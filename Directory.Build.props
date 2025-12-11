@@ -1,0 +1,12 @@
+<Project>
+  <PropertyGroup>
+    <!-- Enable cross-compilation of Windows targets on non-Windows systems -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+
+    <!-- fsdocs configuration for GitHub Pages hosting -->
+    <!-- PackageProjectUrl is used by fsdocs for root URL of generated documentation -->
+    <PackageProjectUrl>https://cariandrum22.github.io/Xanthos</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/cariandrum22/Xanthos</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+</Project>

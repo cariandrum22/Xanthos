@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "fantomas": {
+      "version": "7.0.3",
+      "commands": [
+        "fantomas"
+      ]
+    },
+    "dotnet-fsharplint": {
+      "version": "0.26.8",
+      "commands": [
+        "dotnet-fsharplint"
+      ]
+    },
+    "fsdocs-tool": {
+      "version": "21.0.0",
+      "commands": [
+        "fsdocs"
+      ]
+    }
+  }
+}

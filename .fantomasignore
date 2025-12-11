@@ -1,0 +1,5 @@
+.direnv/
+.git/
+bin/
+obj/
+.artifacts/

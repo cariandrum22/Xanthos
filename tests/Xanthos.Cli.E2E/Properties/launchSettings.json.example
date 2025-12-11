@@ -1,0 +1,17 @@
+{
+  "profiles": {
+    "Xanthos.Cli.E2E": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "XANTHOS_E2E_MODE": "COM",
+        "XANTHOS_E2E_SID": "YOUR_SID",
+        "XANTHOS_E2E_SERVICE_KEY": "YOUR-SERVICE-KEY",
+        "XANTHOS_E2E_SAVE_PATH": "C:\\JVDATA",
+        "XANTHOS_E2E_FROM": "20240101000000",
+        "XANTHOS_E2E_SPEC": "RACE",
+        "XANTHOS_E2E_OPTION": "1",
+        "XANTHOS_E2E_DIAG": "true"
+      }
+    }
+  }
+}

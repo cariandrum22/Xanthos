@@ -1,0 +1,47 @@
+repos:
+  # General hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        exclude: ^docs/img/original\.png$
+
+  # F# formatting and linting (local hooks using dotnet tools)
+  - repo: local
+    hooks:
+      - id: fantomas
+        name: fantomas (F# formatter)
+        entry: dotnet fantomas
+        language: system
+        files: \.fs$
+        exclude: \.direnv/
+        pass_filenames: true
+
+      - id: fsharplint
+        name: fsharplint (F# linter)
+        entry: bash -c 'dotnet fsharplint lint src tests'
+        language: system
+        files: \.fs$
+        exclude: \.direnv/
+        pass_filenames: false
+
+  # Nix formatting
+  - repo: local
+    hooks:
+      - id: nixfmt
+        name: nixfmt
+        entry: nixfmt
+        language: system
+        files: \.nix$
+
+  # Shell scripts
+  - repo: local
+    hooks:
+      - id: shellcheck
+        name: shellcheck
+        entry: shellcheck
+        language: system
+        files: \.sh$
