@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Xanthos.Cli": {
+      "commandName": "Project",
+      "commandLineArgs": "--sid YOUR_SID --service-key YOUR-SERVICE-KEY --save-path \"C:\\JVDATA\" download --spec RACE --option 1 --from 20240101000000"
+    }
+  }
+}

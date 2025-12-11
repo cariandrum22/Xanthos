@@ -1,0 +1,104 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net10.0;net10.0-windows</TargetFrameworks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <UseAppHost>false</UseAppHost>
+    <Nullable>disable</Nullable>
+
+    <!-- Package metadata -->
+    <PackageId>Xanthos</PackageId>
+    <AssemblyName>Xanthos</AssemblyName>
+    <RootNamespace>Xanthos</RootNamespace>
+    <Version>0.1.0</Version>
+    <Authors>cariandrum22</Authors>
+    <Description>F# wrapper library for the JRA-VAN JV-Link COM API. Provides type-safe access to Japanese horse racing data.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://cariandrum22.github.io/Xanthos</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/cariandrum22/Xanthos</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>fsharp;jra-van;jv-link;horse-racing;com-interop;xanthos</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Copyright>Copyright (c) 2025 cariandrum22</Copyright>
+  </PropertyGroup>
+
+  <!-- Define WINDOWS constant for Windows target -->
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-windows'">
+    <DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="Core\Errors.fs" />
+    <Compile Include="Core\ErrorCatalog.fs" />
+    <Compile Include="Core\ErrorCodes.fs" />
+    <Compile Include="Core\Domain.fs" />
+    <Compile Include="Core\Text.fs" />
+    <Compile Include="Core\Serialization.fs" />
+    <Compile Include="Core\Records\FieldDefinitions.fs" />
+    <Compile Include="Core\Records\CodeTables.fs" />
+    <Compile Include="Core\Records\RecordParser.fs" />
+    <Compile Include="Core\Records\RecordTypes.fs" />
+    <Compile Include="Core\Records\TK.fs" />
+    <Compile Include="Core\Records\RA.fs" />
+    <Compile Include="Core\Records\SE.fs" />
+    <Compile Include="Core\Records\HR.fs" />
+    <Compile Include="Core\Records\O1.fs" />
+    <Compile Include="Core\Records\O2.fs" />
+    <Compile Include="Core\Records\O3.fs" />
+    <Compile Include="Core\Records\O4.fs" />
+    <Compile Include="Core\Records\O5.fs" />
+    <Compile Include="Core\Records\O6.fs" />
+    <Compile Include="Core\Records\H1.fs" />
+    <Compile Include="Core\Records\H5.fs" />
+    <Compile Include="Core\Records\H6.fs" />
+    <Compile Include="Core\Records\WF.fs" />
+    <Compile Include="Core\Records\JC.fs" />
+    <Compile Include="Core\Records\TC.fs" />
+    <Compile Include="Core\Records\CC.fs" />
+    <Compile Include="Core\Records\WE.fs" />
+    <Compile Include="Core\Records\AV.fs" />
+    <Compile Include="Core\Records\UM.fs" />
+    <Compile Include="Core\Records\KS.fs" />
+    <Compile Include="Core\Records\CH.fs" />
+    <Compile Include="Core\Records\BR.fs" />
+    <Compile Include="Core\Records\BN.fs" />
+    <Compile Include="Core\Records\RC.fs" />
+    <Compile Include="Core\Records\JG.fs" />
+    <Compile Include="Core\Records\WH.fs" />
+    <Compile Include="Core\Records\HN.fs" />
+    <Compile Include="Core\Records\SK.fs" />
+    <Compile Include="Core\Records\HC.fs" />
+    <Compile Include="Core\Records\HS.fs" />
+    <Compile Include="Core\Records\HY.fs" />
+    <Compile Include="Core\Records\YS.fs" />
+    <Compile Include="Core\Records\BT.fs" />
+    <Compile Include="Core\Records\CS.fs" />
+    <Compile Include="Core\Records\DM.fs" />
+    <Compile Include="Core\Records\TM.fs" />
+    <Compile Include="Core\Records\WC.fs" />
+    <Compile Include="Core\Records\CK.fs" />
+    <Compile Include="Interop\IJvLinkClient.fs" />
+    <Compile Include="Interop\ComInterop.fs" />
+    <Compile Include="Interop\Diagnostics.fs" />
+    <Compile Include="Interop\StaThreadDispatcher.fs" />
+    <Compile Include="Interop\JvLinkStub.fs" />
+    <Compile Include="Interop\ComEvents.fs" />
+    <Compile Include="Interop\ComJvLinkClient.fs" />
+    <Compile Include="Interop\ComClientFactory.fs" />
+    <Compile Include="Runtime\Configuration.fs" />
+    <Compile Include="Runtime\DownloadMonitor.fs" />
+    <Compile Include="Runtime\Instrumentation.fs" />
+    <Compile Include="Runtime\RetryPolicy.fs" />
+    <Compile Include="Runtime\Validation.fs" />
+    <Compile Include="Runtime\PayloadParser.fs" />
+    <Compile Include="Runtime\JvLinkService.fs" />
+    <Compile Include="Runtime\JvLinkService.Async.fs" />
+    <Compile Include="Runtime\JvLinkService.Extensions.fs" />
+    <Compile Include="Library.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+</Project>

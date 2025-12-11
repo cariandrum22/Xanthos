@@ -1,0 +1,283 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_NOLOGO: true
+  XANTHOS_E2E_MODE: STUB
+  XANTHOS_E2E_SID: CI_TEST_SID
+  XANTHOS_E2E_SERVICE_KEY: CI_TEST_KEY
+
+jobs:
+  build-and-test:
+    name: Build and Test (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            platform: linux
+          - os: macos-latest
+            platform: macos
+          - os: windows-latest
+            platform: windows
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+          dotnet-quality: 'preview'
+
+      - name: Display .NET info
+        run: dotnet --info
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build solution
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Run unit tests (with coverage)
+        run: |
+          mkdir -p coverage/unit coverage/property
+          dotnet test tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj \
+            --no-build \
+            --configuration Release \
+            -p:CollectCoverage=true \
+            -p:CoverletOutput="${GITHUB_WORKSPACE}/coverage/unit/" \
+            -p:CoverletOutputFormat=cobertura \
+            --logger "trx;LogFileName=unit-test-results.trx" \
+            --results-directory ./TestResults
+        shell: bash
+
+      - name: Run property tests (with coverage)
+        run: |
+          dotnet test tests/Xanthos.PropertyTests/Xanthos.PropertyTests.fsproj \
+            --no-build \
+            --configuration Release \
+            -p:CollectCoverage=true \
+            -p:MergeWith="${GITHUB_WORKSPACE}/coverage/unit/coverage.cobertura.xml" \
+            -p:CoverletOutput="${GITHUB_WORKSPACE}/coverage/property/" \
+            -p:CoverletOutputFormat=cobertura \
+            --logger "trx;LogFileName=property-test-results.trx" \
+            --results-directory ./TestResults
+        shell: bash
+
+      - name: Run CLI E2E tests (Stub mode, no coverage)
+        run: |
+          dotnet test tests/Xanthos.Cli.E2E \
+            --no-build \
+            --configuration Release \
+            --logger "trx;LogFileName=e2e-stub-results.trx" \
+            --logger "console;verbosity=normal" \
+            --results-directory ./TestResults \
+            -- xunit.parallelizeTestCollections=false
+        shell: bash
+
+      - name: Install ReportGenerator
+        run: dotnet tool install --global dotnet-reportgenerator-globaltool
+        shell: bash
+
+      - name: Generate coverage report
+        run: |
+          # Collect available coverage files
+          COVERAGE_FILES=""
+          if [ -f "coverage/unit/coverage.cobertura.xml" ]; then
+            COVERAGE_FILES="coverage/unit/coverage.cobertura.xml"
+          fi
+          if [ -f "coverage/property/coverage.cobertura.xml" ]; then
+            if [ -n "$COVERAGE_FILES" ]; then
+              COVERAGE_FILES="$COVERAGE_FILES;coverage/property/coverage.cobertura.xml"
+            else
+              COVERAGE_FILES="coverage/property/coverage.cobertura.xml"
+            fi
+          fi
+
+          if [ -n "$COVERAGE_FILES" ]; then
+            reportgenerator \
+              -reports:"$COVERAGE_FILES" \
+              -targetdir:"coverage/report" \
+              -reporttypes:"HtmlInline_AzurePipelines;TextSummary;Cobertura;MarkdownSummary"
+            echo "==== Coverage Summary ===="
+            cat coverage/report/Summary.txt || true
+          else
+            echo "No coverage files found, skipping report generation"
+          fi
+        shell: bash
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+            name: test-results-${{ matrix.platform }}
+            path: ./TestResults/*.trx
+            retention-days: 7
+
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-${{ matrix.platform }}
+          path: |
+            coverage/report/**
+            coverage/**/*.xml
+            coverage/**/*.json
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload test logs (on failure)
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-logs-${{ matrix.platform }}
+          path: .artifacts/cli-e2e/test-logs/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+          dotnet-quality: 'preview'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Restore .NET tools
+        run: dotnet tool restore
+
+      - name: Check formatting (fantomas)
+        run: dotnet fantomas --check .
+
+      - name: Lint (fsharplint)
+        run: dotnet fsharplint lint src tests
+        continue-on-error: true
+
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [build-and-test]
+    if: always()
+    steps:
+      - name: Download all test results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-*
+          path: ./TestResults
+          merge-multiple: true
+
+      - name: Download coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          path: ./CoverageArtifacts
+          merge-multiple: true
+
+      - name: Extract coverage summary
+        run: |
+          echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Build and Test**: ${{ needs.build-and-test.result == 'success' && '✅ All platforms passed' || '❌ Some platforms failed' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Find coverage summary file (path may vary after merge-multiple)
+          SUMMARY_FILE=$(find CoverageArtifacts -name "Summary.txt" -type f 2>/dev/null | head -1)
+          if [ -n "$SUMMARY_FILE" ] && [ -f "$SUMMARY_FILE" ]; then
+            echo "### Coverage Summary" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat "$SUMMARY_FILE" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "_No coverage summary available_" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  docs:
+    name: Build Documentation
+    runs-on: ubuntu-latest
+    needs: [build-and-test]
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+          dotnet-quality: 'preview'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Restore .NET tools
+        run: dotnet tool restore
+
+      - name: Build solution
+        run: dotnet build --configuration Release
+
+      - name: Generate documentation
+        run: >-
+          dotnet fsdocs build --clean --properties Configuration=Release
+          --parameters
+          fsdocs-root /Xanthos/
+          fsdocs-logo-src img/logo.png
+          fsdocs-favicon-src img/favicon.png
+          fsdocs-license-link https://github.com/cariandrum22/Xanthos/blob/main/LICENSE
+          fsdocs-release-notes-link https://github.com/cariandrum22/Xanthos/releases
+          fsdocs-repository-link https://github.com/cariandrum22/Xanthos
+
+      - name: Upload documentation artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation
+          path: output/
+          retention-days: 7
+
+      - name: Setup Pages
+        if: github.ref == 'refs/heads/main'
+        uses: actions/configure-pages@v4
+        with:
+          enablement: true
+
+      - name: Upload to GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: output/
+
+  deploy-docs:
+    name: Deploy Documentation
+    runs-on: ubuntu-latest
+    needs: docs
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

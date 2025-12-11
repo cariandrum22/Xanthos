@@ -1,0 +1,212 @@
+# =============================================================================
+# Xanthos .gitignore
+# Target environments: Windows (Visual Studio), Linux (Nix)
+# =============================================================================
+
+# =============================================================================
+# OS-specific
+# =============================================================================
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS (for collaborators)
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+.directory
+
+# =============================================================================
+# Nix
+# =============================================================================
+
+# Nix build output symlink
+result
+result-*
+
+# Nix cache
+.cache/
+
+# direnv
+.direnv/
+
+# =============================================================================
+# Visual Studio / JetBrains IDE / VS Code
+# =============================================================================
+
+# Visual Studio cache/options
+.vs/
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# VS Code
+.vscode/
+
+# Ionide (F# extension for VS Code)
+.ionide/
+
+# Local history
+.localhistory/
+
+# VC++ database files
+*.VC.db
+*.VC.VC.opendb
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# ReSharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# Visual Studio profiler
+*.psess
+*.vsp
+*.vspx
+*.sap
+
+# NCrunch
+_NCrunch_*
+.*crunch*.local.xml
+nCrunchTemp_*
+
+# =============================================================================
+# .NET / F# Build Results
+# =============================================================================
+
+# Build directories
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Bb]uild[Ll]og.*
+
+# Build artifacts
+*.dll
+*.exe
+*.pdb
+*.pidb
+*.ilk
+*.obj
+*.pch
+*.lib
+*.sbr
+*.cache
+
+# PublishOutput
+publish/
+artifacts/
+.artifacts/
+.artifacts/cli-e2e/
+.artifacts/cli-e2e/test-logs/
+
+# =============================================================================
+# NuGet
+# =============================================================================
+
+# NuGet packages
+*.nupkg
+*.snupkg
+**/packages/*
+!**/packages/build/
+*.nuget.props
+*.nuget.targets
+project.lock.json
+
+# =============================================================================
+# Test Results
+# =============================================================================
+
+# MSTest / xUnit / NUnit
+[Tt]est[Rr]esult*/
+TestResult.xml
+*.VisualState.xml
+*.trx
+
+# Code coverage
+*.coverage
+*.coveragexml
+coverage/
+TestResults/
+
+# DotCover
+*.dotCover
+
+# =============================================================================
+# Test Fixtures (JRA-VAN Data - Copyrighted)
+# =============================================================================
+
+# JV-Link captured fixtures contain JRA copyrighted data
+# Generate locally with: .\scripts\capture-fixtures.ps1 -Sid "YOUR_SID"
+tests/fixtures/
+
+# =============================================================================
+# Documentation & Design
+# =============================================================================
+
+# Force track design/ (override previous patterns)
+!design/
+!design/**
+
+# JRA-VAN official documents (copyrighted - not redistributable)
+design/source-docs/*.xlsx
+design/source-docs/*.html
+design/source-docs/*.txt
+design/source-docs/JV-Link*_files/
+
+# FSharp.Formatting output
+output/
+.fsdocs/
+
+# =============================================================================
+# Miscellaneous
+# =============================================================================
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Backup files
+*.bak
+*.orig
+*.swp
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.so
+.venv/
+venv/
+ENV/
+
+# Node.js (for tooling)
+node_modules/
+
+# Secrets (never commit)
+*.pfx
+*.publishsettings
+appsettings.*.json
+!appsettings.json
+!appsettings.Development.json.example
+
+# Visual Studio launch settings (may contain credentials)
+**/Properties/launchSettings.json
+!**/Properties/launchSettings.json.example
