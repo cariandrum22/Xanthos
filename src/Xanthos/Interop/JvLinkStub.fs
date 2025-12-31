@@ -301,9 +301,7 @@ type JvLinkStub(responses: seq<Result<JvReadOutcome, ComError>>, ?totalSize: int
             and set value = saveFlag <- value
 
         /// <inheritdoc />
-        member _.SavePath
-            with get () = savePath
-            and set value = savePath <- value
+        member _.SavePath = savePath
 
         /// <inheritdoc />
         member _.ServiceKey
