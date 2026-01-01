@@ -34,12 +34,29 @@ dotnet test
 
 ## Development Workflow
 
-### Branch Strategy
+### Branch Strategy (GitFlow)
 
-- `main` - Stable releases
-- `develop` - Development branch
-- `feature/*` - New features
-- `fix/*` - Bug fixes
+This project follows a GitFlow-like branching strategy.
+
+```
+main (release branch)
+  ↑ On merge: version increment + CHANGELOG finalization
+develop (development branch)
+  ↑ PR merge
+feature/*, fix/* (topic branches)
+```
+
+| Branch | Purpose | Merge Target |
+|--------|---------|--------------|
+| `main` | Stable releases. Published to NuGet | - |
+| `develop` | Development integration. Next release candidate | `main` |
+| `feature/*` | New feature development | `develop` |
+| `fix/*` | Bug fixes | `develop` |
+
+**Important**:
+- Topic branches are created from `develop` and merged back to `develop`
+- Merging to `main` is only done during releases
+- Direct commits to `main` are prohibited
 
 ### Contribution Process
 
@@ -51,21 +68,50 @@ dotnet test
 
 ### Commit Messages
 
-Use clear and concise commit messages:
+This project follows the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification.
 
 ```
-<type>: <summary>
+<type>[optional scope]: <description>
 
-<body (optional)>
+[optional body]
+
+[optional footer(s)]
 ```
 
-Types:
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation
-- `test`: Tests
-- `refactor`: Refactoring
-- `ci`: CI/CD
+**Types:**
+
+| Type | Description | SemVer |
+|------|-------------|--------|
+| `feat` | New feature | MINOR |
+| `fix` | Bug fix | PATCH |
+| `docs` | Documentation only | - |
+| `style` | Formatting (no code change) | - |
+| `refactor` | Code refactoring | - |
+| `perf` | Performance improvement | - |
+| `test` | Adding/fixing tests | - |
+| `build` | Build system changes | - |
+| `ci` | CI/CD changes | - |
+| `chore` | Other maintenance | - |
+
+**Breaking Changes:**
+
+Append `!` after type/scope or add `BREAKING CHANGE:` in footer:
+
+```
+feat!: remove deprecated API
+
+BREAKING CHANGE: The old API has been removed.
+```
+
+**Examples:**
+
+```
+feat: add realtime data streaming support
+fix: correct SavePath property access
+docs: update installation instructions
+refactor(parser): simplify record parsing logic
+feat(cli)!: change command argument format
+```
 
 ## Coding Conventions
 
@@ -197,14 +243,65 @@ See [design/architecture/README.md](design/architecture/README.md) for details.
 
 ## Releases
 
+### CHANGELOG Management
+
+This project follows the [Keep a Changelog](https://keepachangelog.com/) format.
+
+#### Recording Changes During Development
+
+When merging a PR, add changes to the `[Unreleased]` section in `CHANGELOG.md`:
+
+```markdown
+## [Unreleased]
+
+### Added
+- Description of new feature
+
+### Changed
+- Description of changes
+
+### Fixed
+- Description of fix
+
+### Breaking Changes
+- Description of breaking change (interface changes, etc.)
+```
+
+Categories:
+- **Added**: New features
+- **Changed**: Changes to existing features
+- **Deprecated**: Features that are deprecated
+- **Removed**: Features that were removed
+- **Fixed**: Bug fixes
+- **Security**: Security fixes
+- **Breaking Changes**: Breaking changes (API/interface changes)
+
+#### Finalizing CHANGELOG on Release
+
+When merging `develop` → `main`:
+
+1. Change `[Unreleased]` to `[X.Y.Z] - YYYY-MM-DD`
+2. Add a new empty `[Unreleased]` section
+3. Update version comparison links
+
+### Version Management
+
+This project follows [Semantic Versioning](https://semver.org/):
+
+- **MAJOR**: Breaking changes (interface changes, etc.)
+- **MINOR**: Backward-compatible new features
+- **PATCH**: Backward-compatible bug fixes
+
+Versions are centrally managed in `Directory.Build.props`.
+
 ### Pre-Release Checklist
 
 Before tagging a release, complete the following:
 
 1. **CI Tests**: All GitHub Actions workflows pass
 2. **Manual COM Verification**: Complete the [verification checklist](tests/README.md#verification-checklist) on Windows
-3. **CHANGELOG**: Update with release notes
-4. **Version**: Update version numbers as needed
+3. **CHANGELOG**: Finalize `[Unreleased]` section with release version
+4. **Version**: Update version in `Directory.Build.props`
 
 ### Release Verification Evidence
 
