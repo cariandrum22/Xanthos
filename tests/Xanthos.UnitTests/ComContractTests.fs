@@ -451,10 +451,10 @@ let ``SaveFlag property should be readable and writable`` () =
     Assert.False(client.SaveFlag)
 
 [<Fact>]
-let ``SavePath property should be readable and writable`` () =
+let ``SavePath property should be readable via SetSavePathDirect`` () =
     let stub = new JvLinkStub()
     let client = stub :> IJvLinkClient
-    client.SavePath <- "C:\\test\\path"
+    client.SetSavePathDirect "C:\\test\\path" |> ignore
     Assert.Equal("C:\\test\\path", client.SavePath)
 
 [<Fact>]

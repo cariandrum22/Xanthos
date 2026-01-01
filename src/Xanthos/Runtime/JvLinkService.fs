@@ -346,16 +346,7 @@ type JvLinkService
                     let result =
                         executeCom defaultRetryPolicy "SetSavePathDirect" (fun () -> client.SetSavePathDirect path)
 
-                    match result |> Errors.mapComError with
-                    | Error e -> Error e
-                    | Ok() ->
-                        // Also update the cached property for consistency
-                        try
-                            client.SavePath <- path
-                        with _ ->
-                            ()
-
-                        Ok()
+                    result |> Errors.mapComError
                 | None -> Ok()
 
             match savePathResult with
@@ -1448,10 +1439,6 @@ type JvLinkService
         guardedWithInitialisation "SetSavePath" (fun () ->
             match runCom "JVSetSavePath" (fun () -> client.SetSavePathDirect trimmed) with
             | Ok() ->
-                try
-                    client.SavePath <- trimmed
-                with _ ->
-                    ()
                 // Update currentConfig so next initialization uses the new value
                 currentConfig <-
                     { currentConfig with

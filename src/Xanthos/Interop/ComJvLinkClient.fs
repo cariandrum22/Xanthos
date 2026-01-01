@@ -864,9 +864,7 @@ type ComJvLinkClient(?useJvGets: bool) =
             with get () = getPropertyInt "m_saveflag" <> 0
             and set value = setPropertyInt "m_saveflag" (if value then 1 else 0) |> ignore
 
-        member _.SavePath
-            with get () = getPropertyString "m_savepath"
-            and set value = setPropertyString "m_savepath" value |> ignore
+        member _.SavePath = getPropertyString "m_savepath"
 
         member _.ServiceKey
             with get () = getPropertyString "m_servicekey"

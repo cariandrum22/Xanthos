@@ -130,9 +130,13 @@ type IJvLinkClient =
     /// <summary>Gets or sets whether downloads are persisted to disk (<c>m_saveflag</c>).</summary>
     /// <remarks>The getter returns a default value (false) if COM property access fails. Use <see cref="TryGetSaveFlag"/> for explicit error handling.</remarks>
     abstract member SaveFlag: bool with get, set
-    /// <summary>Gets or sets the save path configured within JV-Link.</summary>
-    /// <remarks>The getter returns an empty string if COM property access fails. Use <see cref="TryGetSavePath"/> for explicit error handling.</remarks>
-    abstract member SavePath: string with get, set
+    /// <summary>Gets the save path configured within JV-Link.</summary>
+    /// <remarks>
+    /// This property is read-only. Per JV-Link specification, m_savepath can only be modified
+    /// via JVSetSavePath or JVSetUIProperties methods.
+    /// The getter returns an empty string if COM property access fails. Use <see cref="TryGetSavePath"/> for explicit error handling.
+    /// </remarks>
+    abstract member SavePath: string
     /// <summary>Gets or sets the service key configured within JV-Link.</summary>
     /// <remarks>The getter returns an empty string if COM property access fails. Use <see cref="TryGetServiceKey"/> for explicit error handling.</remarks>
     abstract member ServiceKey: string with get, set
