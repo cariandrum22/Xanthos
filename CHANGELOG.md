@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Make `IJvLinkClient.SavePath` property read-only ([#1](https://github.com/cariandrum22/Xanthos/issues/1), [#4](https://github.com/cariandrum22/Xanthos/pull/4))
   - Per JV-Link specification: `SavePath` can only be set via `SetSavePathDirect` method
 
+### Fixed
+
+- Reduce excessive diagnostic logging in `checkUseJvGets()` by caching the resolved value ([#2](https://github.com/cariandrum22/Xanthos/issues/2))
+
 ## [0.1.0] - 2025-12-10
 
 ### Added
