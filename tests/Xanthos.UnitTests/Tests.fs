@@ -566,7 +566,7 @@ let ``All IJvLinkClient properties read and write correctly`` () =
     stubClient.SaveFlag <- false
     Assert.False(stubClient.SaveFlag)
 
-    stubClient.SavePath <- "C:\\temp\\jvdata"
+    stubClient.SetSavePathDirect "C:\\temp\\jvdata" |> ignore
     Assert.Equal("C:\\temp\\jvdata", stubClient.SavePath)
 
     stubClient.ServiceKey <- "TESTKEY123456789"
