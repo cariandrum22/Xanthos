@@ -281,32 +281,39 @@ type ComJvLinkClient(?useJvGets: bool) =
         | _ -> None
 
     // Determines whether to use JVGets (byte array) instead of JVRead (BSTR).
-    // Priority: 1) constructor parameter, 2) XANTHOS_USE_JVGETS environment variable
-    let checkUseJvGets () =
-        match useJvGetsOverride with
-        | Some value ->
-            Diagnostics.emit $"UseJvGets override={value} (from config)"
-            value
-        | None ->
-            let envValue = Environment.GetEnvironmentVariable("XANTHOS_USE_JVGETS")
-            // Normalize: trim whitespace and convert to lowercase for case-insensitive comparison
-            let normalized =
-                if isNull envValue then
-                    ""
-                else
-                    envValue.Trim().ToLowerInvariant()
+    // Priority: 1) constructor parameter, 2) XANTHOS_USE_JVGETS environment variable.
+    //
+    // The decision is cached because it does not change within a session and emitting this
+    // diagnostic on every record creates excessive log noise.
+    let useJvGetsCached =
+        lazy (
+            match useJvGetsOverride with
+            | Some value ->
+                Diagnostics.emit $"UseJvGets override={value} (from config)"
+                value
+            | None ->
+                let envValue = Environment.GetEnvironmentVariable("XANTHOS_USE_JVGETS")
+                // Normalize: trim whitespace and convert to lowercase for case-insensitive comparison
+                let normalized =
+                    if isNull envValue then
+                        ""
+                    else
+                        envValue.Trim().ToLowerInvariant()
 
-            let result =
-                match normalized with
-                | ""
-                | "0"
-                | "false"
-                | "no"
-                | "off" -> false
-                | _ -> true
+                let result =
+                    match normalized with
+                    | ""
+                    | "0"
+                    | "false"
+                    | "no"
+                    | "off" -> false
+                    | _ -> true
 
-            Diagnostics.emit $"XANTHOS_USE_JVGETS env='{envValue}' -> useJvGets={result}"
-            result
+                Diagnostics.emit $"XANTHOS_USE_JVGETS env='{envValue}' -> useJvGets={result}"
+                result
+        )
+
+    let checkUseJvGets () = useJvGetsCached.Value
 
     // JVRead implementation: uses BSTR with UTF-16 byte extraction
     // JVRead returns data as BSTR. JV-Link writes Shift-JIS bytes to the BSTR buffer, but COM
@@ -416,7 +423,6 @@ type ComJvLinkClient(?useJvGets: bool) =
     // Main read dispatcher - selects implementation based on environment variable
     let readRecord () : Result<JvReadOutcome, ComError> =
         if checkUseJvGets () then
-            Diagnostics.emit "Using JVGets path (XANTHOS_USE_JVGETS=1)"
             readRecordViaJvGets ()
         else
             readRecordViaJvRead ()
