@@ -137,9 +137,13 @@ type IJvLinkClient =
     /// The getter returns an empty string if COM property access fails. Use <see cref="TryGetSavePath"/> for explicit error handling.
     /// </remarks>
     abstract member SavePath: string
-    /// <summary>Gets or sets the service key configured within JV-Link.</summary>
-    /// <remarks>The getter returns an empty string if COM property access fails. Use <see cref="TryGetServiceKey"/> for explicit error handling.</remarks>
-    abstract member ServiceKey: string with get, set
+    /// <summary>Gets the service key configured within JV-Link.</summary>
+    /// <remarks>
+    /// This property is read-only. Per JV-Link specification, m_servicekey can only be modified
+    /// via JVSetServiceKey or JVSetUIProperties methods.
+    /// The getter returns an empty string if COM property access fails. Use <see cref="TryGetServiceKey"/> for explicit error handling.
+    /// </remarks>
+    abstract member ServiceKey: string
     /// <summary>Attempts to retrieve whether downloads are persisted to disk (<c>m_saveflag</c>).</summary>
     /// <returns>Ok(bool) on success, or Error if COM property access fails.</returns>
     abstract member TryGetSaveFlag: unit -> Result<bool, ComError>

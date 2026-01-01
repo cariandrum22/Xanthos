@@ -458,10 +458,10 @@ let ``SavePath property should be readable via SetSavePathDirect`` () =
     Assert.Equal("C:\\test\\path", client.SavePath)
 
 [<Fact>]
-let ``ServiceKey property should be readable and writable`` () =
+let ``ServiceKey property should be readable via SetServiceKeyDirect`` () =
     let stub = new JvLinkStub()
     let client = stub :> IJvLinkClient
-    client.ServiceKey <- "test-key-123"
+    client.SetServiceKeyDirect "test-key-123" |> ignore
     Assert.Equal("test-key-123", client.ServiceKey)
 
 [<Fact>]

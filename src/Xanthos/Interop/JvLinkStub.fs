@@ -236,6 +236,7 @@ type JvLinkStub(responses: seq<Result<JvReadOutcome, ComError>>, ?totalSize: int
 
         /// <inheritdoc />
         member _.SetServiceKeyDirect key =
+            serviceKey <- key
             lastServiceKey <- Some key
             Ok()
 
@@ -304,9 +305,7 @@ type JvLinkStub(responses: seq<Result<JvReadOutcome, ComError>>, ?totalSize: int
         member _.SavePath = savePath
 
         /// <inheritdoc />
-        member _.ServiceKey
-            with get () = serviceKey
-            and set value = serviceKey <- value
+        member _.ServiceKey = serviceKey
 
         /// <inheritdoc />
         member _.TryGetSaveFlag() = Ok saveFlag

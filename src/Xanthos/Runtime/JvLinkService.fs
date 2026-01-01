@@ -358,16 +358,7 @@ type JvLinkService
                     let result =
                         executeCom defaultRetryPolicy "SetServiceKeyDirect" (fun () -> client.SetServiceKeyDirect key)
 
-                    match result |> Errors.mapComError with
-                    | Error e -> Error e
-                    | Ok() ->
-                        // Also update the cached property for consistency
-                        try
-                            client.ServiceKey <- key
-                        with _ ->
-                            ()
-
-                        Ok()
+                    result |> Errors.mapComError
                 | None -> Ok()
 
     let openSessionFor request =
@@ -1464,10 +1455,6 @@ type JvLinkService
         guardedWithInitialisation "SetServiceKey" (fun () ->
             match runCom "JVSetServiceKey" (fun () -> client.SetServiceKeyDirect trimmed) with
             | Ok() ->
-                try
-                    client.ServiceKey <- trimmed
-                with _ ->
-                    ()
                 // Update currentConfig so next initialization uses the new value
                 currentConfig <-
                     { currentConfig with
