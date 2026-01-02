@@ -569,7 +569,7 @@ let ``All IJvLinkClient properties read and write correctly`` () =
     stubClient.SetSavePathDirect "C:\\temp\\jvdata" |> ignore
     Assert.Equal("C:\\temp\\jvdata", stubClient.SavePath)
 
-    stubClient.ServiceKey <- "TESTKEY123456789"
+    stubClient.SetServiceKeyDirect "TESTKEY123456789" |> ignore
     Assert.Equal("TESTKEY123456789", stubClient.ServiceKey)
 
     let version = stubClient.JVLinkVersion

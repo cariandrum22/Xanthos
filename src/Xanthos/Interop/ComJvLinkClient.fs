@@ -871,9 +871,7 @@ type ComJvLinkClient(?useJvGets: bool) =
 
         member _.SavePath = getPropertyString "m_savepath"
 
-        member _.ServiceKey
-            with get () = getPropertyString "m_servicekey"
-            and set value = setPropertyString "m_servicekey" value |> ignore
+        member _.ServiceKey = getPropertyString "m_servicekey"
 
         member _.TryGetSaveFlag() =
             tryGetPropertyInt "m_saveflag" |> Result.map (fun v -> v <> 0)

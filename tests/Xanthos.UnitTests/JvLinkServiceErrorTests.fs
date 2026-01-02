@@ -66,9 +66,7 @@ let private createStubThatFailsInit () =
 
         member _.SavePath = ""
 
-        member _.ServiceKey
-            with get () = ""
-            and set (_) = ()
+        member _.ServiceKey = ""
 
         member _.TryGetSaveFlag() = Ok false
         member _.TryGetSavePath() = Ok ""
@@ -134,9 +132,7 @@ let private createStubThatFailsOpen () =
 
         member _.SavePath = ""
 
-        member _.ServiceKey
-            with get () = ""
-            and set (_) = ()
+        member _.ServiceKey = ""
 
         member _.TryGetSaveFlag() = Ok false
         member _.TryGetSavePath() = Ok ""
