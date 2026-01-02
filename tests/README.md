@@ -252,7 +252,7 @@ Expected: All tests pass or skip appropriately based on COM availability.
        "Xanthos.Cli": {
          "commandLineArgs": "--sid YOUR_SID fetch --spec RACE --from 20240101",
          "environmentVariables": {
-           "XANTHOS_USE_JVGETS": "0"
+           "XANTHOS_USE_JVREAD": "1"
          }
        }
      }
@@ -273,16 +273,16 @@ Get-ChildItem -Recurse ./fixtures/*.bin | Measure-Object
 
 Expected: `.bin` and `.meta.json` files created for each record type.
 
-### 4. JVGets Mode Verification
+### 4. JVRead Mode Verification
 
-Test the JVGets API path:
+Test the JVRead API path (opt-out):
 
 ```powershell
-$env:XANTHOS_USE_JVGETS = "1"
+$env:XANTHOS_USE_JVREAD = "1"
 dotnet run --project samples/Xanthos.Cli -- --sid YOUR_SID fetch --spec RACE --from 20240101
 ```
 
-Expected: Data fetched using JVGets instead of JVOpen.
+Expected: Data fetched using JVRead instead of JVGets.
 
 ## Verification Checklist
 
@@ -300,7 +300,8 @@ Use this checklist before releases:
 - [ ] CLI E2E (COM mode) - All pass
 - [ ] Visual Studio debug run - Success
 - [ ] Fixture capture - Files generated
-- [ ] JVGets mode - Data fetched
+- [ ] JVGets mode (default) - Data fetched
+- [ ] JVRead mode (XANTHOS_USE_JVREAD=1) - Data fetched
 
 **Record Types Verified:**
 - [ ] TK (Track info)
@@ -384,11 +385,12 @@ $env:XANTHOS_SID = "YOUR_SID"
 # 1. Verify COM instantiation works
 dotnet run --project samples/Xanthos.Cli -- --sid $env:XANTHOS_SID version
 
-# 2. Verify data fetching (JVRead path)
+# 2. Verify data fetching (JVRead path / opt-out)
+$env:XANTHOS_USE_JVREAD = "1"
 dotnet run --project samples/Xanthos.Cli -- --sid $env:XANTHOS_SID fetch --spec RACE --from 20240101 --limit 5
 
-# 3. Verify JVGets path (if using Gets mode)
-$env:XANTHOS_USE_JVGETS = "1"
+# 3. Verify JVGets path (default / opt-in)
+$env:XANTHOS_USE_JVREAD = "0"
 dotnet run --project samples/Xanthos.Cli -- --sid $env:XANTHOS_SID fetch --spec RACE --from 20240101 --limit 5
 
 # 4. Run E2E test suite in COM mode
@@ -410,7 +412,7 @@ Before each release, fill out and include in the release notes:
 **Smoke Test Results:**
 - [ ] `version` command: COM client instantiated successfully
 - [ ] `fetch` command (JVRead): Data retrieved and parsed
-- [ ] `fetch` command (JVGets): Data retrieved via Gets API (if applicable)
+- [ ] `fetch` command (JVGets): Data retrieved via JVGets (default)
 - [ ] E2E test suite (COM mode): All tests pass
 
 **Verified By:** ____________
