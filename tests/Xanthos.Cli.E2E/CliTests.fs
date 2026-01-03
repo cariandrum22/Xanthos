@@ -723,6 +723,8 @@ type CliTests(output: ITestOutputHelper, fixture: ServiceKeySetupFixture) =
     [<Trait("Category", "Silks")>]
     member _.``silks-file generates silks bitmap``() =
         let outputPath = Path.Combine(Harness.savePath, "silks-test", "output.bmp")
+        // JV-Link requires the output directory to exist.
+        Directory.CreateDirectory(Path.GetDirectoryName outputPath) |> ignore
 
         let result =
             Harness.runCli mode [ "silks-file"; "--pattern"; silksTestPattern; "--output"; outputPath ]
