@@ -527,7 +527,7 @@ let runTotalReadSize ctx =
     withService ctx (fun service ->
         let _ = printEvidence ctx service
 
-        match service.GetTotalReadFileSize() with
+        match service.GetTotalReadFileSizeBytes() with
         | Ok size ->
             printfn "Total read file size: %d bytes" size
             0
