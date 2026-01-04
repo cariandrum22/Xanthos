@@ -250,6 +250,14 @@ Brief description of changes
 - [ ] CHANGELOG.md updated
 ```
 
+### Merge Strategy
+
+To keep the `develop` history readable and consistent:
+
+- **Topic branches → `develop`**: prefer **Squash and merge** (one PR = one commit).
+- **`develop` → `main` (releases)**: prefer a **merge commit** to preserve a clear release boundary.
+- **Rebase and merge**: only use when each commit is intentionally curated and meaningful on its own.
+
 ## Architecture
 
 The project follows a three-layer architecture:
