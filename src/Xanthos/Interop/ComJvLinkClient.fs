@@ -927,6 +927,7 @@ type ComJvLinkClient(?useJvGets: bool) =
         member _.TryGetParentWindowHandle() =
             // NOTE: ParentHWnd is write-only in COM mode; reading fails.
             Error(InvalidState "ParentHWnd cannot be read in COM mode (property is write-only).")
+
         member _.TryGetPayoffDialogSuppressed() = tryGetPropertyBool "m_payflag"
 
         member _.JVLinkVersion = getPropertyString "m_JVLinkVersion"
