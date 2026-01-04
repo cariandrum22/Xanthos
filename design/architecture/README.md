@@ -494,8 +494,15 @@ match service.SetSaveDownloadsEnabled true with
 service.SetSavePath @"D:\\JVDATA" |> ignore
 service.SetServiceKey "12345678901234567" |> ignore
 
-// Suppress payoff dialogs and set owner window
-service.SetPayoffDialogSuppressed true |> ignore
+// Suppress payoff dialogs.
+// NOTE: In COM mode, m_payflag is effectively read-only (writes fail). Use ShowConfigurationDialog().
+match service.SetPayoffDialogSuppressed true with
+| Ok () -> ()
+| Error (Unsupported _) -> printfn "Payoff dialog suppression is not supported in COM mode; use ShowConfigurationDialog()."
+| Error err -> printfn "Failed to configure payoff dialogs: %A" err
+
+// Set owner window for JV-Link dialogs (ParentHWnd).
+// NOTE: ParentHWnd is write-only in COM mode (cannot be read back).
 service.SetParentWindowHandle(IntPtr 0x00012345) |> ignore
 
 // Launch JV-Link UI dialog (same options exposed interactively)
@@ -506,7 +513,7 @@ match service.GetJVLinkVersion() with
 | Ok version -> printfn "JV-Link %s" version
 | Error err -> printfn "Failed to get version: %A" err
 
-match service.GetTotalReadFileSize() with
+match service.GetTotalReadFileSizeBytes() with
 | Ok size -> printfn "Total bytes remaining: %d" size
 | Error err -> printfn "Failed to get total size: %A" err
 
@@ -515,7 +522,7 @@ match service.GetCurrentReadFileSize() with
 | Error err -> printfn "Failed to get current size: %A" err
 ```
 
-These helpers wrap the COM properties (`m_saveflag`, `m_savepath`, `m_servicekey`, `m_payflag`, `ParentHWnd`, etc.) while surfacing idiomatic F# APIs and error handling.
+These helpers wrap the COM properties (`m_saveflag`, `m_savepath`, `m_servicekey`, `m_payflag`, `ParentHWnd`, etc.) while surfacing idiomatic F# APIs and error handling (including COM read/write limitations).
 
 ### 5.9 Fetching Workout Video Listings
 
@@ -537,29 +544,23 @@ match service.FetchWorkoutVideos(MovieType.WorkoutWeekAll, "20240101") with
 
 ### 6.1 Interface Definition
 
+The authoritative definition lives in `src/Xanthos/Interop/IJvLinkClient.fs`. This excerpt shows the core shape:
+
 ```fsharp
 type JvReadOutcome =
     | Payload of JvPayload
-    | EndOfStream
     | FileBoundary
     | DownloadPending
+    | EndOfStream
 
 type IJvLinkClient =
-    abstract member Init : sid:string -> Result<unit, ComError>
-    abstract member Open : request:JvOpenRequest -> Result<bool, ComError>
-    abstract member OpenRealtime : spec:string * key:string -> Result<bool, ComError>
-    abstract member Read : unit -> Result<JvReadOutcome, ComError>
-    abstract member Close : unit -> unit
-    abstract member Status : unit -> Result<int, ComError>
-    abstract member Skip : unit -> Result<unit, ComError>
-    abstract member Cancel : unit -> Result<unit, ComError>
-    abstract member DeleteFile : filename:string -> Result<unit, ComError>
-    abstract member WatchEvent : (string -> unit) -> Result<unit, ComError>
-    abstract member WatchEventClose : unit -> Result<unit, ComError>
-    abstract member SavePath : string
-    abstract member ServiceKey : string
-    abstract member TotalReadFileSize : int64
-    abstract member CurrentFileTimestamp : System.DateTime option
+    abstract member Init: sid: string -> Result<unit, ComError>
+    abstract member Open: request: JvOpenRequest -> Result<JvOpenResult, ComError>
+    abstract member OpenRealtime: spec: string * key: string -> Result<JvOpenResult, ComError>
+    abstract member Read: unit -> Result<JvReadOutcome, ComError>
+    abstract member Gets: buffer: byref<string> * bufferSize: int * filename: byref<string> -> Result<int, ComError>
+    abstract member Close: unit -> unit
+    // ... additional JV-Link methods and properties
 ```
 
 > **Note**: `OpenRealtime` takes a string `key` parameter matching JV-Link spec formats:
@@ -571,17 +572,17 @@ The runtime layer lifts `Result<_, ComError>` into `Result<_, XanthosError>` to 
 
 #### COM Client Lifecycle Management
 
-`IJvLinkClient` inherits from `IDisposable`, and `ComJvLinkClient` implements proper resource cleanup. Callers should dispose of COM clients explicitly:
+`IJvLinkClient` itself does not require `IDisposable`, but `ComJvLinkClient` implements proper resource cleanup.
+`JvLinkService` disposes the injected client when it implements `IDisposable`, so callers should typically dispose the service:
 
 ```fsharp
 // Option 1: Use ComClientFactory with 'use' binding
 // Parameter: useJvGets (None = env vars; XANTHOS_USE_JVREAD opt-out, XANTHOS_USE_JVGETS legacy)
 match ComClientFactory.tryCreate None with
 | Ok client ->
-    use client = client  // IJvLinkClient inherits IDisposable
-    let service = JvLinkService(client, config, logger)
+    use service = JvLinkService(client, config, logger)
     // ... use service ...
-    // Client is disposed when 'use' scope exits
+    // Service (and underlying client) is disposed when 'use' scope exits
 | Error err -> printfn "COM activation failed: %A" err
 
 // Option 2: With DI container (automatic disposal)
@@ -590,11 +591,11 @@ match ComClientFactory.tryCreate None with
 // Option 3: Manual disposal
 match ComClientFactory.tryCreate None with
 | Ok client ->
+    let service = JvLinkService(client, config, logger)
     try
-        let service = JvLinkService(client, config, logger)
         // ... use service ...
     finally
-        client.Dispose()
+        service.Dispose()
 | Error err -> printfn "COM activation failed: %A" err
 ```
 
