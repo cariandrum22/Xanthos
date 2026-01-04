@@ -701,7 +701,11 @@ let runCaptureFixtures ctx args =
         let ctxForFixtures =
             if args.UseJvGets then
                 printfn "Using JVGets mode (--use-jvgets)"
-                { ctx with Config = { ctx.Config with UseJvGets = Some true } }
+
+                { ctx with
+                    Config =
+                        { ctx.Config with
+                            UseJvGets = Some true } }
             else
                 ctx
 
