@@ -58,6 +58,25 @@ feature/*, fix/* (topic branches)
 - Merging to `main` is only done during releases
 - Direct commits to `main` are prohibited
 
+### Branch Naming
+
+Use a consistent, descriptive branch name format:
+
+- **With an Issue**: `<type>/<issue-number>-<slug>`
+- **Without an Issue**: `<type>/<slug>` (or `<type>/no-issue-<slug>` if you want to make that explicit)
+
+Rules:
+
+- `type` should align with Conventional Commits types (e.g. `feat/`, `fix/`, `docs/`, `refactor/`, `test/`, `ci/`, `chore/`)
+- `issue-number` is digits only (no `issue-` prefix)
+- `slug` should be short, kebab-case, and descriptive
+
+Examples:
+
+- `fix/3-jvgets-default`
+- `docs/6-gitflow-workflow`
+- `chore/no-issue-ci-cleanup`
+
 ### Contribution Process
 
 1. Create an Issue to discuss changes (for major changes)
