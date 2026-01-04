@@ -101,9 +101,16 @@ type IJvLinkClient =
     abstract member SetServiceKeyDirect: key: string -> Result<unit, ComError>
     /// <summary>Sets the save path via `JVSetSavePath`.</summary>
     abstract member SetSavePathDirect: path: string -> Result<unit, ComError>
-    /// <summary>Sets the parent window handle via property assignment.</summary>
+    /// <summary>Sets the parent window handle for JV-Link dialogs (<c>ParentHWnd</c>).</summary>
+    /// <remarks>
+    /// In COM mode, <c>ParentHWnd</c> is write-only: reading it back is not supported.
+    /// </remarks>
     abstract member SetParentWindowHandleDirect: handle: IntPtr -> Result<unit, ComError>
-    /// <summary>Sets whether payoff dialogs are suppressed via property assignment.</summary>
+    /// <summary>Attempts to set whether payoff dialogs are suppressed (<c>m_payflag</c>).</summary>
+    /// <remarks>
+    /// In COM mode, <c>m_payflag</c> is effectively read-only (write fails). Users can still change this
+    /// setting interactively via <see cref="SetUiProperties"/> (JVSetUIProperties dialog).
+    /// </remarks>
     abstract member SetPayoffDialogSuppressedDirect: suppressed: bool -> Result<unit, ComError>
     /// <summary>Retrieves a course diagram with explanation.</summary>
     abstract member CourseFile: key: string -> Result<string * string, ComError>
@@ -167,7 +174,8 @@ type IJvLinkClient =
     /// <returns>Ok(DateTime option) on success, or Error if COM property access fails.</returns>
     abstract member TryGetCurrentFileTimestamp: unit -> Result<DateTime option, ComError>
     /// <summary>Attempts to retrieve the parent window handle for JV dialogs.</summary>
-    /// <returns>Ok(IntPtr) on success, or Error if COM property access fails.</returns>
+    /// <remarks>In COM mode, <c>ParentHWnd</c> is write-only and cannot be read.</remarks>
+    /// <returns>Ok(IntPtr) on success, or Error if the value cannot be read.</returns>
     abstract member TryGetParentWindowHandle: unit -> Result<IntPtr, ComError>
     /// <summary>Attempts to retrieve whether payoff dialogs are suppressed (<c>m_payflag</c>).</summary>
     /// <returns>Ok(bool) on success, or Error if COM property access fails.</returns>
@@ -185,8 +193,15 @@ type IJvLinkClient =
     /// <remarks>The getter returns None if COM property access fails. Use <see cref="TryGetCurrentFileTimestamp"/> for explicit error handling.</remarks>
     abstract member CurrentFileTimestamp: DateTime option
     /// <summary>Gets or sets the parent window handle for JV dialogs.</summary>
-    /// <remarks>The getter returns IntPtr.Zero if COM property access fails. Use <see cref="TryGetParentWindowHandle"/> for explicit error handling.</remarks>
+    /// <remarks>
+    /// In COM mode, <c>ParentHWnd</c> is write-only. The getter returns IntPtr.Zero.
+    /// Use <see cref="TryGetParentWindowHandle"/> for explicit error handling.
+    /// </remarks>
     abstract member ParentWindowHandle: IntPtr with get, set
     /// <summary>Gets or sets whether payoff dialogs are suppressed (<c>m_payflag</c>).</summary>
-    /// <remarks>The getter returns false if COM property access fails. Use <see cref="TryGetPayoffDialogSuppressed"/> for explicit error handling.</remarks>
+    /// <remarks>
+    /// In COM mode, <c>m_payflag</c> is effectively read-only: setting it programmatically is not supported.
+    /// The setter is best-effort and may be ignored. Use <see cref="SetUiProperties"/> to change the value interactively.
+    /// The getter returns false if COM property access fails. Use <see cref="TryGetPayoffDialogSuppressed"/> for explicit error handling.
+    /// </remarks>
     abstract member PayoffDialogSuppressed: bool with get, set

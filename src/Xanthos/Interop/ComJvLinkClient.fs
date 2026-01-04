@@ -701,8 +701,13 @@ type ComJvLinkClient(?useJvGets: bool) =
         member _.SetParentWindowHandleDirect handle =
             setPropertyInt "ParentHWnd" (int handle)
 
-        member _.SetPayoffDialogSuppressedDirect suppressed =
-            setPropertyInt "m_payflag" (if suppressed then 1 else 0)
+        member _.SetPayoffDialogSuppressedDirect _suppressed =
+            // NOTE: In COM mode, the m_payflag property is effectively read-only (write fails).
+            // Users can still change this setting via JVSetUIProperties (interactive dialog).
+            Error(
+                InvalidState
+                    "m_payflag cannot be set programmatically in COM mode (property is read-only). Use JVSetUIProperties to change this setting."
+            )
 
         member _.CourseFile key =
             protect "JVCourseFile" (fun () ->
@@ -919,7 +924,9 @@ type ComJvLinkClient(?useJvGets: bool) =
                     | true, dt -> Some dt
                     | false, _ -> None)
 
-        member _.TryGetParentWindowHandle() = tryGetPropertyIntPtr "ParentHWnd"
+        member _.TryGetParentWindowHandle() =
+            // NOTE: ParentHWnd is write-only in COM mode; reading fails.
+            Error(InvalidState "ParentHWnd cannot be read in COM mode (property is write-only).")
         member _.TryGetPayoffDialogSuppressed() = tryGetPropertyBool "m_payflag"
 
         member _.JVLinkVersion = getPropertyString "m_JVLinkVersion"
@@ -944,12 +951,18 @@ type ComJvLinkClient(?useJvGets: bool) =
                 | false, _ -> None
 
         member _.ParentWindowHandle
-            with get () = IntPtr(getPropertyInt "ParentHWnd")
+            with get () =
+                // NOTE: ParentHWnd is write-only in COM mode; return a safe default.
+                IntPtr.Zero
             and set value = setPropertyInt "ParentHWnd" (int value) |> ignore
 
         member _.PayoffDialogSuppressed
             with get () = getPropertyInt "m_payflag" <> 0
-            and set value = setPropertyInt "m_payflag" (if value then 1 else 0) |> ignore
+            and set _ =
+                // NOTE: In COM mode, the m_payflag property is effectively read-only (write fails).
+                // Keep the setter as a no-op to avoid spurious COM errors when consumers use property syntax.
+                Diagnostics.emit "WARN m_payflag is read-only in COM mode; ignoring PayoffDialogSuppressed set."
+                ()
 
     /// <summary>
     /// Releases COM resources and disconnects event subscriptions.
