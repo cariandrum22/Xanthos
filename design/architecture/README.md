@@ -556,8 +556,8 @@ type IJvLinkClient =
     abstract member DeleteFile : filename:string -> Result<unit, ComError>
     abstract member WatchEvent : (string -> unit) -> Result<unit, ComError>
     abstract member WatchEventClose : unit -> Result<unit, ComError>
-    abstract member SavePath : string with get,set
-    abstract member ServiceKey : string with get,set
+    abstract member SavePath : string
+    abstract member ServiceKey : string
     abstract member TotalReadFileSize : int64
     abstract member CurrentFileTimestamp : System.DateTime option
 ```
@@ -575,7 +575,7 @@ The runtime layer lifts `Result<_, ComError>` into `Result<_, XanthosError>` to 
 
 ```fsharp
 // Option 1: Use ComClientFactory with 'use' binding
-// Parameter: useJvGets (None = use env var XANTHOS_USE_JVGETS)
+// Parameter: useJvGets (None = env vars; XANTHOS_USE_JVREAD opt-out, XANTHOS_USE_JVGETS legacy)
 match ComClientFactory.tryCreate None with
 | Ok client ->
     use client = client  // IJvLinkClient inherits IDisposable

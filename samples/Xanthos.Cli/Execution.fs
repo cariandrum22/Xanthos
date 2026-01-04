@@ -697,18 +697,19 @@ let runCaptureFixtures ctx args =
         printfn "Run this command on Windows with JV-Link installed."
         2
     | Com ->
-        // Set environment variable for JVGets mode only if explicitly requested via CLI option
-        // This preserves any existing environment variable setting when --use-jvgets is not specified
-        if args.UseJvGets then
-            Environment.SetEnvironmentVariable("XANTHOS_USE_JVGETS", "1")
-            printfn "Using JVGets mode (--use-jvgets)"
-        else
-            // Check if environment variable is already set
-            match Environment.GetEnvironmentVariable("XANTHOS_USE_JVGETS") with
-            | "1" -> printfn "Using JVGets mode (from environment variable)"
-            | _ -> ()
+        // Force JVGets when explicitly requested, regardless of env var defaults.
+        let ctxForFixtures =
+            if args.UseJvGets then
+                printfn "Using JVGets mode (--use-jvgets)"
 
-        match tryCreateService ctx with
+                { ctx with
+                    Config =
+                        { ctx.Config with
+                            UseJvGets = Some true } }
+            else
+                ctx
+
+        match tryCreateService ctxForFixtures with
         | Error msg ->
             printfn "ERROR: COM client creation failed: %s" msg
             2

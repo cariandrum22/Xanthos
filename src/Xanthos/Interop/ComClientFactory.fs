@@ -8,7 +8,7 @@ module ComClientFactory =
     /// Attempts to create a COM-backed JV-Link client.
     /// </summary>
     /// <param name="useJvGets">Optional flag to use JVGets API instead of JVRead.
-    /// When None, falls back to XANTHOS_USE_JVGETS environment variable.</param>
+    /// When None, falls back to environment variables (XANTHOS_USE_JVREAD opt-out, XANTHOS_USE_JVGETS legacy).</param>
     /// <returns>
     /// Ok with the client on success, or Error with details on failure.
     /// </returns>

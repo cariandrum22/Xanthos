@@ -16,6 +16,8 @@ Global Options:
   --save-path <path>      Directory for persisted files (or XANTHOS_JVLINK_SAVE_PATH).
   --stub                  Force stub mode (default on non-Windows).
   --diag                  Enable COM diagnostics output.
+  --use-jvgets            Force JVGets (default) regardless of env vars.
+  --no-jvgets             Force JVRead (equivalent to XANTHOS_USE_JVREAD=1).
   --help                  Show this help text.
 
 Commands:
@@ -106,7 +108,7 @@ Commands:
       --from <timestamp>    Start time YYYYMMDDHHmmss (default: 30 days ago).
       --to <timestamp>      End time YYYYMMDDHHmmss (optional).
       --max-records <n>     Max records per type (default: 10).
-      --use-jvgets          Use JVGets instead of JVRead.
+      --use-jvgets          Force JVGets (default).
 """
 
 let private printHelp () =

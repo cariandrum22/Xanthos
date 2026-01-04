@@ -9,7 +9,7 @@
     <PackageId>Xanthos</PackageId>
     <AssemblyName>Xanthos</AssemblyName>
     <RootNamespace>Xanthos</RootNamespace>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <Authors>cariandrum22</Authors>
     <Description>F# wrapper library for the JRA-VAN JV-Link COM API. Provides type-safe access to Japanese horse racing data.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

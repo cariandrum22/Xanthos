@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Per JV-Link specification: `SavePath` can only be set via `SetSavePathDirect` method
 - Make `IJvLinkClient.ServiceKey` property read-only ([#5](https://github.com/cariandrum22/Xanthos/issues/5))
   - Per JV-Link specification: `ServiceKey` can only be set via `SetServiceKeyDirect` method
+- Change default JVRead/JVGets behavior: use JVGets by default; set `XANTHOS_USE_JVREAD=1` to opt out ([#3](https://github.com/cariandrum22/Xanthos/issues/3))
+  - `XANTHOS_USE_JVGETS` is still supported as a legacy override
 
 ### Fixed
 

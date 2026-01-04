@@ -34,7 +34,7 @@ type GlobalSettings =
         StubPreference: StubPreference
         EnableDiagnostics: bool
         /// When Some true, use JVGets (byte array) instead of JVRead (BSTR).
-        /// When None, falls back to XANTHOS_USE_JVGETS environment variable.
+        /// When None, falls back to environment variables (XANTHOS_USE_JVREAD opt-out, XANTHOS_USE_JVGETS legacy).
         UseJvGets: bool option
     }
 

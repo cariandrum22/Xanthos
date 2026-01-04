@@ -281,36 +281,52 @@ type ComJvLinkClient(?useJvGets: bool) =
         | _ -> None
 
     // Determines whether to use JVGets (byte array) instead of JVRead (BSTR).
-    // Priority: 1) constructor parameter, 2) XANTHOS_USE_JVGETS environment variable.
+    // Priority:
+    //  1) constructor parameter (useJvGets)
+    //  2) XANTHOS_USE_JVREAD environment variable (opt-out; set to 1/true to use JVRead)
+    //  3) XANTHOS_USE_JVGETS environment variable (legacy; set to 0/false to use JVRead)
+    //  4) default: true (use JVGets)
     //
     // The decision is cached because it does not change within a session and emitting this
     // diagnostic on every record creates excessive log noise.
     let useJvGetsCached =
         lazy
-            (match useJvGetsOverride with
+            (let parseEnvBool (envValue: string) : bool option =
+                if isNull envValue then
+                    None
+                else
+                    let normalized = envValue.Trim().ToLowerInvariant()
+
+                    match normalized with
+                    | "" -> None
+                    | "0"
+                    | "false"
+                    | "no"
+                    | "off" -> Some false
+                    | _ -> Some true
+
+             match useJvGetsOverride with
              | Some value ->
                  Diagnostics.emit $"UseJvGets override={value} (from config)"
                  value
              | None ->
-                 let envValue = Environment.GetEnvironmentVariable("XANTHOS_USE_JVGETS")
-                 // Normalize: trim whitespace and convert to lowercase for case-insensitive comparison
-                 let normalized =
-                     if isNull envValue then
-                         ""
-                     else
-                         envValue.Trim().ToLowerInvariant()
+                 let jvReadEnv = Environment.GetEnvironmentVariable("XANTHOS_USE_JVREAD")
 
-                 let result =
-                     match normalized with
-                     | ""
-                     | "0"
-                     | "false"
-                     | "no"
-                     | "off" -> false
-                     | _ -> true
+                 match parseEnvBool jvReadEnv with
+                 | Some useJvRead ->
+                     let useJvGets = not useJvRead
+                     Diagnostics.emit $"XANTHOS_USE_JVREAD env='{jvReadEnv}' -> useJvGets={useJvGets}"
+                     useJvGets
+                 | None ->
+                     let jvGetsEnv = Environment.GetEnvironmentVariable("XANTHOS_USE_JVGETS")
 
-                 Diagnostics.emit $"XANTHOS_USE_JVGETS env='{envValue}' -> useJvGets={result}"
-                 result)
+                     match parseEnvBool jvGetsEnv with
+                     | Some useJvGets ->
+                         Diagnostics.emit $"XANTHOS_USE_JVGETS env='{jvGetsEnv}' -> useJvGets={useJvGets}"
+                         useJvGets
+                     | None ->
+                         Diagnostics.emit "UseJvGets default=true (JVGets)"
+                         true)
 
     let checkUseJvGets () = useJvGetsCached.Value
 
@@ -419,7 +435,7 @@ type ComJvLinkClient(?useJvGets: bool) =
     // Note: Avoid forced GC here - unpinning the handle is sufficient.
     // Forced GC per-record causes significant performance degradation.
 
-    // Main read dispatcher - selects implementation based on environment variable
+    // Main read dispatcher - selects implementation based on cached decision.
     let readRecord () : Result<JvReadOutcome, ComError> =
         if checkUseJvGets () then
             readRecordViaJvGets ()
