@@ -59,10 +59,21 @@ module Harness =
 
     // When XANTHOS_E2E_USE_EXE=true (or auto-detected), run the built exe directly instead of dotnet run
     // This is required for COM to work on Windows (32-bit exe for 32-bit COM)
-    let useBuiltExe =
+    type ExeModeSetting =
+        | ForcedExe
+        | ForcedDotnet
+        | Auto
+
+    let exeModeSetting =
         match Environment.GetEnvironmentVariable "XANTHOS_E2E_USE_EXE" with
-        | v when not (isNull v) && v.Equals("true", StringComparison.OrdinalIgnoreCase) -> true
-        | v when not (isNull v) && v.Equals("false", StringComparison.OrdinalIgnoreCase) -> false
+        | v when not (isNull v) && v.Equals("true", StringComparison.OrdinalIgnoreCase) -> ForcedExe
+        | v when not (isNull v) && v.Equals("false", StringComparison.OrdinalIgnoreCase) -> ForcedDotnet
+        | _ -> Auto
+
+    let mutable useBuiltExe =
+        match exeModeSetting with
+        | ForcedExe -> true
+        | ForcedDotnet -> false
         | _ ->
             // Auto-detect: use exe mode if on Windows and JV-Link COM is registered
             if OperatingSystem.IsWindows() && isJvLinkComRegistered () then
@@ -71,36 +82,86 @@ module Harness =
             else
                 false
 
+    let private artifactsDir = Path.Combine(repoRoot, ".artifacts", "cli-e2e")
+    let private buildCliLogFile = Path.Combine(artifactsDir, "build-cli.log")
+
+    let private writeBootstrapLog (fileName: string) (commandLine: string) (stdout: string) (stderr: string) =
+        try
+            Directory.CreateDirectory artifactsDir |> ignore
+            let file = Path.Combine(artifactsDir, fileName)
+
+            File.WriteAllText(
+                file,
+                "COMMAND:\n"
+                + commandLine
+                + "\n\nSTDOUT:\n"
+                + stdout
+                + "\n---\nSTDERR:\n"
+                + stderr
+                + "\n"
+            )
+
+            Some file
+        with _ ->
+            None
+
     let private buildCliIfNeeded () =
         if useBuiltExe && OperatingSystem.IsWindows() then
             printfn "[E2E] Building CLI with net10.0-windows target..."
+            let args = [ "build"; cliProject; "-c"; "Release"; "-f"; "net10.0-windows" ]
             let si = ProcessStartInfo(dotnetExe)
             si.WorkingDirectory <- repoRoot
             si.RedirectStandardOutput <- true
             si.RedirectStandardError <- true
             si.UseShellExecute <- false
 
-            [ "build"; cliProject; "-c"; "Release"; "-f"; "net10.0-windows" ]
-            |> List.iter si.ArgumentList.Add
+            args |> List.iter si.ArgumentList.Add
 
-            use proc = Process.Start(si)
-            let stdout = proc.StandardOutput.ReadToEnd()
-            let stderr = proc.StandardError.ReadToEnd()
-            proc.WaitForExit(120000) |> ignore
+            use proc = new Process()
+            proc.StartInfo <- si
 
-            if proc.ExitCode <> 0 then
-                printfn "[E2E] Build FAILED with exit code %d" proc.ExitCode
-                printfn "[E2E] Build stdout:\n%s" stdout
-                printfn "[E2E] Build stderr:\n%s" stderr
+            if not (proc.Start()) then
+                printfn "[E2E] Build FAILED: could not start dotnet process"
                 false
             else
-                printfn "[E2E] Build succeeded"
-                true
+                let stdoutTask = proc.StandardOutput.ReadToEndAsync()
+                let stderrTask = proc.StandardError.ReadToEndAsync()
+                let exited = proc.WaitForExit(120000)
+
+                if not exited then
+                    try
+                        proc.Kill(true)
+                    with _ ->
+                        ()
+
+                let stdout = stdoutTask.GetAwaiter().GetResult()
+                let stderr = stderrTask.GetAwaiter().GetResult()
+                let exitCode = if exited then proc.ExitCode else -1
+
+                if exitCode <> 0 then
+                    let commandLine = dotnetExe + " " + (args |> String.concat " ")
+
+                    let logFile =
+                        writeBootstrapLog "build-cli.log" commandLine stdout stderr
+                        |> Option.map (fun p -> $" See log: {p}")
+                        |> Option.defaultValue ""
+
+                    printfn "[E2E] Build FAILED with exit code %d.%s" exitCode logFile
+                    false
+                else
+                    printfn "[E2E] Build succeeded"
+                    true
         else
             true
 
     let private cliExePath =
-        Path.Combine(repoRoot, "samples", "Xanthos.Cli", "bin", "Release", "net10.0-windows", "Xanthos.Cli.exe")
+        let exeName =
+            if OperatingSystem.IsWindows() then
+                "Xanthos.Cli.exe"
+            else
+                "Xanthos.Cli"
+
+        Path.Combine(repoRoot, "samples", "Xanthos.Cli", "bin", "Release", "net10.0-windows", exeName)
 
     // Build once at module initialization
     do
@@ -114,19 +175,46 @@ module Harness =
              else
                  "Non-Windows")
 
+        printfn "[E2E] exeModeSetting: %A" exeModeSetting
         printfn "[E2E] useBuiltExe: %b" useBuiltExe
 
         if useBuiltExe && OperatingSystem.IsWindows() then
             if not (buildCliIfNeeded ()) then
-                failwith "Failed to build CLI for E2E tests"
+                let message =
+                    "Failed to build CLI for E2E tests.\n"
+                    + "Try running:\n"
+                    + $"  {dotnetExe} build {cliProject} -c Release -f net10.0-windows\n"
+                    + $"See {buildCliLogFile} for details (if created)."
 
+                match exeModeSetting with
+                | ForcedExe -> failwith message
+                | Auto ->
+                    printfn "[E2E] WARNING: %s" message
+                    printfn "[E2E] Falling back to 'dotnet run' mode."
+                    useBuiltExe <- false
+                | ForcedDotnet -> ()
+
+        if useBuiltExe && OperatingSystem.IsWindows() then
             // Verify the exe exists
             if File.Exists(cliExePath) then
                 printfn "[E2E] CLI exe found: %s" cliExePath
             else
-                printfn "[E2E] WARNING: CLI exe NOT found: %s" cliExePath
+                let message =
+                    "CLI exe not found after build.\n"
+                    + $"Expected: {cliExePath}\n"
+                    + "Try running:\n"
+                    + $"  {dotnetExe} build {cliProject} -c Release -f net10.0-windows\n"
+                    + $"See {buildCliLogFile} for details (if created)."
+
+                match exeModeSetting with
+                | ForcedExe -> failwith message
+                | Auto ->
+                    printfn "[E2E] WARNING: %s" message
+                    printfn "[E2E] Falling back to 'dotnet run' mode."
+                    useBuiltExe <- false
+                | ForcedDotnet -> ()
         else
-            printfn "[E2E] Using 'dotnet run' mode (no COM support)"
+            printfn "[E2E] Using 'dotnet run' mode (COM may fall back to Stub)"
 
         printfn "[E2E] =============================================="
 
@@ -237,7 +325,7 @@ module Harness =
 
     let private createProcessStartInfo mode commandArgs =
         let si =
-            if useBuiltExe && OperatingSystem.IsWindows() then
+            if useBuiltExe && OperatingSystem.IsWindows() && File.Exists(cliExePath) then
                 // Run the built 32-bit exe directly for COM support
                 ProcessStartInfo(cliExePath)
             else
@@ -248,7 +336,7 @@ module Harness =
         si.RedirectStandardError <- true
         si.UseShellExecute <- false
 
-        if not (useBuiltExe && OperatingSystem.IsWindows()) then
+        if not (useBuiltExe && OperatingSystem.IsWindows() && File.Exists(cliExePath)) then
             // When not using built exe (i.e., no COM support), always use net10.0
             // to avoid x86 architecture constraints of net10.0-windows.
             // COM-dependent features won't work in this mode anyway.
@@ -270,7 +358,7 @@ module Harness =
 
     let private createProcessStartInfoWithServiceKey mode commandArgs =
         let si =
-            if useBuiltExe && OperatingSystem.IsWindows() then
+            if useBuiltExe && OperatingSystem.IsWindows() && File.Exists(cliExePath) then
                 ProcessStartInfo(cliExePath)
             else
                 ProcessStartInfo(dotnetExe)
@@ -280,7 +368,7 @@ module Harness =
         si.RedirectStandardError <- true
         si.UseShellExecute <- false
 
-        if not (useBuiltExe && OperatingSystem.IsWindows()) then
+        if not (useBuiltExe && OperatingSystem.IsWindows() && File.Exists(cliExePath)) then
             let tfm = "net10.0"
 
             let noBuild =
