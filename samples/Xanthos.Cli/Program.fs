@@ -123,8 +123,16 @@ let private configureConsoleEncoding () =
     try
         let utf8 = UTF8Encoding(false)
 
-        if Console.IsOutputRedirected || Console.IsErrorRedirected then
+        if Console.IsOutputRedirected then
             Console.OutputEncoding <- utf8
+            let writer = new IO.StreamWriter(Console.OpenStandardOutput(), utf8)
+            writer.AutoFlush <- true
+            Console.SetOut(writer)
+
+        if Console.IsErrorRedirected then
+            let writer = new IO.StreamWriter(Console.OpenStandardError(), utf8)
+            writer.AutoFlush <- true
+            Console.SetError(writer)
 
         if Console.IsInputRedirected then
             Console.InputEncoding <- utf8
