@@ -87,16 +87,15 @@ module Harness =
         match exeModeSetting with
         | ForcedExe -> true
         | ForcedDotnet -> false
-        | _ ->
-            // Auto-detect: use exe mode if on Windows and JV-Link COM is registered
-            if OperatingSystem.IsWindows() && isJvLinkComRegistered () then
-                printfn "[E2E] JV-Link COM detected, using exe mode for full COM support"
-                true
-            else
-                false
+        | Auto ->
+            // Prefer exe mode on Windows so the CLI runs the net10.0-windows build.
+            // VS test explorer runs the testhost as x64, so dotnet-run mode would always use net10.0
+            // and COM interop would be unavailable (JV-Link is a 32-bit COM server).
+            OperatingSystem.IsWindows()
 
     let private artifactsDir = Path.Combine(repoRoot, ".artifacts", "cli-e2e")
     let private buildCliLogFile = Path.Combine(artifactsDir, "build-cli.log")
+    let private harnessInitLogFile = Path.Combine(artifactsDir, "harness-init.log")
 
     let private writeBootstrapLog (fileName: string) (commandLine: string) (stdout: string) (stderr: string) =
         try
@@ -190,6 +189,39 @@ module Harness =
 
         printfn "[E2E] exeModeSetting: %A" exeModeSetting
         printfn "[E2E] useBuiltExe: %b" useBuiltExe
+
+        try
+            Directory.CreateDirectory artifactsDir |> ignore
+
+            let jvLinkRegistered =
+                if OperatingSystem.IsWindows() then
+                    Some(isJvLinkComRegistered ())
+                else
+                    None
+
+            let platform =
+                if OperatingSystem.IsWindows() then
+                    "windows"
+                else
+                    "non-windows"
+
+            let jvLinkRegisteredValue =
+                jvLinkRegistered |> Option.map string |> Option.defaultValue "n/a"
+
+            let lines =
+                [ $"platform={platform}"
+                  $"process64Bit={Environment.Is64BitProcess}"
+                  $"exeModeSetting={exeModeSetting}"
+                  $"useBuiltExe={useBuiltExe}"
+                  $"jvLinkProgIdRegistered={jvLinkRegisteredValue}"
+                  $"repoRoot={repoRoot}"
+                  $"cliProject={cliProject}"
+                  $"cliExePath={cliExePath}"
+                  $"appBaseDir={AppContext.BaseDirectory}" ]
+
+            File.WriteAllLines(harnessInitLogFile, lines)
+        with _ ->
+            ()
 
         if useBuiltExe && OperatingSystem.IsWindows() then
             if not (buildCliIfNeeded ()) then
