@@ -1501,7 +1501,12 @@ type JvLinkService
     /// Retrieves the parent window handle configured for JV-Link dialogs.
     /// </summary>
     member _.GetParentWindowHandle() : Result<IntPtr, XanthosError> =
-        client.TryGetParentWindowHandle() |> Errors.mapComError
+        // NOTE: ParentHWnd is write-only in JV-Link COM. Reading it back fails.
+        // Stub clients can still support round-tripping for tests.
+        if comDispatcher.IsSome then
+            Error(Unsupported "ParentHWnd is write-only in COM mode; reading is not supported.")
+        else
+            client.TryGetParentWindowHandle() |> Errors.mapComError
 
     /// <summary>
     /// Sets the parent window handle used for JV-Link dialogs.
@@ -1519,7 +1524,15 @@ type JvLinkService
     /// Configures payoff dialog suppression within JV-Link.
     /// </summary>
     member _.SetPayoffDialogSuppressed(suppressed: bool) : Result<unit, XanthosError> =
-        client.SetPayoffDialogSuppressedDirect(suppressed) |> Errors.mapComError
+        // NOTE: In JV-Link COM, m_payflag is effectively read-only (writes fail).
+        // Users can change it via ShowConfigurationDialog (JVSetUIProperties).
+        if comDispatcher.IsSome then
+            Error(
+                Unsupported
+                    "m_payflag cannot be set programmatically in COM mode; use ShowConfigurationDialog (JVSetUIProperties) to change this setting."
+            )
+        else
+            client.SetPayoffDialogSuppressedDirect(suppressed) |> Errors.mapComError
 
     /// <summary>
     /// Displays the JV-Link configuration dialog via `JVSetUIProperties`.

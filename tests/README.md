@@ -22,7 +22,7 @@ dotnet run --project samples/Xanthos.Cli -- \
     capture-fixtures \
     --output tests/fixtures \
     --specs "RACE,DIFF,0B12" \
-    --from "2024-01-01" \
+    --from "20240101" \
     --max-records 10
 ```
 
@@ -32,7 +32,7 @@ dotnet run --project samples/Xanthos.Cli -- \
 |--------|-------------|
 | `--output` | Directory to save fixtures (required) |
 | `--specs` | Comma-separated list of data specs (required) |
-| `--from` | Start date for data retrieval (required) |
+| `--from` | Start time for data retrieval (`yyyyMMdd` or `yyyyMMddHHmmss`; required) |
 | `--max-records` | Max records per record type (default: 10) |
 
 ### Fixture Directory Structure
@@ -108,7 +108,7 @@ dotnet run --project samples/Xanthos.Cli -- \
     --sid YOUR_SID capture-fixtures \
     --output tests/fixtures \
     --specs "RACE,DIFF" \
-    --from "2024-01-01" \
+    --from "20240101" \
     --max-records 10
 ```
 
@@ -118,7 +118,7 @@ dotnet run --project samples/Xanthos.Cli -- \
     --sid YOUR_SID capture-fixtures \
     --output tests/fixtures \
     --specs "RACE,DIFF,0B12,0B31,BLOD" \
-    --from "2024-01-01" \
+    --from "20240101" \
     --max-records 5
 ```
 
@@ -128,7 +128,7 @@ dotnet run --project samples/Xanthos.Cli -- \
     --sid YOUR_SID capture-fixtures \
     --output tests/fixtures \
     --specs "RACE,DIFF,0B12,0B31,BLOD,SNAP,YSCH" \
-    --from "2024-01-01" \
+    --from "20240101" \
     --max-records 3
 ```
 
@@ -233,7 +233,8 @@ Run the E2E test suite in COM mode on Windows:
 ```powershell
 # Set environment for COM mode
 $env:XANTHOS_E2E_MODE = "COM"
-$env:XANTHOS_SID = "YOUR_SID"
+$env:XANTHOS_E2E_SID = "YOUR_SID"
+$env:XANTHOS_E2E_SERVICE_KEY = "YOUR_SERVICE_KEY"
 
 # Run E2E tests
 dotnet test tests/Xanthos.Cli.E2E --filter "Category=E2E"
@@ -248,9 +249,9 @@ Expected: All tests pass or skip appropriately based on COM availability.
 3. Configure launch settings with your SID:
    ```json
    {
-     "profiles": {
-       "Xanthos.Cli": {
-         "commandLineArgs": "--sid YOUR_SID fetch --spec RACE --from 20240101",
+       "profiles": {
+         "Xanthos.Cli": {
+         "commandLineArgs": "--sid YOUR_SID download --spec RACE --from 20240101",
          "environmentVariables": {
            "XANTHOS_USE_JVREAD": "1"
          }
@@ -279,7 +280,7 @@ Test the JVRead API path (opt-out):
 
 ```powershell
 $env:XANTHOS_USE_JVREAD = "1"
-dotnet run --project samples/Xanthos.Cli -- --sid YOUR_SID fetch --spec RACE --from 20240101
+dotnet run --project samples/Xanthos.Cli -- --sid YOUR_SID download --spec RACE --from 20240101
 ```
 
 Expected: Data fetched using JVRead instead of JVGets.
@@ -380,18 +381,19 @@ Before tagging a release, the following COM smoke tests **MUST** pass on a Windo
 ```powershell
 # Set environment for COM mode
 $env:XANTHOS_E2E_MODE = "COM"
-$env:XANTHOS_SID = "YOUR_SID"
+$env:XANTHOS_E2E_SID = "YOUR_SID"
+$env:XANTHOS_E2E_SERVICE_KEY = "YOUR_SERVICE_KEY"
 
 # 1. Verify COM instantiation works
-dotnet run --project samples/Xanthos.Cli -- --sid $env:XANTHOS_SID version
+dotnet run --project samples/Xanthos.Cli -- --sid $env:XANTHOS_E2E_SID version
 
 # 2. Verify data fetching (JVRead path / opt-out)
 $env:XANTHOS_USE_JVREAD = "1"
-dotnet run --project samples/Xanthos.Cli -- --sid $env:XANTHOS_SID fetch --spec RACE --from 20240101 --limit 5
+dotnet run --project samples/Xanthos.Cli -- --sid $env:XANTHOS_E2E_SID --service-key $env:XANTHOS_E2E_SERVICE_KEY download --spec RACE --from 20240101
 
 # 3. Verify JVGets path (default / opt-in)
 $env:XANTHOS_USE_JVREAD = "0"
-dotnet run --project samples/Xanthos.Cli -- --sid $env:XANTHOS_SID fetch --spec RACE --from 20240101 --limit 5
+dotnet run --project samples/Xanthos.Cli -- --sid $env:XANTHOS_E2E_SID --service-key $env:XANTHOS_E2E_SERVICE_KEY download --spec RACE --from 20240101
 
 # 4. Run E2E test suite in COM mode
 dotnet test tests/Xanthos.Cli.E2E --filter "Category=E2E"
@@ -411,8 +413,8 @@ Before each release, fill out and include in the release notes:
 
 **Smoke Test Results:**
 - [ ] `version` command: COM client instantiated successfully
-- [ ] `fetch` command (JVRead): Data retrieved and parsed
-- [ ] `fetch` command (JVGets): Data retrieved via JVGets (default)
+- [ ] `download` command (JVRead): Data retrieved and parsed
+- [ ] `download` command (JVGets): Data retrieved via JVGets (default)
 - [ ] E2E test suite (COM mode): All tests pass
 
 **Verified By:** ____________

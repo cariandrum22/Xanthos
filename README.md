@@ -118,10 +118,10 @@ All commands support global options:
 | `get-save-path` | Show save path |
 | `set-service-key` | Set service key |
 | `get-service-key` | Show service key |
-| `set-payoff-dialog` | Enable/disable payoff dialog suppression |
+| `set-payoff-dialog` | Set payoff dialog suppression (COM: use `set-ui-properties`) |
 | `get-payoff-dialog` | Show payoff dialog suppression |
 | `set-parent-hwnd` | Set parent window handle (UI) |
-| `get-parent-hwnd` | Show parent window handle (UI) |
+| `get-parent-hwnd` | Show parent window handle (COM: unsupported; `ParentHWnd` is write-only) |
 | `course-file` | Retrieve course diagram file path + explanation |
 | `course-file2` | Retrieve course diagram file path |
 | `silks-file` | Generate silks bitmap file |

@@ -13,7 +13,7 @@ Status legend: ✅ Implemented / ⚠️ Partial (workaround or property-based) /
 | JVSetSavePath | ✅ | Cache path | `JvLinkService.SetSavePath` (calls `JVSetSavePath`) |
 | JVOpen | ✅ | Batch download | Implemented; returns file count |
 | JVRTOpen | ✅ | Real-time odds | `StreamRealtimePayloads`, `StreamRealtimeAsync` (alias `StreamRealtimePayloadsAsync`) |
-| JVStatus | ✅ | Progress check | Implemented via `IJvLinkClient.Status`; returns download % |
+| JVStatus | ✅ | Progress check | Implemented via `IJvLinkClient.Status`; returns completed file count |
 | JVRead | ✅ | Data retrieval | Implemented with Shift-JIS handling |
 | JVGets | ✅ | Line read | SAFEARRAY byte extraction + Shift-JIS decode; avoids JV-Link internal Unicode conversion |
 | JVSkip | ✅ | Skip file | Implemented via `IJvLinkClient.Skip` |
@@ -83,8 +83,8 @@ This section provides expected return values, error codes, and specification ref
 | m_TotalReadFilesize | ✅ | `JvLinkService.GetTotalReadFileSize` |
 | m_CurrentReadFilesize | ✅ | `JvLinkService.GetCurrentReadFileSize` |
 | m_CurrentFileTimestamp | ✅ | `JvLinkService.GetCurrentFileTimestamp` |
-| ParentHWnd | ✅ | `JvLinkService.SetParentWindowHandle` / `GetParentWindowHandle` (write-only in COM; read fails) |
-| m_payflag | ✅ | `JvLinkService.SetPayoffDialogSuppressed` / `GetPayoffDialogSuppressed` (read-only in COM; write fails) |
+| ParentHWnd | ✅ | `JvLinkService.SetParentWindowHandle` / `GetParentWindowHandle` (write-only in COM; read not supported) |
+| m_payflag | ✅ | `JvLinkService.SetPayoffDialogSuppressed` / `GetPayoffDialogSuppressed` (read-only in COM; write not supported) |
 
 ## Update Guidelines
 
