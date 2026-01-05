@@ -1,6 +1,7 @@
 # Contributing to Xanthos
 
-Thank you for your interest in contributing to Xanthos! This document explains how to contribute to the project.
+Thank you for your interest in contributing to Xanthos!
+This document explains how to contribute to the project.
 
 ## Development Environment Setup
 
@@ -38,7 +39,7 @@ dotnet test
 
 This project follows a GitFlow-like branching strategy.
 
-```
+```text
 main (release branch)
   ↑ On merge: version increment + CHANGELOG finalization
 develop (development branch)
@@ -47,13 +48,14 @@ feature/*, fix/* (topic branches)
 ```
 
 | Branch | Purpose | Merge Target |
-|--------|---------|--------------|
+| ------ | ------- | ------------ |
 | `main` | Stable releases. Published to NuGet | - |
 | `develop` | Development integration. Next release candidate | `main` |
 | `feature/*` | New feature development | `develop` |
 | `fix/*` | Bug fixes | `develop` |
 
 **Important**:
+
 - Topic branches are created from `develop` and merged back to `develop`
 - Merging to `main` is only done during releases
 - Direct commits to `main` are prohibited
@@ -63,11 +65,13 @@ feature/*, fix/* (topic branches)
 Use a consistent, descriptive branch name format:
 
 - **With an Issue**: `<type>/<issue-number>-<slug>`
-- **Without an Issue**: `<type>/<slug>` (or `<type>/no-issue-<slug>` if you want to make that explicit)
+- **Without an Issue**: `<type>/<slug>`
+  (or `<type>/no-issue-<slug>` if you want to make that explicit)
 
 Rules:
 
-- `type` should align with Conventional Commits types (e.g. `feat/`, `fix/`, `docs/`, `refactor/`, `test/`, `ci/`, `chore/`)
+- `type` should align with Conventional Commits types (e.g. `feat/`, `fix/`, `docs/`,
+  `refactor/`, `test/`, `ci/`, `chore/`)
 - `issue-number` is digits only (no `issue-` prefix)
 - `slug` should be short, kebab-case, and descriptive
 
@@ -87,9 +91,10 @@ Examples:
 
 ### Commit Messages
 
-This project follows the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification.
+This project follows the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
+specification.
 
-```
+```text
 <type>[optional scope]: <description>
 
 [optional body]
@@ -100,7 +105,7 @@ This project follows the [Conventional Commits](https://www.conventionalcommits.
 **Types:**
 
 | Type | Description | SemVer |
-|------|-------------|--------|
+| ---- | ----------- | ----- |
 | `feat` | New feature | MINOR |
 | `fix` | Bug fix | PATCH |
 | `docs` | Documentation only | - |
@@ -116,7 +121,7 @@ This project follows the [Conventional Commits](https://www.conventionalcommits.
 
 Append `!` after type/scope or add `BREAKING CHANGE:` in footer:
 
-```
+```text
 feat!: remove deprecated API
 
 BREAKING CHANGE: The old API has been removed.
@@ -124,7 +129,7 @@ BREAKING CHANGE: The old API has been removed.
 
 **Examples:**
 
-```
+```text
 feat: add realtime data streaming support
 fix: correct SavePath property access
 docs: update installation instructions
@@ -168,7 +173,7 @@ dotnet fsharplint lint src tests
 ### Test Categories
 
 | Category | Description | Environment |
-|----------|-------------|-------------|
+| -------- | ----------- | ----------- |
 | Unit | Pure F# unit tests | CI (any OS) |
 | Property | FsCheck property-based tests | CI (any OS) |
 | Fixtures | Fixture-based parser tests | CI (if fixtures exist) |
@@ -201,7 +206,8 @@ XANTHOS_E2E_MODE=COM XANTHOS_SID=YOUR_SID dotnet test tests/Xanthos.Cli.E2E
 ### Manual COM Verification
 
 Some functionality requires testing with real JV-Link COM on Windows.
-See [tests/README.md - Manual COM Verification](tests/README.md#manual-com-verification) for:
+See [tests/README.md - Manual COM Verification](tests/README.md#manual-com-verification)
+for:
 
 - Step-by-step verification procedures
 - Pre-release checklist template
@@ -250,6 +256,16 @@ Brief description of changes
 - [ ] CHANGELOG.md updated
 ```
 
+### Merge Strategy
+
+To keep the `develop` history readable and consistent:
+
+- **Topic branches → `develop`**: prefer **Squash and merge** (one PR = one commit).
+- **`develop` → `main` (releases)**: prefer a **merge commit** to preserve a clear
+  release boundary.
+- **Rebase and merge**: only use when each commit is intentionally curated and
+  meaningful on its own.
+
 ## Architecture
 
 The project follows a three-layer architecture:
@@ -287,6 +303,7 @@ When merging a PR, add changes to the `[Unreleased]` section in `CHANGELOG.md`:
 ```
 
 Categories:
+
 - **Added**: New features
 - **Changed**: Changes to existing features
 - **Deprecated**: Features that are deprecated
@@ -318,7 +335,8 @@ Versions are centrally managed in `Directory.Build.props`.
 Before tagging a release, complete the following:
 
 1. **CI Tests**: All GitHub Actions workflows pass
-2. **Manual COM Verification**: Complete the [verification checklist](tests/README.md#verification-checklist) on Windows
+2. **Manual COM Verification**: Complete the
+   [verification checklist](tests/README.md#verification-checklist) on Windows
 3. **CHANGELOG**: Finalize `[Unreleased]` section with release version
 4. **Version**: Update version in `Directory.Build.props`
 
