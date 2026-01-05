@@ -23,7 +23,7 @@ Global Options:
 Commands:
 
   Data Retrieval:
-    download              Bulk download payloads via JVOpen + JVRead.
+    download              Bulk download payloads via JVOpen + JVRead/JVGets.
       --spec <dataspec>     Data specification (required, e.g., RACE, TOKU).
       --from <timestamp>    Start time YYYYMMDDHHmmss (required).
       --option <1-4>        JVOpen option (default: 1).
@@ -61,8 +61,8 @@ Commands:
     get-service-key       Get current service key.
     set-parent-hwnd       Set parent window handle.
       --value <handle>      Handle value as integer (required).
-    get-parent-hwnd       Get current parent window handle.
-    set-payoff-dialog     Control payoff dialog display.
+    get-parent-hwnd       Get current parent window handle (not supported in COM).
+    set-payoff-dialog     Control payoff dialog display (not supported in COM; use set-ui-properties).
       --value <bool>        Enable/disable (required).
     get-payoff-dialog     Get payoff dialog setting.
     set-ui-properties     Synchronize UI state.

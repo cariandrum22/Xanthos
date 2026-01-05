@@ -104,8 +104,8 @@ All commands support global options: `--sid --service-key --save-path [--stub] [
 | `set-save-flag` / `get-save-flag` | Toggle/query persistence flag |
 | `set-save-path` / `get-save-path` | Configure/query save path |
 | `set-service-key` / `get-service-key` | Configure/query service key |
-| `set-payoff-dialog` / `get-payoff-dialog` | Suppress payoff dialogs |
-| `set-parent-hwnd` / `get-parent-hwnd` | Configure/query parent window handle (UI) |
+| `set-payoff-dialog` / `get-payoff-dialog` | Query payoff dialog suppression (`set-payoff-dialog` is not supported in COM; use `set-ui-properties`) |
+| `set-parent-hwnd` / `get-parent-hwnd` | Configure/query parent window handle (`get-parent-hwnd` is not supported in COM; `ParentHWnd` is write-only) |
 | `course-file` / `course-file2` | Retrieve course diagram (path + explanation / path only) |
 | `silks-file` | Generate silks bitmap file |
 | `silks-binary` | Retrieve silks bytes |
