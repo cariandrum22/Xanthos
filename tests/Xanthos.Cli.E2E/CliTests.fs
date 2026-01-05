@@ -77,6 +77,12 @@ module Harness =
         | ForcedDotnet
         | Auto
 
+    let private readRequestedModeFromEnv () =
+        match Environment.GetEnvironmentVariable "XANTHOS_E2E_MODE" with
+        | v when not (isNull v) && v.Equals("COM", StringComparison.OrdinalIgnoreCase) -> Some Com
+        | v when not (isNull v) && v.Equals("STUB", StringComparison.OrdinalIgnoreCase) -> Some Stub
+        | _ -> None
+
     let exeModeSetting =
         match Environment.GetEnvironmentVariable "XANTHOS_E2E_USE_EXE" with
         | v when not (isNull v) && v.Equals("true", StringComparison.OrdinalIgnoreCase) -> ForcedExe
@@ -88,10 +94,17 @@ module Harness =
         | ForcedExe -> true
         | ForcedDotnet -> false
         | Auto ->
-            // Prefer exe mode on Windows so the CLI runs the net10.0-windows build.
-            // VS test explorer runs the testhost as x64, so dotnet-run mode would always use net10.0
-            // and COM interop would be unavailable (JV-Link is a 32-bit COM server).
-            OperatingSystem.IsWindows()
+            // Prefer exe mode only when COM is the requested mode.
+            // - COM requires the net10.0-windows (x86) CLI build to talk to JV-Link.
+            // - STUB mode should keep using `dotnet run --framework net10.0` so it works in x64-only
+            //   environments like GitHub Actions runners.
+            if not (OperatingSystem.IsWindows()) then
+                false
+            else
+                match readRequestedModeFromEnv () with
+                | Some Stub -> false
+                | Some Com
+                | None -> true
 
     let private artifactsDir = Path.Combine(repoRoot, ".artifacts", "cli-e2e")
     let private buildCliLogFile = Path.Combine(artifactsDir, "build-cli.log")
@@ -402,11 +415,7 @@ module Harness =
         with _ ->
             ()
 
-    let requestedMode =
-        match Environment.GetEnvironmentVariable "XANTHOS_E2E_MODE" with
-        | v when not (isNull v) && v.Equals("COM", StringComparison.OrdinalIgnoreCase) -> Some Com
-        | v when not (isNull v) && v.Equals("STUB", StringComparison.OrdinalIgnoreCase) -> Some Stub
-        | _ -> None
+    let requestedMode = readRequestedModeFromEnv ()
 
     let resolveMode () =
         requestedMode
