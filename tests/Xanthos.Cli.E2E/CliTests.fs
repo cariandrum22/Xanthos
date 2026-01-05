@@ -96,6 +96,7 @@ module Harness =
     let private artifactsDir = Path.Combine(repoRoot, ".artifacts", "cli-e2e")
     let private buildCliLogFile = Path.Combine(artifactsDir, "build-cli.log")
     let private harnessInitLogFile = Path.Combine(artifactsDir, "harness-init.log")
+    let private cliBuildDir = Path.Combine(artifactsDir, "cli-build")
 
     let private writeBootstrapLog (fileName: string) (commandLine: string) (stdout: string) (stderr: string) =
         try
@@ -117,55 +118,6 @@ module Harness =
         with _ ->
             None
 
-    let private buildCliIfNeeded () =
-        if useBuiltExe && OperatingSystem.IsWindows() then
-            printfn "[E2E] Building CLI with net10.0-windows target..."
-            let args = [ "build"; cliProject; "-c"; "Release"; "-f"; "net10.0-windows" ]
-            let si = ProcessStartInfo(dotnetExe)
-            si.WorkingDirectory <- repoRoot
-            si.RedirectStandardOutput <- true
-            si.RedirectStandardError <- true
-            si.UseShellExecute <- false
-
-            args |> List.iter si.ArgumentList.Add
-
-            use proc = new Process()
-            proc.StartInfo <- si
-
-            if not (proc.Start()) then
-                printfn "[E2E] Build FAILED: could not start dotnet process"
-                false
-            else
-                let stdoutTask = proc.StandardOutput.ReadToEndAsync()
-                let stderrTask = proc.StandardError.ReadToEndAsync()
-                let exited = proc.WaitForExit(120000)
-
-                if not exited then
-                    try
-                        proc.Kill(true)
-                    with _ ->
-                        ()
-
-                let stdout = stdoutTask.GetAwaiter().GetResult()
-                let stderr = stderrTask.GetAwaiter().GetResult()
-                let exitCode = if exited then proc.ExitCode else -1
-
-                if exitCode <> 0 then
-                    let commandLine = dotnetExe + " " + (args |> String.concat " ")
-
-                    let logFile =
-                        writeBootstrapLog "build-cli.log" commandLine stdout stderr
-                        |> Option.map (fun p -> $" See log: {p}")
-                        |> Option.defaultValue ""
-
-                    printfn "[E2E] Build FAILED with exit code %d.%s" exitCode logFile
-                    false
-                else
-                    printfn "[E2E] Build succeeded"
-                    true
-        else
-            true
-
     let private cliExePath =
         let exeName =
             if OperatingSystem.IsWindows() then
@@ -173,63 +125,145 @@ module Harness =
             else
                 "Xanthos.Cli"
 
-        Path.Combine(repoRoot, "samples", "Xanthos.Cli", "bin", "Release", "net10.0-windows", exeName)
+        Path.Combine(cliBuildDir, exeName)
+
+    type CliBuildResult =
+        { Attempted: bool
+          ExitCode: int option
+          LogFile: string option
+          Error: string option }
+
+    let private buildCliIfNeeded () : CliBuildResult =
+        if not (useBuiltExe && OperatingSystem.IsWindows()) then
+            { Attempted = false
+              ExitCode = None
+              LogFile = None
+              Error = None }
+        else
+            printfn "[E2E] Building CLI with net10.0-windows target..."
+
+            try
+                if Directory.Exists cliBuildDir then
+                    Directory.Delete(cliBuildDir, true)
+
+                Directory.CreateDirectory cliBuildDir |> ignore
+
+                let args =
+                    [ "build"
+                      cliProject
+                      "-c"
+                      "Release"
+                      "-f"
+                      "net10.0-windows"
+                      "-o"
+                      cliBuildDir ]
+
+                let commandLine = dotnetExe + " " + (args |> String.concat " ")
+                let si = ProcessStartInfo(dotnetExe)
+                si.WorkingDirectory <- repoRoot
+                si.RedirectStandardOutput <- true
+                si.RedirectStandardError <- true
+                si.UseShellExecute <- false
+                args |> List.iter si.ArgumentList.Add
+
+                use proc = new Process()
+                proc.StartInfo <- si
+
+                let started = proc.Start()
+
+                if not started then
+                    let logFile =
+                        writeBootstrapLog "build-cli.log" commandLine "" "Failed to start dotnet process."
+
+                    { Attempted = true
+                      ExitCode = Some -1
+                      LogFile = logFile
+                      Error = Some "Failed to start dotnet process." }
+                else
+                    let stdoutTask = proc.StandardOutput.ReadToEndAsync()
+                    let stderrTask = proc.StandardError.ReadToEndAsync()
+                    let exited = proc.WaitForExit(120000)
+
+                    if not exited then
+                        try
+                            proc.Kill(true)
+                        with _ ->
+                            ()
+
+                    let stdout = stdoutTask.GetAwaiter().GetResult()
+                    let stderr = stderrTask.GetAwaiter().GetResult()
+                    let exitCode = if exited then proc.ExitCode else -1
+                    let logFile = writeBootstrapLog "build-cli.log" commandLine stdout stderr
+
+                    if exitCode <> 0 then
+                        let logFileHint =
+                            logFile |> Option.map (fun p -> $" See log: {p}") |> Option.defaultValue ""
+
+                        printfn "[E2E] Build FAILED with exit code %d.%s" exitCode logFileHint
+                    else
+                        printfn "[E2E] Build succeeded"
+
+                    { Attempted = true
+                      ExitCode = Some exitCode
+                      LogFile = logFile
+                      Error = None }
+            with ex ->
+                let args =
+                    [ "build"
+                      cliProject
+                      "-c"
+                      "Release"
+                      "-f"
+                      "net10.0-windows"
+                      "-o"
+                      cliBuildDir ]
+
+                let commandLine = dotnetExe + " " + (args |> String.concat " ")
+
+                let logFile = writeBootstrapLog "build-cli.log" commandLine "" $"Exception: {ex}"
+
+                { Attempted = true
+                  ExitCode = Some -1
+                  LogFile = logFile
+                  Error = Some ex.Message }
 
     // Build once at module initialization
     do
         printfn "[E2E] =============================================="
         printfn "[E2E] E2E Test Harness Initialization"
 
-        printfn
-            "[E2E] Platform: %s"
-            (if OperatingSystem.IsWindows() then
-                 "Windows"
-             else
-                 "Non-Windows")
+        let platform =
+            if OperatingSystem.IsWindows() then
+                "Windows"
+            else
+                "Non-Windows"
+
+        printfn "[E2E] Platform: %s" platform
 
         printfn "[E2E] exeModeSetting: %A" exeModeSetting
         printfn "[E2E] useBuiltExe: %b" useBuiltExe
 
-        try
-            Directory.CreateDirectory artifactsDir |> ignore
+        let jvLinkRegistered =
+            if OperatingSystem.IsWindows() then
+                Some(isJvLinkComRegistered ())
+            else
+                None
 
-            let jvLinkRegistered =
-                if OperatingSystem.IsWindows() then
-                    Some(isJvLinkComRegistered ())
-                else
-                    None
-
-            let platform =
-                if OperatingSystem.IsWindows() then
-                    "windows"
-                else
-                    "non-windows"
-
-            let jvLinkRegisteredValue =
-                jvLinkRegistered |> Option.map string |> Option.defaultValue "n/a"
-
-            let lines =
-                [ $"platform={platform}"
-                  $"process64Bit={Environment.Is64BitProcess}"
-                  $"exeModeSetting={exeModeSetting}"
-                  $"useBuiltExe={useBuiltExe}"
-                  $"jvLinkProgIdRegistered={jvLinkRegisteredValue}"
-                  $"repoRoot={repoRoot}"
-                  $"cliProject={cliProject}"
-                  $"cliExePath={cliExePath}"
-                  $"appBaseDir={AppContext.BaseDirectory}" ]
-
-            File.WriteAllLines(harnessInitLogFile, lines)
-        with _ ->
-            ()
+        let buildResult = buildCliIfNeeded ()
+        let cliExeExists = File.Exists(cliExePath)
+        let mutable fallbackReason: string option = None
 
         if useBuiltExe && OperatingSystem.IsWindows() then
-            if not (buildCliIfNeeded ()) then
+            let buildFailed = buildResult.ExitCode |> Option.exists (fun code -> code <> 0)
+
+            if buildFailed then
                 let message =
                     "Failed to build CLI for E2E tests.\n"
                     + "Try running:\n"
-                    + $"  {dotnetExe} build {cliProject} -c Release -f net10.0-windows\n"
-                    + $"See {buildCliLogFile} for details (if created)."
+                    + $"  {dotnetExe} build {cliProject} -c Release -f net10.0-windows -o {cliBuildDir}\n"
+                    + $"See {buildCliLogFile} for details."
+
+                fallbackReason <- Some "CLI build failed"
 
                 match exeModeSetting with
                 | ForcedExe -> failwith message
@@ -241,15 +275,17 @@ module Harness =
 
         if useBuiltExe && OperatingSystem.IsWindows() then
             // Verify the exe exists
-            if File.Exists(cliExePath) then
+            if cliExeExists then
                 printfn "[E2E] CLI exe found: %s" cliExePath
             else
                 let message =
                     "CLI exe not found after build.\n"
                     + $"Expected: {cliExePath}\n"
                     + "Try running:\n"
-                    + $"  {dotnetExe} build {cliProject} -c Release -f net10.0-windows\n"
-                    + $"See {buildCliLogFile} for details (if created)."
+                    + $"  {dotnetExe} build {cliProject} -c Release -f net10.0-windows -o {cliBuildDir}\n"
+                    + $"See {buildCliLogFile} for details."
+
+                fallbackReason <- Some "CLI exe missing after build"
 
                 match exeModeSetting with
                 | ForcedExe -> failwith message
@@ -260,6 +296,49 @@ module Harness =
                 | ForcedDotnet -> ()
         else
             printfn "[E2E] Using 'dotnet run' mode (COM may fall back to Stub)"
+
+        try
+            Directory.CreateDirectory artifactsDir |> ignore
+
+            let platformValue =
+                if OperatingSystem.IsWindows() then
+                    "windows"
+                else
+                    "non-windows"
+
+            let jvLinkRegisteredValue =
+                jvLinkRegistered |> Option.map string |> Option.defaultValue "n/a"
+
+            let buildAttemptedValue = if buildResult.Attempted then "true" else "false"
+
+            let buildExitCodeValue =
+                buildResult.ExitCode |> Option.map string |> Option.defaultValue "n/a"
+
+            let buildLogValue = buildResult.LogFile |> Option.defaultValue "n/a"
+
+            let fallbackReasonValue = fallbackReason |> Option.defaultValue "n/a"
+
+            let lines =
+                [ $"platform={platformValue}"
+                  $"process64Bit={Environment.Is64BitProcess}"
+                  $"exeModeSetting={exeModeSetting}"
+                  $"useBuiltExe={useBuiltExe}"
+                  $"jvLinkProgIdRegistered={jvLinkRegisteredValue}"
+                  $"dotnetExe={dotnetExe}"
+                  $"repoRoot={repoRoot}"
+                  $"cliProject={cliProject}"
+                  $"cliBuildDir={cliBuildDir}"
+                  $"cliExePath={cliExePath}"
+                  $"cliExeExists={cliExeExists}"
+                  $"buildAttempted={buildAttemptedValue}"
+                  $"buildExitCode={buildExitCodeValue}"
+                  $"buildLogFile={buildLogValue}"
+                  $"fallbackReason={fallbackReasonValue}"
+                  $"appBaseDir={AppContext.BaseDirectory}" ]
+
+            File.WriteAllLines(harnessInitLogFile, lines)
+        with _ ->
+            ()
 
         printfn "[E2E] =============================================="
 
