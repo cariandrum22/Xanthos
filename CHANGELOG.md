@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Reduce excessive diagnostic logging in `checkUseJvGets()` by caching the resolved value ([#2](https://github.com/cariandrum22/Xanthos/issues/2))
 - Avoid unsupported COM property access for `ParentHWnd` (write-only) and `m_payflag` (read-only); return clear `Unsupported` errors from `JvLinkService` in COM mode ([#14](https://github.com/cariandrum22/Xanthos/issues/14))
+- Improve CLI E2E harness diagnostics for exe-mode builds on Windows ([#17](https://github.com/cariandrum22/Xanthos/issues/17))
 
 ## [0.1.0] - 2025-12-10
 

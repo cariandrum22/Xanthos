@@ -49,9 +49,16 @@ module ComClientFactory =
                       Details = ex.Message
                       Exception = Some ex }
 #else
+        let details =
+            if OperatingSystem.IsWindows() then
+                "COM interop is available only in the net10.0-windows build."
+                + " Ensure you reference the Windows target and run in a 32-bit (x86) process."
+            else
+                "Non-Windows platform"
+
         Error
             { Reason = ComFaultReason.ActivationFailure
-              Details = "Non-Windows platform"
+              Details = details
               Exception = None }
 #endif
 
