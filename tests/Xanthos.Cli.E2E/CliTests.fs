@@ -46,16 +46,29 @@ module Harness =
 
     // Check if JV-Link COM is registered (Windows only)
     // We check for the ProgID registration which is more reliable
+    let private tryOpenProgId (view: Microsoft.Win32.RegistryView) =
+        try
+            use root =
+                Microsoft.Win32.RegistryKey.OpenBaseKey(Microsoft.Win32.RegistryHive.ClassesRoot, view)
+
+            use key = root.OpenSubKey("JVDTLab.JVLink")
+            not (isNull key)
+        with _ ->
+            false
+
     let private isJvLinkComRegistered () =
         if not (OperatingSystem.IsWindows()) then
             false
         else
-            try
-                // Check for ProgID registration (JVDTLab.JVLink)
-                use key = Microsoft.Win32.Registry.ClassesRoot.OpenSubKey("JVDTLab.JVLink")
-                not (isNull key)
-            with _ ->
-                false
+            // NOTE: JV-Link is a 32-bit COM server. When the test runner is 64-bit (default in VS),
+            // the ProgID can exist only in the 32-bit registry view. Probe both views.
+            let has32 = tryOpenProgId Microsoft.Win32.RegistryView.Registry32
+            let has64 = tryOpenProgId Microsoft.Win32.RegistryView.Registry64
+
+            if has32 || has64 then
+                printfn "[E2E] JV-Link ProgID registration detected (Registry32=%b, Registry64=%b)" has32 has64
+
+            has32 || has64
 
     // When XANTHOS_E2E_USE_EXE=true (or auto-detected), run the built exe directly instead of dotnet run
     // This is required for COM to work on Windows (32-bit exe for 32-bit COM)
