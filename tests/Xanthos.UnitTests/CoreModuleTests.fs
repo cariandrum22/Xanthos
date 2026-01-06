@@ -803,6 +803,15 @@ module TextModuleTests =
         Assert.Equal(expected, result)
 
     [<Fact>]
+    let ``decodeShiftJisBstrBytesIfNeeded should stop at NUL terminator`` () =
+        let expected = "東京芝/芝1200m"
+        let bytes = System.Text.Encoding.GetEncoding(932).GetBytes(expected)
+        let stuffedBytes = Array.concat [ bytes; [| 0uy; 0x80uy; 0xFFuy; 0uy |] ]
+        let stuffed = stuffedBytes |> Array.map char |> (fun chars -> new string (chars))
+        let result = decodeShiftJisBstrBytesIfNeeded stuffed
+        Assert.Equal(expected, result)
+
+    [<Fact>]
     let ``decodeShiftJisBstrBytesIfNeeded should decode raw Shift-JIS bytes copied into UTF-16 buffer`` () =
         let expected = "東京芝/芝1200m"
         let bytes = System.Text.Encoding.GetEncoding(932).GetBytes(expected)

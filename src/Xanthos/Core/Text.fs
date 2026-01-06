@@ -154,124 +154,151 @@ module Text =
         if String.IsNullOrEmpty text then
             text
         else
-            let trimNuls (s: string) = s.TrimEnd('\u0000')
+            let text =
+                let nulIndex = text.IndexOf('\u0000')
 
-            let tryDecodeShiftJisStrict (bytes: byte[]) =
-                try
-                    let decoded = shiftJisEncoding.Value.GetString bytes
-                    Some(trimNuls decoded)
-                with :? DecoderFallbackException ->
-                    None
+                if nulIndex >= 0 then text.Substring(0, nulIndex) else text
 
-            let bytesFromLowBytePerChar =
-                text.ToCharArray() |> Array.map (fun ch -> byte (int ch &&& 0xFF))
+            if String.IsNullOrEmpty text then
+                text
+            else
+                let trimNuls (s: string) = s.TrimEnd('\u0000')
 
-            let bytesFromHighBytePerChar =
-                text.ToCharArray() |> Array.map (fun ch -> byte ((int ch >>> 8) &&& 0xFF))
+                let tryDecodeShiftJisStrictWithTrimming (bytes: byte[]) =
+                    try
+                        let tryDecode (candidate: byte[]) =
+                            try
+                                let decoded = shiftJisEncoding.Value.GetString candidate
+                                Some(trimNuls decoded)
+                            with :? DecoderFallbackException ->
+                                None
 
-            let bytesFromUtf16LittleEndian =
-                let bytes = Encoding.Unicode.GetBytes text
-                bytes |> Array.rev |> Array.skipWhile ((=) 0uy) |> Array.rev
-
-            let bytesFromUtf16BigEndian =
-                let bytes = Encoding.BigEndianUnicode.GetBytes text
-                bytes |> Array.rev |> Array.skipWhile ((=) 0uy) |> Array.rev
-
-            let isJapaneseChar (ch: char) =
-                let code = int ch
-
-                (code >= 0x3000 && code <= 0x303F) // CJK Symbols and Punctuation
-                || (code >= 0x3040 && code <= 0x309F) // Hiragana
-                || (code >= 0x30A0 && code <= 0x30FF) // Katakana
-                || (code >= 0x4E00 && code <= 0x9FFF) // CJK Unified Ideographs
-
-            let score (s: string) =
-                let hiraganaCount =
-                    s
-                    |> Seq.sumBy (fun ch ->
-                        let code = int ch
-                        if code >= 0x3040 && code <= 0x309F then 1 else 0)
-
-                let katakanaCount =
-                    s
-                    |> Seq.sumBy (fun ch ->
-                        let code = int ch
-                        if code >= 0x30A0 && code <= 0x30FF then 1 else 0)
-
-                let kanjiCount =
-                    s
-                    |> Seq.sumBy (fun ch ->
-                        let code = int ch
-                        if code >= 0x4E00 && code <= 0x9FFF then 1 else 0)
-
-                let cjkPunctCount =
-                    s
-                    |> Seq.sumBy (fun ch ->
-                        let code = int ch
-                        if code >= 0x3000 && code <= 0x303F then 1 else 0)
-
-                let asciiPrintableCount =
-                    s
-                    |> Seq.sumBy (fun ch ->
-                        let code = int ch
-                        if code >= 0x20 && code <= 0x7E then 1 else 0)
-
-                let replacementCount = s |> Seq.sumBy (fun ch -> if ch = '\uFFFD' then 1 else 0)
-                let nulCount = s |> Seq.sumBy (fun ch -> if ch = '\u0000' then 1 else 0)
-                let controlCount = s |> Seq.sumBy (fun ch -> if Char.IsControl ch then 1 else 0)
-                let surrogateCount = s |> Seq.sumBy (fun ch -> if Char.IsSurrogate ch then 1 else 0)
-
-                let otherNonAsciiPrintableCount =
-                    s
-                    |> Seq.sumBy (fun ch ->
-                        if isJapaneseChar ch then
-                            0
+                        if isNull bytes || bytes.Length = 0 then
+                            None
                         else
-                            let code = int ch
+                            match tryDecode bytes with
+                            | Some decoded -> Some decoded
+                            | None ->
+                                // Some JV-Link APIs appear to leave garbage bytes at the end of the buffer.
+                                // Retry by trimming a small number of trailing bytes to recover a valid Shift-JIS sequence.
+                                let maxTrim = min 8 (bytes.Length - 1)
 
-                            if (code >= 0x20 && code <= 0x7E) || Char.IsWhiteSpace ch then
+                                [ 1..maxTrim ]
+                                |> List.tryPick (fun trim ->
+                                    let len = bytes.Length - trim
+                                    if len <= 0 then None else tryDecode (Array.take len bytes))
+                    with :? DecoderFallbackException ->
+                        None
+
+                let bytesFromLowBytePerChar =
+                    text.ToCharArray() |> Array.map (fun ch -> byte (int ch &&& 0xFF))
+
+                let bytesFromHighBytePerChar =
+                    text.ToCharArray() |> Array.map (fun ch -> byte ((int ch >>> 8) &&& 0xFF))
+
+                let bytesFromUtf16LittleEndian =
+                    let bytes = Encoding.Unicode.GetBytes text
+                    bytes |> Array.rev |> Array.skipWhile ((=) 0uy) |> Array.rev
+
+                let bytesFromUtf16BigEndian =
+                    let bytes = Encoding.BigEndianUnicode.GetBytes text
+                    bytes |> Array.rev |> Array.skipWhile ((=) 0uy) |> Array.rev
+
+                let isJapaneseChar (ch: char) =
+                    let code = int ch
+
+                    (code >= 0x3000 && code <= 0x303F) // CJK Symbols and Punctuation
+                    || (code >= 0x3040 && code <= 0x309F) // Hiragana
+                    || (code >= 0x30A0 && code <= 0x30FF) // Katakana
+                    || (code >= 0x4E00 && code <= 0x9FFF) // CJK Unified Ideographs
+
+                let score (s: string) =
+                    let hiraganaCount =
+                        s
+                        |> Seq.sumBy (fun ch ->
+                            let code = int ch
+                            if code >= 0x3040 && code <= 0x309F then 1 else 0)
+
+                    let katakanaCount =
+                        s
+                        |> Seq.sumBy (fun ch ->
+                            let code = int ch
+                            if code >= 0x30A0 && code <= 0x30FF then 1 else 0)
+
+                    let kanjiCount =
+                        s
+                        |> Seq.sumBy (fun ch ->
+                            let code = int ch
+                            if code >= 0x4E00 && code <= 0x9FFF then 1 else 0)
+
+                    let cjkPunctCount =
+                        s
+                        |> Seq.sumBy (fun ch ->
+                            let code = int ch
+                            if code >= 0x3000 && code <= 0x303F then 1 else 0)
+
+                    let asciiPrintableCount =
+                        s
+                        |> Seq.sumBy (fun ch ->
+                            let code = int ch
+                            if code >= 0x20 && code <= 0x7E then 1 else 0)
+
+                    let replacementCount = s |> Seq.sumBy (fun ch -> if ch = '\uFFFD' then 1 else 0)
+                    let nulCount = s |> Seq.sumBy (fun ch -> if ch = '\u0000' then 1 else 0)
+                    let controlCount = s |> Seq.sumBy (fun ch -> if Char.IsControl ch then 1 else 0)
+                    let surrogateCount = s |> Seq.sumBy (fun ch -> if Char.IsSurrogate ch then 1 else 0)
+
+                    let otherNonAsciiPrintableCount =
+                        s
+                        |> Seq.sumBy (fun ch ->
+                            if isJapaneseChar ch then
                                 0
                             else
-                                1)
+                                let code = int ch
 
-                // A common corruption pattern is "high-byte stuffed" strings where each UTF-16 code unit is 0xXX00.
-                // Penalize those to avoid treating random CJK-looking characters as already-decoded Japanese.
-                let highByteStuffedCount =
-                    s
-                    |> Seq.sumBy (fun ch ->
-                        let code = int ch
-                        if (code &&& 0xFF) = 0 && (code >>> 8) <> 0 then 1 else 0)
+                                if (code >= 0x20 && code <= 0x7E) || Char.IsWhiteSpace ch then
+                                    0
+                                else
+                                    1)
 
-                (hiraganaCount * 20)
-                + (katakanaCount * 20)
-                + (kanjiCount * 10)
-                + (cjkPunctCount * 5)
-                + asciiPrintableCount
-                - (replacementCount * 20)
-                - (nulCount * 5)
-                - (controlCount * 5)
-                - (surrogateCount * 10)
-                - (otherNonAsciiPrintableCount * 8)
-                - (highByteStuffedCount * 8)
+                    // A common corruption pattern is "high-byte stuffed" strings where each UTF-16 code unit is 0xXX00.
+                    // Penalize those to avoid treating random CJK-looking characters as already-decoded Japanese.
+                    let highByteStuffedCount =
+                        s
+                        |> Seq.sumBy (fun ch ->
+                            let code = int ch
+                            if (code &&& 0xFF) = 0 && (code >>> 8) <> 0 then 1 else 0)
 
-            let decodedCandidates =
-                [ tryDecodeShiftJisStrict bytesFromLowBytePerChar
-                  tryDecodeShiftJisStrict bytesFromHighBytePerChar
-                  tryDecodeShiftJisStrict bytesFromUtf16LittleEndian
-                  tryDecodeShiftJisStrict bytesFromUtf16BigEndian ]
-                |> List.choose id
+                    (hiraganaCount * 20)
+                    + (katakanaCount * 20)
+                    + (kanjiCount * 10)
+                    + (cjkPunctCount * 5)
+                    + asciiPrintableCount
+                    - (replacementCount * 20)
+                    - (nulCount * 5)
+                    - (controlCount * 5)
+                    - (surrogateCount * 10)
+                    - (otherNonAsciiPrintableCount * 8)
+                    - (highByteStuffedCount * 8)
 
-            let candidates = text :: decodedCandidates |> List.distinct
-            let scored = candidates |> List.map (fun s -> s, score s)
+                let decodedCandidates =
+                    [ tryDecodeShiftJisStrictWithTrimming bytesFromLowBytePerChar
+                      tryDecodeShiftJisStrictWithTrimming bytesFromHighBytePerChar
+                      tryDecodeShiftJisStrictWithTrimming bytesFromUtf16LittleEndian
+                      tryDecodeShiftJisStrictWithTrimming bytesFromUtf16BigEndian ]
+                    |> List.choose id
 
-            let originalScore = score text
-            let bestText, bestScore = scored |> List.maxBy snd
+                let candidates = text :: decodedCandidates |> List.distinct
+                let scored = candidates |> List.map (fun s -> s, score s)
 
-            // Only replace when it is a clear improvement; avoids accidental re-decoding of already-good strings.
-            if bestText <> text && bestScore >= originalScore + 5 then
-                bestText
-            else
-                text
+                let originalScore = score text
+                let bestText, bestScore = scored |> List.maxBy snd
+
+                // Only replace when it is a clear improvement; avoids accidental re-decoding of already-good strings.
+                if bestText <> text && bestScore >= originalScore + 5 then
+                    bestText
+                else
+                    text
 
     /// <summary>
     /// Encodes a .NET string to Shift-JIS byte array.
