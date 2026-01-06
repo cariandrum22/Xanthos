@@ -24,15 +24,74 @@ module Harness =
         if isNull bytes || bytes.Length = 0 then
             ""
         else
-            try
-                let utf8Strict = UTF8Encoding(false, true)
-                utf8Strict.GetString bytes
-            with :? DecoderFallbackException ->
+            let decodeUtf8 (data: byte[]) =
+                try
+                    let utf8Strict = UTF8Encoding(false, true)
+                    utf8Strict.GetString data
+                with :? DecoderFallbackException ->
+                    Encoding.UTF8.GetString data
+
+            let decodeCp932 (data: byte[]) =
                 try
                     Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)
-                    Encoding.GetEncoding(932).GetString bytes
+                    Encoding.GetEncoding(932).GetString data
                 with _ ->
-                    Encoding.UTF8.GetString bytes
+                    ""
+
+            let score (text: string) =
+                if String.IsNullOrEmpty text then
+                    Int32.MinValue
+                else
+                    let mutable hiragana = 0
+                    let mutable katakana = 0
+                    let mutable kanji = 0
+                    let mutable asciiPrintable = 0
+                    let mutable replacement = 0
+                    let mutable privateUse = 0
+                    let mutable control = 0
+                    let mutable c1Control = 0
+
+                    for ch in text do
+                        let code = int ch
+
+                        if code >= 0x3040 && code <= 0x309F then
+                            hiragana <- hiragana + 1
+                        elif code >= 0x30A0 && code <= 0x30FF then
+                            katakana <- katakana + 1
+                        elif code >= 0x4E00 && code <= 0x9FFF then
+                            kanji <- kanji + 1
+                        elif code >= 0x20 && code <= 0x7E then
+                            asciiPrintable <- asciiPrintable + 1
+
+                        if ch = '\uFFFD' then
+                            replacement <- replacement + 1
+
+                        if (code >= 0xE000 && code <= 0xF8FF) || (code >= 0xF0000 && code <= 0xFFFFD) then
+                            privateUse <- privateUse + 1
+
+                        if Char.IsControl ch then
+                            control <- control + 1
+
+                        if code >= 0x80 && code <= 0x9F then
+                            c1Control <- c1Control + 1
+
+                    // Prefer readable Japanese and ASCII; heavily penalize obvious mojibake signals.
+                    (hiragana + katakana) * 20 + (kanji * 10) + asciiPrintable
+                    - (replacement * 100)
+                    - (privateUse * 30)
+                    - (control * 20)
+                    - (c1Control * 30)
+
+            let utf8Text = decodeUtf8 bytes
+            let cp932Text = decodeCp932 bytes
+
+            let utf8Score = score utf8Text
+            let cp932Score = score cp932Text
+
+            if not (String.IsNullOrEmpty cp932Text) && cp932Score > utf8Score + 10 then
+                cp932Text
+            else
+                utf8Text
 
     let private readAllBytesAsync (stream: Stream) =
         System.Threading.Tasks.Task.Run(fun () ->
