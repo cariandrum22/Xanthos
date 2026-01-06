@@ -468,6 +468,8 @@ module Harness =
         si.RedirectStandardOutput <- true
         si.RedirectStandardError <- true
         si.UseShellExecute <- false
+        si.StandardOutputEncoding <- System.Text.Encoding.UTF8
+        si.StandardErrorEncoding <- System.Text.Encoding.UTF8
 
         if not (useBuiltExe && OperatingSystem.IsWindows() && File.Exists(cliExePath)) then
             // When not using built exe (i.e., no COM support), always use net10.0
@@ -500,6 +502,8 @@ module Harness =
         si.RedirectStandardOutput <- true
         si.RedirectStandardError <- true
         si.UseShellExecute <- false
+        si.StandardOutputEncoding <- System.Text.Encoding.UTF8
+        si.StandardErrorEncoding <- System.Text.Encoding.UTF8
 
         if not (useBuiltExe && OperatingSystem.IsWindows() && File.Exists(cliExePath)) then
             let tfm = "net10.0"
