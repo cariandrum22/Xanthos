@@ -36,6 +36,12 @@ module Text =
             (Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)
              Encoding.GetEncoding("shift_jis", EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback))
 
+    /// <summary>Lenient Shift-JIS (code page 932) encoding used for best-effort recovery.</summary>
+    let private shiftJisEncodingLenient =
+        lazy
+            (Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)
+             Encoding.GetEncoding(932))
+
     /// <summary>Strict UTF-8 encoding for fallback decoding.</summary>
     let private utf8Strict = lazy (new UTF8Encoding(false, true))
 
@@ -164,6 +170,12 @@ module Text =
             else
                 let trimNuls (s: string) = s.TrimEnd('\u0000')
 
+                let removeEmbeddedNuls (s: string) =
+                    if String.IsNullOrEmpty s then
+                        s
+                    else
+                        s.Replace("\u0000", "")
+
                 let tryDecodeShiftJisStrictWithTrimming (bytes: byte[]) =
                     try
                         let tryDecode (candidate: byte[]) =
@@ -188,6 +200,16 @@ module Text =
                                     let len = bytes.Length - trim
                                     if len <= 0 then None else tryDecode (Array.take len bytes))
                     with :? DecoderFallbackException ->
+                        None
+
+                let tryDecodeShiftJisLenient (bytes: byte[]) =
+                    try
+                        if isNull bytes || bytes.Length = 0 then
+                            None
+                        else
+                            let decoded = shiftJisEncodingLenient.Value.GetString bytes
+                            Some(decoded |> trimNuls |> removeEmbeddedNuls)
+                    with _ ->
                         None
 
                 let bytesFromLowBytePerChar =
@@ -246,6 +268,13 @@ module Text =
                     let replacementCount = s |> Seq.sumBy (fun ch -> if ch = '\uFFFD' then 1 else 0)
                     let nulCount = s |> Seq.sumBy (fun ch -> if ch = '\u0000' then 1 else 0)
                     let controlCount = s |> Seq.sumBy (fun ch -> if Char.IsControl ch then 1 else 0)
+
+                    let c1ControlCount =
+                        s
+                        |> Seq.sumBy (fun ch ->
+                            let code = int ch
+                            if code >= 0x80 && code <= 0x9F then 1 else 0)
+
                     let surrogateCount = s |> Seq.sumBy (fun ch -> if Char.IsSurrogate ch then 1 else 0)
 
                     let otherNonAsciiPrintableCount =
@@ -277,26 +306,80 @@ module Text =
                     - (replacementCount * 20)
                     - (nulCount * 5)
                     - (controlCount * 5)
+                    - (c1ControlCount * 10)
                     - (surrogateCount * 10)
                     - (otherNonAsciiPrintableCount * 8)
                     - (highByteStuffedCount * 8)
 
-                let decodedCandidates =
-                    [ tryDecodeShiftJisStrictWithTrimming bytesFromLowBytePerChar
-                      tryDecodeShiftJisStrictWithTrimming bytesFromHighBytePerChar
-                      tryDecodeShiftJisStrictWithTrimming bytesFromUtf16LittleEndian
-                      tryDecodeShiftJisStrictWithTrimming bytesFromUtf16BigEndian ]
-                    |> List.choose id
+                let kanaCount =
+                    text
+                    |> Seq.sumBy (fun ch ->
+                        let code = int ch
 
-                let candidates = text :: decodedCandidates |> List.distinct
-                let scored = candidates |> List.map (fun s -> s, score s)
+                        if (code >= 0x3040 && code <= 0x309F) || (code >= 0x30A0 && code <= 0x30FF) then
+                            1
+                        else
+                            0)
 
-                let originalScore = score text
-                let bestText, bestScore = scored |> List.maxBy snd
+                let kanjiCount =
+                    text
+                    |> Seq.sumBy (fun ch ->
+                        let code = int ch
+                        if code >= 0x4E00 && code <= 0x9FFF then 1 else 0)
 
-                // Only replace when it is a clear improvement; avoids accidental re-decoding of already-good strings.
-                if bestText <> text && bestScore >= originalScore + 5 then
-                    bestText
+                let c1ControlCount =
+                    text
+                    |> Seq.sumBy (fun ch ->
+                        let code = int ch
+                        if code >= 0x80 && code <= 0x9F then 1 else 0)
+
+                let highByteStuffedCount =
+                    text
+                    |> Seq.sumBy (fun ch ->
+                        let code = int ch
+                        if (code &&& 0xFF) = 0 && (code >>> 8) <> 0 then 1 else 0)
+
+                let otherNonAsciiPrintableCount =
+                    text
+                    |> Seq.sumBy (fun ch ->
+                        if isJapaneseChar ch then
+                            0
+                        else
+                            let code = int ch
+
+                            if (code >= 0x20 && code <= 0x7E) || Char.IsWhiteSpace ch then
+                                0
+                            else
+                                1)
+
+                let longKanjiOnly = text.Length >= 30 && kanaCount = 0 && kanjiCount > 0
+
+                let decodeFromBytes (bytes: byte[]) =
+                    match tryDecodeShiftJisStrictWithTrimming bytes with
+                    | Some decoded -> Some(removeEmbeddedNuls decoded)
+                    | None -> tryDecodeShiftJisLenient bytes
+
+                if c1ControlCount > 0 then
+                    decodeFromBytes bytesFromLowBytePerChar |> Option.defaultValue text
+                elif highByteStuffedCount > 0 then
+                    decodeFromBytes bytesFromHighBytePerChar |> Option.defaultValue text
+                elif otherNonAsciiPrintableCount > 0 || longKanjiOnly then
+                    let decodedCandidates =
+                        [ decodeFromBytes bytesFromUtf16LittleEndian
+                          decodeFromBytes bytesFromUtf16BigEndian
+                          decodeFromBytes bytesFromLowBytePerChar
+                          decodeFromBytes bytesFromHighBytePerChar ]
+                        |> List.choose id
+
+                    let candidates = text :: decodedCandidates |> List.distinct
+                    let scored = candidates |> List.map (fun s -> s, score s)
+                    let originalScore = score text
+                    let bestText, bestScore = scored |> List.maxBy snd
+
+                    if bestText <> text && bestScore > originalScore then
+                        bestText
+                    else
+                        text
                 else
                     text
 
