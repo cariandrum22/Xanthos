@@ -330,6 +330,17 @@ type ComJvLinkClient(?useJvGets: bool) =
 
     let checkUseJvGets () = useJvGetsCached.Value
 
+    let decodeShiftJisBstrBytesIfNeeded (text: string) =
+        if String.IsNullOrEmpty text then
+            text
+        else if text |> Seq.exists (fun ch -> int ch > 0xFF) then
+            // Already a normal Unicode string (e.g., proper BSTR output)
+            text
+        else
+            // Some JV-Link APIs write Shift-JIS bytes directly to a BSTR buffer (one byte per UTF-16 code unit).
+            // Decode those bytes to a proper .NET string for safe UTF-8 output/logging.
+            text.ToCharArray() |> Array.map byte |> Text.decodeShiftJis
+
     // JVRead implementation: uses BSTR with UTF-16 byte extraction
     // JVRead returns data as BSTR. JV-Link writes Shift-JIS bytes to the BSTR buffer, but COM
     // interprets these as Unicode code units. We extract the low bytes from each char to recover
@@ -727,7 +738,7 @@ type ComJvLinkClient(?useJvGets: bool) =
                         | :? string as s -> s
                         | _ -> ""
 
-                    Ok(filepath, explanation)
+                    Ok(decodeShiftJisBstrBytesIfNeeded filepath, decodeShiftJisBstrBytesIfNeeded explanation)
                 | Error e -> Error e)
 
         member _.CourseFile2(key, filepath) =
