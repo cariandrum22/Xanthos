@@ -138,6 +138,142 @@ module Text =
                 decoded
 
     /// <summary>
+    /// Decodes JV-Link Shift-JIS bytes that were mistakenly marshalled as a BSTR string.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Some JV-Link COM APIs populate out-parameters using Shift-JIS bytes, but the COM marshaller
+    /// may expose them to .NET as a UTF-16 string without decoding. This function attempts to
+    /// recover the original bytes from common BSTR layouts and decode them as Shift-JIS.
+    /// </para>
+    /// <para>
+    /// If the input already looks like readable Japanese text, it is returned as-is.
+    /// </para>
+    /// </remarks>
+    let decodeShiftJisBstrBytesIfNeeded (text: string) =
+        if String.IsNullOrEmpty text then
+            text
+        else
+            let trimNuls (s: string) = s.TrimEnd('\u0000')
+
+            let tryDecodeShiftJisStrict (bytes: byte[]) =
+                try
+                    let decoded = shiftJisEncoding.Value.GetString bytes
+                    Some(trimNuls decoded)
+                with :? DecoderFallbackException ->
+                    None
+
+            let bytesFromLowBytePerChar =
+                text.ToCharArray() |> Array.map (fun ch -> byte (int ch &&& 0xFF))
+
+            let bytesFromHighBytePerChar =
+                text.ToCharArray() |> Array.map (fun ch -> byte ((int ch >>> 8) &&& 0xFF))
+
+            let bytesFromUtf16LittleEndian =
+                let bytes = Encoding.Unicode.GetBytes text
+                bytes |> Array.rev |> Array.skipWhile ((=) 0uy) |> Array.rev
+
+            let bytesFromUtf16BigEndian =
+                let bytes = Encoding.BigEndianUnicode.GetBytes text
+                bytes |> Array.rev |> Array.skipWhile ((=) 0uy) |> Array.rev
+
+            let isJapaneseChar (ch: char) =
+                let code = int ch
+
+                (code >= 0x3000 && code <= 0x303F) // CJK Symbols and Punctuation
+                || (code >= 0x3040 && code <= 0x309F) // Hiragana
+                || (code >= 0x30A0 && code <= 0x30FF) // Katakana
+                || (code >= 0x4E00 && code <= 0x9FFF) // CJK Unified Ideographs
+
+            let score (s: string) =
+                let hiraganaCount =
+                    s
+                    |> Seq.sumBy (fun ch ->
+                        let code = int ch
+                        if code >= 0x3040 && code <= 0x309F then 1 else 0)
+
+                let katakanaCount =
+                    s
+                    |> Seq.sumBy (fun ch ->
+                        let code = int ch
+                        if code >= 0x30A0 && code <= 0x30FF then 1 else 0)
+
+                let kanjiCount =
+                    s
+                    |> Seq.sumBy (fun ch ->
+                        let code = int ch
+                        if code >= 0x4E00 && code <= 0x9FFF then 1 else 0)
+
+                let cjkPunctCount =
+                    s
+                    |> Seq.sumBy (fun ch ->
+                        let code = int ch
+                        if code >= 0x3000 && code <= 0x303F then 1 else 0)
+
+                let asciiPrintableCount =
+                    s
+                    |> Seq.sumBy (fun ch ->
+                        let code = int ch
+                        if code >= 0x20 && code <= 0x7E then 1 else 0)
+
+                let replacementCount = s |> Seq.sumBy (fun ch -> if ch = '\uFFFD' then 1 else 0)
+                let nulCount = s |> Seq.sumBy (fun ch -> if ch = '\u0000' then 1 else 0)
+                let controlCount = s |> Seq.sumBy (fun ch -> if Char.IsControl ch then 1 else 0)
+                let surrogateCount = s |> Seq.sumBy (fun ch -> if Char.IsSurrogate ch then 1 else 0)
+
+                let otherNonAsciiPrintableCount =
+                    s
+                    |> Seq.sumBy (fun ch ->
+                        if isJapaneseChar ch then
+                            0
+                        else
+                            let code = int ch
+
+                            if (code >= 0x20 && code <= 0x7E) || Char.IsWhiteSpace ch then
+                                0
+                            else
+                                1)
+
+                // A common corruption pattern is "high-byte stuffed" strings where each UTF-16 code unit is 0xXX00.
+                // Penalize those to avoid treating random CJK-looking characters as already-decoded Japanese.
+                let highByteStuffedCount =
+                    s
+                    |> Seq.sumBy (fun ch ->
+                        let code = int ch
+                        if (code &&& 0xFF) = 0 && (code >>> 8) <> 0 then 1 else 0)
+
+                (hiraganaCount * 20)
+                + (katakanaCount * 20)
+                + (kanjiCount * 10)
+                + (cjkPunctCount * 5)
+                + asciiPrintableCount
+                - (replacementCount * 20)
+                - (nulCount * 5)
+                - (controlCount * 5)
+                - (surrogateCount * 10)
+                - (otherNonAsciiPrintableCount * 8)
+                - (highByteStuffedCount * 8)
+
+            let decodedCandidates =
+                [ tryDecodeShiftJisStrict bytesFromLowBytePerChar
+                  tryDecodeShiftJisStrict bytesFromHighBytePerChar
+                  tryDecodeShiftJisStrict bytesFromUtf16LittleEndian
+                  tryDecodeShiftJisStrict bytesFromUtf16BigEndian ]
+                |> List.choose id
+
+            let candidates = text :: decodedCandidates |> List.distinct
+            let scored = candidates |> List.map (fun s -> s, score s)
+
+            let originalScore = score text
+            let bestText, bestScore = scored |> List.maxBy snd
+
+            // Only replace when it is a clear improvement; avoids accidental re-decoding of already-good strings.
+            if bestText <> text && bestScore >= originalScore + 5 then
+                bestText
+            else
+                text
+
+    /// <summary>
     /// Encodes a .NET string to Shift-JIS byte array.
     /// </summary>
     /// <param name="text">The string to encode. May be null or empty.</param>

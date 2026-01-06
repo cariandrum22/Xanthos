@@ -330,87 +330,6 @@ type ComJvLinkClient(?useJvGets: bool) =
 
     let checkUseJvGets () = useJvGetsCached.Value
 
-    let decodeShiftJisBstrBytesIfNeeded (text: string) =
-        if String.IsNullOrEmpty text then
-            text
-        else
-            let containsJapaneseCharacters (s: string) =
-                s
-                |> Seq.exists (fun ch ->
-                    let code = int ch
-
-                    (code >= 0x3000 && code <= 0x303F) // CJK Symbols and Punctuation
-                    || (code >= 0x3040 && code <= 0x309F) // Hiragana
-                    || (code >= 0x30A0 && code <= 0x30FF) // Katakana
-                    || (code >= 0x4E00 && code <= 0x9FFF)) // CJK Unified Ideographs
-
-            // If the string already contains Japanese characters, assume it's properly decoded.
-            if containsJapaneseCharacters text then
-                text
-            else
-                // Some JV-Link APIs write Shift-JIS bytes directly to a BSTR buffer. There are two common patterns:
-                // 1) one byte per UTF-16 code unit (high byte = 0)
-                // 2) raw bytes copied into the BSTR memory (two bytes per UTF-16 code unit, little-endian)
-                // Try both, then pick the result that looks most plausible.
-                let tryDecodeShiftJisStrict (bytes: byte[]) =
-                    try
-                        System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance)
-
-                        let sjis =
-                            System.Text.Encoding.GetEncoding(
-                                "shift_jis",
-                                System.Text.EncoderFallback.ExceptionFallback,
-                                System.Text.DecoderFallback.ExceptionFallback
-                            )
-
-                        let decoded = sjis.GetString bytes
-                        Some(decoded.TrimEnd('\u0000'))
-                    with
-                    | :? System.Text.DecoderFallbackException -> None
-                    | _ -> None
-
-                let bytesFromLowBytePerChar =
-                    text.ToCharArray() |> Array.map (fun ch -> byte (int ch &&& 0xFF))
-
-                let bytesFromUtf16 =
-                    let bytes = System.Text.Encoding.Unicode.GetBytes text
-                    // Drop trailing NULs if present.
-                    bytes |> Array.rev |> Array.skipWhile ((=) 0uy) |> Array.rev
-
-                let score (s: string) =
-                    let japaneseCount =
-                        s
-                        |> Seq.sumBy (fun ch ->
-                            let code = int ch
-
-                            if
-                                (code >= 0x3000 && code <= 0x303F)
-                                || (code >= 0x3040 && code <= 0x309F)
-                                || (code >= 0x30A0 && code <= 0x30FF)
-                                || (code >= 0x4E00 && code <= 0x9FFF)
-                            then
-                                1
-                            else
-                                0)
-
-                    let replacementCount = s |> Seq.sumBy (fun ch -> if ch = '\uFFFD' then 1 else 0)
-                    let nulCount = s |> Seq.sumBy (fun ch -> if ch = '\u0000' then 1 else 0)
-                    let controlCount = s |> Seq.sumBy (fun ch -> if int ch < 0x20 then 1 else 0)
-
-                    (japaneseCount * 10)
-                    - (replacementCount * 20)
-                    - (nulCount * 5)
-                    - (controlCount * 2)
-
-                let candidate1 = tryDecodeShiftJisStrict bytesFromLowBytePerChar
-                let candidate2 = tryDecodeShiftJisStrict bytesFromUtf16
-
-                match candidate1, candidate2 with
-                | Some a, Some b -> if score b > score a then b else a
-                | Some a, None -> a
-                | None, Some b -> b
-                | None, None -> text
-
     // JVRead implementation: uses BSTR with UTF-16 byte extraction
     // JVRead returns data as BSTR. JV-Link writes Shift-JIS bytes to the BSTR buffer, but COM
     // interprets these as Unicode code units. We extract the low bytes from each char to recover
@@ -808,7 +727,7 @@ type ComJvLinkClient(?useJvGets: bool) =
                         | :? string as s -> s
                         | _ -> ""
 
-                    Ok(decodeShiftJisBstrBytesIfNeeded filepath, decodeShiftJisBstrBytesIfNeeded explanation)
+                    Ok(Text.decodeShiftJisBstrBytesIfNeeded filepath, Text.decodeShiftJisBstrBytesIfNeeded explanation)
                 | Error e -> Error e)
 
         member _.CourseFile2(key, filepath) =
