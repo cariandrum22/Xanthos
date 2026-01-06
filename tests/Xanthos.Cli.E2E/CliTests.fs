@@ -3,6 +3,7 @@ namespace Xanthos.Cli.E2E
 open System
 open System.Diagnostics
 open System.IO
+open System.Text
 open Xunit
 open Xunit.Abstractions
 
@@ -19,6 +20,26 @@ type CliResult =
       LogFile: string }
 
 module Harness =
+    let private decodeProcessOutput (bytes: byte[]) =
+        if isNull bytes || bytes.Length = 0 then
+            ""
+        else
+            try
+                let utf8Strict = UTF8Encoding(false, true)
+                utf8Strict.GetString bytes
+            with :? DecoderFallbackException ->
+                try
+                    Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)
+                    Encoding.GetEncoding(932).GetString bytes
+                with _ ->
+                    Encoding.UTF8.GetString bytes
+
+    let private readAllBytesAsync (stream: Stream) =
+        System.Threading.Tasks.Task.Run(fun () ->
+            use ms = new MemoryStream()
+            stream.CopyTo(ms)
+            ms.ToArray())
+
     let rec private findRepoRoot startDir dir =
         if File.Exists(Path.Combine(dir, "Xanthos.sln")) then
             dir
@@ -468,8 +489,6 @@ module Harness =
         si.RedirectStandardOutput <- true
         si.RedirectStandardError <- true
         si.UseShellExecute <- false
-        si.StandardOutputEncoding <- System.Text.Encoding.UTF8
-        si.StandardErrorEncoding <- System.Text.Encoding.UTF8
 
         if not (useBuiltExe && OperatingSystem.IsWindows() && File.Exists(cliExePath)) then
             // When not using built exe (i.e., no COM support), always use net10.0
@@ -502,8 +521,6 @@ module Harness =
         si.RedirectStandardOutput <- true
         si.RedirectStandardError <- true
         si.UseShellExecute <- false
-        si.StandardOutputEncoding <- System.Text.Encoding.UTF8
-        si.StandardErrorEncoding <- System.Text.Encoding.UTF8
 
         if not (useBuiltExe && OperatingSystem.IsWindows() && File.Exists(cliExePath)) then
             let tfm = "net10.0"
@@ -536,8 +553,8 @@ module Harness =
                 | true, ms when ms > 0 -> ms
                 | _ -> 60000
 
-        let out = proc.StandardOutput.ReadToEnd()
-        let err = proc.StandardError.ReadToEnd()
+        let stdoutTask = readAllBytesAsync proc.StandardOutput.BaseStream
+        let stderrTask = readAllBytesAsync proc.StandardError.BaseStream
         let exited = proc.WaitForExit(timeoutMs)
 
         if not exited then
@@ -545,6 +562,11 @@ module Harness =
                 proc.Kill(true)
             with _ ->
                 ()
+
+        let outBytes = stdoutTask.GetAwaiter().GetResult()
+        let errBytes = stderrTask.GetAwaiter().GetResult()
+        let out = decodeProcessOutput outBytes
+        let err = decodeProcessOutput errBytes
 
         let exitCode = if exited then proc.ExitCode else -1
         let logFile = writeLog commandArgs out err
@@ -572,8 +594,8 @@ module Harness =
                 | true, ms when ms > 0 -> ms
                 | _ -> 60000
 
-        let out = proc.StandardOutput.ReadToEnd()
-        let err = proc.StandardError.ReadToEnd()
+        let stdoutTask = readAllBytesAsync proc.StandardOutput.BaseStream
+        let stderrTask = readAllBytesAsync proc.StandardError.BaseStream
         let exited = proc.WaitForExit(timeoutMs)
 
         if not exited then
@@ -581,6 +603,11 @@ module Harness =
                 proc.Kill(true)
             with _ ->
                 ()
+
+        let outBytes = stdoutTask.GetAwaiter().GetResult()
+        let errBytes = stderrTask.GetAwaiter().GetResult()
+        let out = decodeProcessOutput outBytes
+        let err = decodeProcessOutput errBytes
 
         let exitCode = if exited then proc.ExitCode else -1
         let logFile = writeLog ("setup-" :: commandArgs) out err
