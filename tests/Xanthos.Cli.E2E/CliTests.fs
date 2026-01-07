@@ -3,6 +3,7 @@ namespace Xanthos.Cli.E2E
 open System
 open System.Diagnostics
 open System.IO
+open System.Text
 open Xunit
 open Xunit.Abstractions
 
@@ -19,6 +20,58 @@ type CliResult =
       LogFile: string }
 
 module Harness =
+    type private OutputEncodingMode =
+        | Auto
+        | Utf8
+        | Cp932
+
+    let private outputEncodingMode =
+        match Environment.GetEnvironmentVariable "XANTHOS_E2E_OUTPUT_ENCODING" with
+        | null
+        | "" -> Auto
+        | v when v.Equals("utf8", StringComparison.OrdinalIgnoreCase) -> Utf8
+        | v when v.Equals("cp932", StringComparison.OrdinalIgnoreCase) -> Cp932
+        | v when v.Equals("auto", StringComparison.OrdinalIgnoreCase) -> Auto
+        | _ -> Auto
+
+    let private decodeProcessOutput (bytes: byte[]) =
+        if isNull bytes || bytes.Length = 0 then
+            ""
+        else
+            let decodeUtf8Strict (data: byte[]) =
+                let utf8Strict = UTF8Encoding(false, true)
+                utf8Strict.GetString data
+
+            let decodeUtf8Lenient (data: byte[]) = Encoding.UTF8.GetString data
+
+            let decodeCp932 (data: byte[]) =
+                try
+                    Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)
+                    Encoding.GetEncoding(932).GetString data
+                with _ ->
+                    ""
+
+            match outputEncodingMode with
+            | Utf8 ->
+                try
+                    decodeUtf8Strict bytes
+                with :? DecoderFallbackException ->
+                    decodeUtf8Lenient bytes
+            | Cp932 -> decodeCp932 bytes
+            | Auto ->
+                // The CLI forces UTF-8 when stdout/stderr is redirected (E2E harness).
+                // Prefer strict UTF-8, and fall back to CP932 only when decoding fails.
+                try
+                    decodeUtf8Strict bytes
+                with :? DecoderFallbackException ->
+                    decodeCp932 bytes
+
+    let private readAllBytesAsync (stream: Stream) =
+        System.Threading.Tasks.Task.Run(fun () ->
+            use ms = new MemoryStream()
+            stream.CopyTo(ms)
+            ms.ToArray())
+
     let rec private findRepoRoot startDir dir =
         if File.Exists(Path.Combine(dir, "Xanthos.sln")) then
             dir
@@ -532,8 +585,8 @@ module Harness =
                 | true, ms when ms > 0 -> ms
                 | _ -> 60000
 
-        let out = proc.StandardOutput.ReadToEnd()
-        let err = proc.StandardError.ReadToEnd()
+        let stdoutTask = readAllBytesAsync proc.StandardOutput.BaseStream
+        let stderrTask = readAllBytesAsync proc.StandardError.BaseStream
         let exited = proc.WaitForExit(timeoutMs)
 
         if not exited then
@@ -541,6 +594,11 @@ module Harness =
                 proc.Kill(true)
             with _ ->
                 ()
+
+        let outBytes = stdoutTask.GetAwaiter().GetResult()
+        let errBytes = stderrTask.GetAwaiter().GetResult()
+        let out = decodeProcessOutput outBytes
+        let err = decodeProcessOutput errBytes
 
         let exitCode = if exited then proc.ExitCode else -1
         let logFile = writeLog commandArgs out err
@@ -568,8 +626,8 @@ module Harness =
                 | true, ms when ms > 0 -> ms
                 | _ -> 60000
 
-        let out = proc.StandardOutput.ReadToEnd()
-        let err = proc.StandardError.ReadToEnd()
+        let stdoutTask = readAllBytesAsync proc.StandardOutput.BaseStream
+        let stderrTask = readAllBytesAsync proc.StandardError.BaseStream
         let exited = proc.WaitForExit(timeoutMs)
 
         if not exited then
@@ -577,6 +635,11 @@ module Harness =
                 proc.Kill(true)
             with _ ->
                 ()
+
+        let outBytes = stdoutTask.GetAwaiter().GetResult()
+        let errBytes = stderrTask.GetAwaiter().GetResult()
+        let out = decodeProcessOutput outBytes
+        let err = decodeProcessOutput errBytes
 
         let exitCode = if exited then proc.ExitCode else -1
         let logFile = writeLog ("setup-" :: commandArgs) out err

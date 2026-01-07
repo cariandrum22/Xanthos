@@ -1,6 +1,7 @@
 module Xanthos.Cli.Program
 
 open System
+open System.Text
 open Xanthos.Cli.Types
 open Xanthos.Cli.Parsing
 open Xanthos.Cli.Execution
@@ -115,6 +116,41 @@ let private printHelp () =
     printfn "%s" (usage.Trim())
     0
 
+let private configureConsoleEncoding () =
+    // JV-Link returns Japanese text; when stdout/stderr is redirected (E2E harness, Test Explorer, CI),
+    // the default Windows code page output can be decoded as UTF-8 by the consumer and appear garbled.
+    // Prefer UTF-8 for redirected output to make captured logs readable.
+    let utf8 = UTF8Encoding(false)
+
+    if Console.IsOutputRedirected then
+        try
+            // Setting Console.OutputEncoding can throw when no console is attached. The StreamWriter
+            // encoding is what matters for redirected output, so set it independently.
+            let writer = new IO.StreamWriter(Console.OpenStandardOutput(), utf8)
+            writer.AutoFlush <- true
+            Console.SetOut(writer)
+        with _ ->
+            ()
+
+        try
+            Console.OutputEncoding <- utf8
+        with _ ->
+            ()
+
+    if Console.IsErrorRedirected then
+        try
+            let writer = new IO.StreamWriter(Console.OpenStandardError(), utf8)
+            writer.AutoFlush <- true
+            Console.SetError(writer)
+        with _ ->
+            ()
+
+    if Console.IsInputRedirected then
+        try
+            Console.InputEncoding <- utf8
+        with _ ->
+            ()
+
 let private runCommand ctx command =
     match command with
     | Download args -> runDownload ctx args
@@ -154,6 +190,8 @@ let private runCommand ctx command =
 [<STAThread>]
 [<EntryPoint>]
 let main argv =
+    configureConsoleEncoding ()
+
     match parseInput argv with
     | Error msg ->
         printfn "%s\n%s" msg (usage.Trim())

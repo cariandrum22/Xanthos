@@ -36,6 +36,12 @@ module Text =
             (Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)
              Encoding.GetEncoding("shift_jis", EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback))
 
+    /// <summary>Lenient Shift-JIS (code page 932) encoding used for best-effort recovery.</summary>
+    let private shiftJisEncodingLenient =
+        lazy
+            (Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)
+             Encoding.GetEncoding(932))
+
     /// <summary>Strict UTF-8 encoding for fallback decoding.</summary>
     let private utf8Strict = lazy (new UTF8Encoding(false, true))
 
@@ -136,6 +142,339 @@ module Text =
                     trimCache decodeKeyQueue decodeCache maxDecodeEntries
 
                 decoded
+
+    /// <summary>
+    /// Decodes JV-Link Shift-JIS bytes that were mistakenly marshalled as a BSTR string.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Some JV-Link COM APIs populate out-parameters using Shift-JIS bytes, but the COM marshaller
+    /// may expose them to .NET as a UTF-16 string without decoding. This function attempts to
+    /// recover the original bytes from common BSTR layouts and decode them as Shift-JIS.
+    /// </para>
+    /// <para>
+    /// If the input already looks like readable Japanese text, it is returned as-is.
+    /// </para>
+    /// </remarks>
+    let decodeShiftJisBstrBytesIfNeeded (text: string) =
+        if String.IsNullOrEmpty text then
+            text
+        else
+            let text =
+                // Common COM out-param patterns:
+                // - Classic fixed buffer: actual content followed by trailing NULs.
+                // - Corruption patterns: embedded NULs (e.g., every other char).
+                // Prefer trimming at the first NUL, unless NULs look strongly interleaved.
+                let firstNul = text.IndexOf('\u0000')
+
+                if firstNul < 0 then
+                    text
+                else
+                    let mutable nulCount = 0
+                    let mutable nulsAtEven = 0
+                    let mutable nulsAtOdd = 0
+
+                    for i = 0 to text.Length - 1 do
+                        if text.[i] = '\u0000' then
+                            nulCount <- nulCount + 1
+
+                            if (i &&& 1) = 0 then
+                                nulsAtEven <- nulsAtEven + 1
+                            else
+                                nulsAtOdd <- nulsAtOdd + 1
+
+                    let dominant = max nulsAtEven nulsAtOdd
+
+                    // Detect the classic "every other char is NUL" pattern that appears when ANSI bytes
+                    // are exposed as UTF-16 code units (e.g., 0x00XX / 0xXX00 layouts).
+                    let looksInterleavedNuls =
+                        nulCount >= 4
+                        && firstNul <= 1
+                        && (nulCount * 2) >= text.Length
+                        && (dominant * 5) >= (nulCount * 4) // >= 80% on one parity
+
+                    if looksInterleavedNuls then
+                        text
+                    else
+                        text.Substring(0, firstNul)
+
+            if String.IsNullOrEmpty text then
+                text
+            else
+                let trimNuls (s: string) = s.TrimEnd('\u0000')
+
+                let removeEmbeddedNuls (s: string) =
+                    if String.IsNullOrEmpty s then
+                        s
+                    else
+                        s.Replace("\u0000", "")
+
+                let tryDecodeShiftJisStrictWithTrimming (bytes: byte[]) =
+                    try
+                        let tryDecode (candidate: byte[]) =
+                            try
+                                let decoded = shiftJisEncoding.Value.GetString candidate
+                                Some(trimNuls decoded)
+                            with :? DecoderFallbackException ->
+                                None
+
+                        if isNull bytes || bytes.Length = 0 then
+                            None
+                        else
+                            match tryDecode bytes with
+                            | Some decoded -> Some decoded
+                            | None ->
+                                // Some JV-Link APIs appear to leave garbage bytes at the end of the buffer.
+                                // Retry by trimming a small number of trailing bytes to recover a valid Shift-JIS sequence.
+                                let maxTrim = min 8 (bytes.Length - 1)
+
+                                [ 1..maxTrim ]
+                                |> List.tryPick (fun trim ->
+                                    let len = bytes.Length - trim
+                                    if len <= 0 then None else tryDecode (Array.take len bytes))
+                    with :? DecoderFallbackException ->
+                        None
+
+                let tryDecodeShiftJisLenient (bytes: byte[]) =
+                    try
+                        if isNull bytes || bytes.Length = 0 then
+                            None
+                        else
+                            let decoded = shiftJisEncodingLenient.Value.GetString bytes
+                            Some(decoded |> trimNuls |> removeEmbeddedNuls)
+                    with _ ->
+                        None
+
+                let bytesFromLowBytePerChar =
+                    text.ToCharArray() |> Array.map (fun ch -> byte (int ch &&& 0xFF))
+
+                let bytesFromHighBytePerChar =
+                    text.ToCharArray() |> Array.map (fun ch -> byte ((int ch >>> 8) &&& 0xFF))
+
+                let bytesFromUtf16LittleEndian =
+                    let bytes = Encoding.Unicode.GetBytes text
+                    bytes |> Array.rev |> Array.skipWhile ((=) 0uy) |> Array.rev
+
+                let bytesFromUtf16BigEndian =
+                    let bytes = Encoding.BigEndianUnicode.GetBytes text
+                    bytes |> Array.rev |> Array.skipWhile ((=) 0uy) |> Array.rev
+
+                let isJapaneseChar (ch: char) =
+                    let code = int ch
+
+                    (code >= 0x3000 && code <= 0x303F) // CJK Symbols and Punctuation
+                    || (code >= 0x3040 && code <= 0x309F) // Hiragana
+                    || (code >= 0x30A0 && code <= 0x30FF) // Katakana
+                    || (code >= 0x4E00 && code <= 0x9FFF) // CJK Unified Ideographs
+
+                let score (s: string) =
+                    let hiraganaCount =
+                        s
+                        |> Seq.sumBy (fun ch ->
+                            let code = int ch
+                            if code >= 0x3040 && code <= 0x309F then 1 else 0)
+
+                    let katakanaCount =
+                        s
+                        |> Seq.sumBy (fun ch ->
+                            let code = int ch
+                            if code >= 0x30A0 && code <= 0x30FF then 1 else 0)
+
+                    let kanjiCount =
+                        s
+                        |> Seq.sumBy (fun ch ->
+                            let code = int ch
+                            if code >= 0x4E00 && code <= 0x9FFF then 1 else 0)
+
+                    let cjkPunctCount =
+                        s
+                        |> Seq.sumBy (fun ch ->
+                            let code = int ch
+                            if code >= 0x3000 && code <= 0x303F then 1 else 0)
+
+                    let halfwidthKatakanaCount =
+                        s
+                        |> Seq.sumBy (fun ch ->
+                            let code = int ch
+                            if code >= 0xFF61 && code <= 0xFF9F then 1 else 0)
+
+                    let asciiPrintableCount =
+                        s
+                        |> Seq.sumBy (fun ch ->
+                            let code = int ch
+                            if code >= 0x20 && code <= 0x7E then 1 else 0)
+
+                    let replacementCount = s |> Seq.sumBy (fun ch -> if ch = '\uFFFD' then 1 else 0)
+                    let nulCount = s |> Seq.sumBy (fun ch -> if ch = '\u0000' then 1 else 0)
+                    let controlCount = s |> Seq.sumBy (fun ch -> if Char.IsControl ch then 1 else 0)
+
+                    let c1ControlCount =
+                        s
+                        |> Seq.sumBy (fun ch ->
+                            let code = int ch
+                            if code >= 0x80 && code <= 0x9F then 1 else 0)
+
+                    let surrogateCount = s |> Seq.sumBy (fun ch -> if Char.IsSurrogate ch then 1 else 0)
+
+                    let otherNonAsciiPrintableCount =
+                        s
+                        |> Seq.sumBy (fun ch ->
+                            if isJapaneseChar ch then
+                                0
+                            else
+                                let code = int ch
+
+                                if (code >= 0x20 && code <= 0x7E) || Char.IsWhiteSpace ch then
+                                    0
+                                else
+                                    1)
+
+                    // A common corruption pattern is "high-byte stuffed" strings where each UTF-16 code unit is 0xXX00.
+                    // Penalize those to avoid treating random CJK-looking characters as already-decoded Japanese.
+                    let highByteStuffedCount =
+                        s
+                        |> Seq.sumBy (fun ch ->
+                            let code = int ch
+                            if (code &&& 0xFF) = 0 && (code >>> 8) <> 0 then 1 else 0)
+
+                    (hiraganaCount * 20)
+                    + (katakanaCount * 20)
+                    + (kanjiCount * 10)
+                    + (cjkPunctCount * 5)
+                    + asciiPrintableCount
+                    - (replacementCount * 20)
+                    - (nulCount * 5)
+                    - (controlCount * 5)
+                    - (c1ControlCount * 10)
+                    - (surrogateCount * 10)
+                    - (halfwidthKatakanaCount * 25)
+                    - (otherNonAsciiPrintableCount * 8)
+                    - (highByteStuffedCount * 8)
+
+                let kanaCount =
+                    text
+                    |> Seq.sumBy (fun ch ->
+                        let code = int ch
+
+                        if (code >= 0x3040 && code <= 0x309F) || (code >= 0x30A0 && code <= 0x30FF) then
+                            1
+                        else
+                            0)
+
+                let kanjiCount =
+                    text
+                    |> Seq.sumBy (fun ch ->
+                        let code = int ch
+                        if code >= 0x4E00 && code <= 0x9FFF then 1 else 0)
+
+                let c1ControlCount =
+                    text
+                    |> Seq.sumBy (fun ch ->
+                        let code = int ch
+                        if code >= 0x80 && code <= 0x9F then 1 else 0)
+
+                let highByteStuffedCount =
+                    text
+                    |> Seq.sumBy (fun ch ->
+                        let code = int ch
+                        if (code &&& 0xFF) = 0 && (code >>> 8) <> 0 then 1 else 0)
+
+                let otherNonAsciiPrintableCount =
+                    text
+                    |> Seq.sumBy (fun ch ->
+                        if isJapaneseChar ch then
+                            0
+                        else
+                            let code = int ch
+
+                            if (code >= 0x20 && code <= 0x7E) || Char.IsWhiteSpace ch then
+                                0
+                            else
+                                1)
+
+                let longKanjiOnly = text.Length >= 30 && kanaCount = 0 && kanjiCount > 0
+
+                let decodeFromBytes (bytes: byte[]) =
+                    match tryDecodeShiftJisStrictWithTrimming bytes with
+                    | Some decoded -> Some(removeEmbeddedNuls decoded)
+                    | None -> tryDecodeShiftJisLenient bytes
+
+                let tryDecodeUtf8Strict (bytes: byte[]) =
+                    try
+                        if isNull bytes || bytes.Length = 0 then
+                            None
+                        else
+                            Some(utf8Strict.Value.GetString bytes |> trimNuls |> removeEmbeddedNuls)
+                    with :? DecoderFallbackException ->
+                        None
+
+                let tryDecodeUtf16le (bytes: byte[]) =
+                    try
+                        if isNull bytes || bytes.Length < 2 then
+                            None
+                        else
+                            let bytes =
+                                if bytes.Length % 2 = 0 then
+                                    bytes
+                                else
+                                    bytes |> Array.take (bytes.Length - 1)
+
+                            Some(Encoding.Unicode.GetString bytes |> trimNuls |> removeEmbeddedNuls)
+                    with _ ->
+                        None
+
+                let tryDecodeUtf16be (bytes: byte[]) =
+                    try
+                        if isNull bytes || bytes.Length < 2 then
+                            None
+                        else
+                            let bytes =
+                                if bytes.Length % 2 = 0 then
+                                    bytes
+                                else
+                                    bytes |> Array.take (bytes.Length - 1)
+
+                            Some(Encoding.BigEndianUnicode.GetString bytes |> trimNuls |> removeEmbeddedNuls)
+                    with _ ->
+                        None
+
+                let bytesFromCp932EncodedText =
+                    try
+                        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)
+                        Encoding.GetEncoding(932).GetBytes text
+                    with _ ->
+                        Array.empty
+
+                if c1ControlCount > 0 then
+                    decodeFromBytes bytesFromLowBytePerChar |> Option.defaultValue text
+                elif highByteStuffedCount > 0 then
+                    decodeFromBytes bytesFromHighBytePerChar |> Option.defaultValue text
+                elif otherNonAsciiPrintableCount > 0 || longKanjiOnly then
+                    let decodedCandidates =
+                        [ decodeFromBytes bytesFromUtf16LittleEndian
+                          decodeFromBytes bytesFromUtf16BigEndian
+                          decodeFromBytes bytesFromLowBytePerChar
+                          decodeFromBytes bytesFromHighBytePerChar
+                          // Recover from classic mojibake patterns:
+                          // - UTF-8 bytes decoded as CP932 -> re-encode as CP932, then decode as UTF-8.
+                          // - UTF-16 bytes decoded as CP932 -> re-encode as CP932, then decode as UTF-16.
+                          tryDecodeUtf8Strict bytesFromCp932EncodedText
+                          tryDecodeUtf16le bytesFromCp932EncodedText
+                          tryDecodeUtf16be bytesFromCp932EncodedText ]
+                        |> List.choose id
+
+                    let candidates = text :: decodedCandidates |> List.distinct
+                    let scored = candidates |> List.map (fun s -> s, score s)
+                    let originalScore = score text
+                    let bestText, bestScore = scored |> List.maxBy snd
+
+                    // Require a margin to avoid rewriting already-correct Japanese strings.
+                    if bestText <> text && bestScore > (originalScore + 10) then
+                        bestText
+                    else
+                        text
+                else
+                    text
 
     /// <summary>
     /// Encodes a .NET string to Shift-JIS byte array.
