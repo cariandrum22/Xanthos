@@ -161,21 +161,42 @@ module Text =
             text
         else
             let text =
-                // Some corruption patterns (e.g., decoding UTF-16 bytes as CP932) can introduce many
-                // embedded NULs. For normal BSTR terminator cases, we still want to stop at the first NUL.
-                let nulCount = text |> Seq.sumBy (fun ch -> if ch = '\u0000' then 1 else 0)
+                // Common COM out-param patterns:
+                // - Classic fixed buffer: actual content followed by trailing NULs.
+                // - Corruption patterns: embedded NULs (e.g., every other char).
+                // Prefer trimming at the first NUL, unless NULs look strongly interleaved.
+                let firstNul = text.IndexOf('\u0000')
 
-                if nulCount = 0 then
+                if firstNul < 0 then
                     text
                 else
-                    // If NULs are frequent, keep the full string and let downstream recovery remove them.
-                    // If NULs are sparse, treat the first NUL as a terminator (classic fixed-buffer case).
-                    let looksLikeEmbeddedNuls = nulCount >= 4 && (nulCount * 4) >= text.Length
+                    let mutable nulCount = 0
+                    let mutable nulsAtEven = 0
+                    let mutable nulsAtOdd = 0
 
-                    if looksLikeEmbeddedNuls then
+                    for i = 0 to text.Length - 1 do
+                        if text.[i] = '\u0000' then
+                            nulCount <- nulCount + 1
+
+                            if (i &&& 1) = 0 then
+                                nulsAtEven <- nulsAtEven + 1
+                            else
+                                nulsAtOdd <- nulsAtOdd + 1
+
+                    let dominant = max nulsAtEven nulsAtOdd
+
+                    // Detect the classic "every other char is NUL" pattern that appears when ANSI bytes
+                    // are exposed as UTF-16 code units (e.g., 0x00XX / 0xXX00 layouts).
+                    let looksInterleavedNuls =
+                        nulCount >= 4
+                        && firstNul <= 1
+                        && (nulCount * 2) >= text.Length
+                        && (dominant * 5) >= (nulCount * 4) // >= 80% on one parity
+
+                    if looksInterleavedNuls then
                         text
                     else
-                        text.Substring(0, text.IndexOf('\u0000'))
+                        text.Substring(0, firstNul)
 
             if String.IsNullOrEmpty text then
                 text
