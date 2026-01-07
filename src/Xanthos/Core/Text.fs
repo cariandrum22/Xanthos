@@ -161,9 +161,21 @@ module Text =
             text
         else
             let text =
-                let nulIndex = text.IndexOf('\u0000')
+                // Some corruption patterns (e.g., decoding UTF-16 bytes as CP932) can introduce many
+                // embedded NULs. For normal BSTR terminator cases, we still want to stop at the first NUL.
+                let nulCount = text |> Seq.sumBy (fun ch -> if ch = '\u0000' then 1 else 0)
 
-                if nulIndex >= 0 then text.Substring(0, nulIndex) else text
+                if nulCount = 0 then
+                    text
+                else
+                    // If NULs are frequent, keep the full string and let downstream recovery remove them.
+                    // If NULs are sparse, treat the first NUL as a terminator (classic fixed-buffer case).
+                    let looksLikeEmbeddedNuls = nulCount >= 4 && (nulCount * 4) >= text.Length
+
+                    if looksLikeEmbeddedNuls then
+                        text
+                    else
+                        text.Substring(0, text.IndexOf('\u0000'))
 
             if String.IsNullOrEmpty text then
                 text
@@ -259,6 +271,12 @@ module Text =
                             let code = int ch
                             if code >= 0x3000 && code <= 0x303F then 1 else 0)
 
+                    let halfwidthKatakanaCount =
+                        s
+                        |> Seq.sumBy (fun ch ->
+                            let code = int ch
+                            if code >= 0xFF61 && code <= 0xFF9F then 1 else 0)
+
                     let asciiPrintableCount =
                         s
                         |> Seq.sumBy (fun ch ->
@@ -308,6 +326,7 @@ module Text =
                     - (controlCount * 5)
                     - (c1ControlCount * 10)
                     - (surrogateCount * 10)
+                    - (halfwidthKatakanaCount * 25)
                     - (otherNonAsciiPrintableCount * 8)
                     - (highByteStuffedCount * 8)
 
@@ -359,6 +378,52 @@ module Text =
                     | Some decoded -> Some(removeEmbeddedNuls decoded)
                     | None -> tryDecodeShiftJisLenient bytes
 
+                let tryDecodeUtf8Strict (bytes: byte[]) =
+                    try
+                        if isNull bytes || bytes.Length = 0 then
+                            None
+                        else
+                            Some(utf8Strict.Value.GetString bytes |> trimNuls |> removeEmbeddedNuls)
+                    with :? DecoderFallbackException ->
+                        None
+
+                let tryDecodeUtf16le (bytes: byte[]) =
+                    try
+                        if isNull bytes || bytes.Length < 2 then
+                            None
+                        else
+                            let bytes =
+                                if bytes.Length % 2 = 0 then
+                                    bytes
+                                else
+                                    bytes |> Array.take (bytes.Length - 1)
+
+                            Some(Encoding.Unicode.GetString bytes |> trimNuls |> removeEmbeddedNuls)
+                    with _ ->
+                        None
+
+                let tryDecodeUtf16be (bytes: byte[]) =
+                    try
+                        if isNull bytes || bytes.Length < 2 then
+                            None
+                        else
+                            let bytes =
+                                if bytes.Length % 2 = 0 then
+                                    bytes
+                                else
+                                    bytes |> Array.take (bytes.Length - 1)
+
+                            Some(Encoding.BigEndianUnicode.GetString bytes |> trimNuls |> removeEmbeddedNuls)
+                    with _ ->
+                        None
+
+                let bytesFromCp932EncodedText =
+                    try
+                        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)
+                        Encoding.GetEncoding(932).GetBytes text
+                    with _ ->
+                        Array.empty
+
                 if c1ControlCount > 0 then
                     decodeFromBytes bytesFromLowBytePerChar |> Option.defaultValue text
                 elif highByteStuffedCount > 0 then
@@ -368,7 +433,13 @@ module Text =
                         [ decodeFromBytes bytesFromUtf16LittleEndian
                           decodeFromBytes bytesFromUtf16BigEndian
                           decodeFromBytes bytesFromLowBytePerChar
-                          decodeFromBytes bytesFromHighBytePerChar ]
+                          decodeFromBytes bytesFromHighBytePerChar
+                          // Recover from classic mojibake patterns:
+                          // - UTF-8 bytes decoded as CP932 -> re-encode as CP932, then decode as UTF-8.
+                          // - UTF-16 bytes decoded as CP932 -> re-encode as CP932, then decode as UTF-16.
+                          tryDecodeUtf8Strict bytesFromCp932EncodedText
+                          tryDecodeUtf16le bytesFromCp932EncodedText
+                          tryDecodeUtf16be bytesFromCp932EncodedText ]
                         |> List.choose id
 
                     let candidates = text :: decodedCandidates |> List.distinct
@@ -376,7 +447,8 @@ module Text =
                     let originalScore = score text
                     let bestText, bestScore = scored |> List.maxBy snd
 
-                    if bestText <> text && bestScore > originalScore then
+                    // Require a margin to avoid rewriting already-correct Japanese strings.
+                    if bestText <> text && bestScore > (originalScore + 10) then
                         bestText
                     else
                         text
