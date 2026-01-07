@@ -712,7 +712,17 @@ type ComJvLinkClient(?useJvGets: bool) =
         member _.CourseFile key =
             protect "JVCourseFile" (fun () ->
                 // JVCourseFile: key (in), filepath (out ByRef), explanation (out ByRef)
-                let args: obj[] = [| key; ""; "" |]
+                // Some JV-Link implementations appear to write into the provided BSTR buffer rather than
+                // returning a freshly allocated string. Provide a reasonably sized NUL-filled buffer to
+                // avoid truncation/garbage in out parameters (especially the long explanation string).
+                let outStringBuffer (size: int) =
+                    if size <= 0 then "" else String(char 0, size)
+
+                let args: obj[] =
+                    [| key
+                       outStringBuffer 512 // filepath
+                       outStringBuffer 16384 |] // explanation (can be long)
+
                 let code = invokeWithByRef "JVCourseFile" args [ 1; 2 ]
 
                 match ensureSuccess "JVCourseFile" code with

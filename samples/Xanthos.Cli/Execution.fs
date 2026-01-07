@@ -384,14 +384,8 @@ let runCourseFile ctx key =
 
         match service.GetCourseDiagram key with
         | Ok diagram ->
-            let explanation =
-                diagram.Explanation
-                |> Option.defaultValue "(no explanation)"
-                |> decodeShiftJisBstrBytesIfNeeded
-
-            let path = diagram.FilePath |> decodeShiftJisBstrBytesIfNeeded
-
-            printfn "Course file [%s]: Path=%s Explanation=%s" key path explanation
+            let explanation = diagram.Explanation |> Option.defaultValue "(no explanation)"
+            printfn "Course file [%s]: Path=%s Explanation=%s" key diagram.FilePath explanation
             0
         | Error err -> reportError "Failed to get course file" err)
 
