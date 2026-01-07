@@ -20,16 +20,29 @@ type CliResult =
       LogFile: string }
 
 module Harness =
+    type private OutputEncodingMode =
+        | Auto
+        | Utf8
+        | Cp932
+
+    let private outputEncodingMode =
+        match Environment.GetEnvironmentVariable "XANTHOS_E2E_OUTPUT_ENCODING" with
+        | null
+        | "" -> Auto
+        | v when v.Equals("utf8", StringComparison.OrdinalIgnoreCase) -> Utf8
+        | v when v.Equals("cp932", StringComparison.OrdinalIgnoreCase) -> Cp932
+        | v when v.Equals("auto", StringComparison.OrdinalIgnoreCase) -> Auto
+        | _ -> Auto
+
     let private decodeProcessOutput (bytes: byte[]) =
         if isNull bytes || bytes.Length = 0 then
             ""
         else
             let decodeUtf8Strict (data: byte[]) =
-                try
-                    let utf8Strict = UTF8Encoding(false, true)
-                    utf8Strict.GetString data, true
-                with :? DecoderFallbackException ->
-                    Encoding.UTF8.GetString data, false
+                let utf8Strict = UTF8Encoding(false, true)
+                utf8Strict.GetString data
+
+            let decodeUtf8Lenient (data: byte[]) = Encoding.UTF8.GetString data
 
             let decodeCp932 (data: byte[]) =
                 try
@@ -38,83 +51,20 @@ module Harness =
                 with _ ->
                     ""
 
-            let analyze (text: string) =
-                if String.IsNullOrEmpty text then
-                    struct (Int32.MinValue, 0, 0, 0, 0, 0)
-                else
-                    let mutable hiragana = 0
-                    let mutable katakana = 0
-                    let mutable kanji = 0
-                    let mutable cjkPunct = 0
-                    let mutable asciiPrintable = 0
-                    let mutable replacement = 0
-                    let mutable privateUse = 0
-                    let mutable c1Control = 0
-                    let mutable halfwidthKatakana = 0
-
-                    for ch in text do
-                        let code = int ch
-
-                        if code >= 0x3040 && code <= 0x309F then
-                            hiragana <- hiragana + 1
-                        elif code >= 0x30A0 && code <= 0x30FF then
-                            katakana <- katakana + 1
-                        elif code >= 0x4E00 && code <= 0x9FFF then
-                            kanji <- kanji + 1
-                        elif code >= 0x3000 && code <= 0x303F then
-                            cjkPunct <- cjkPunct + 1
-                        elif code >= 0xFF61 && code <= 0xFF9F then
-                            // Halfwidth Katakana is a strong mojibake signal for UTF-8 bytes decoded as CP932.
-                            halfwidthKatakana <- halfwidthKatakana + 1
-                        elif code >= 0x20 && code <= 0x7E then
-                            asciiPrintable <- asciiPrintable + 1
-
-                        if ch = '\uFFFD' then
-                            replacement <- replacement + 1
-
-                        if (code >= 0xE000 && code <= 0xF8FF) || (code >= 0xF0000 && code <= 0xFFFFD) then
-                            privateUse <- privateUse + 1
-
-                        if code >= 0x80 && code <= 0x9F then
-                            c1Control <- c1Control + 1
-
-                    // Prefer readable Japanese and ASCII; heavily penalize obvious mojibake signals.
-                    let score =
-                        (hiragana + katakana) * 20 + (kanji * 10) + (cjkPunct * 5) + asciiPrintable
-                        - (replacement * 100)
-                        - (privateUse * 30)
-                        - (c1Control * 30)
-                        - (halfwidthKatakana * 25)
-
-                    struct (score,
-                            replacement,
-                            privateUse,
-                            c1Control,
-                            halfwidthKatakana,
-                            hiragana + katakana + kanji + asciiPrintable)
-
-            let utf8Text, utf8StrictOk = decodeUtf8Strict bytes
-            let cp932Text = decodeCp932 bytes
-
-            let struct (utf8Score, utf8Replacement, utf8PrivateUse, utf8C1, utf8Halfwidth, utf8Visible) =
-                analyze utf8Text
-
-            let struct (cp932Score, _, _, _, _, _) = analyze cp932Text
-
-            let utf8LooksSafe =
-                utf8StrictOk
-                && utf8Visible > 0
-                && utf8Replacement = 0
-                && utf8PrivateUse = 0
-                && utf8C1 = 0
-                && utf8Halfwidth = 0
-
-            if utf8LooksSafe then
-                utf8Text
-            elif not (String.IsNullOrEmpty cp932Text) && cp932Score > utf8Score + 10 then
-                cp932Text
-            else
-                utf8Text
+            match outputEncodingMode with
+            | Utf8 ->
+                try
+                    decodeUtf8Strict bytes
+                with :? DecoderFallbackException ->
+                    decodeUtf8Lenient bytes
+            | Cp932 -> decodeCp932 bytes
+            | Auto ->
+                // The CLI forces UTF-8 when stdout/stderr is redirected (E2E harness).
+                // Prefer strict UTF-8, and fall back to CP932 only when decoding fails.
+                try
+                    decodeUtf8Strict bytes
+                with :? DecoderFallbackException ->
+                    decodeCp932 bytes
 
     let private readAllBytesAsync (stream: Stream) =
         System.Threading.Tasks.Task.Run(fun () ->
