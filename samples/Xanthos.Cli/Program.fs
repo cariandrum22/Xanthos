@@ -120,24 +120,36 @@ let private configureConsoleEncoding () =
     // JV-Link returns Japanese text; when stdout/stderr is redirected (E2E harness, Test Explorer, CI),
     // the default Windows code page output can be decoded as UTF-8 by the consumer and appear garbled.
     // Prefer UTF-8 for redirected output to make captured logs readable.
-    try
-        let utf8 = UTF8Encoding(false)
+    let utf8 = UTF8Encoding(false)
 
-        if Console.IsOutputRedirected then
-            Console.OutputEncoding <- utf8
+    if Console.IsOutputRedirected then
+        try
+            // Setting Console.OutputEncoding can throw when no console is attached. The StreamWriter
+            // encoding is what matters for redirected output, so set it independently.
             let writer = new IO.StreamWriter(Console.OpenStandardOutput(), utf8)
             writer.AutoFlush <- true
             Console.SetOut(writer)
+        with _ ->
+            ()
 
-        if Console.IsErrorRedirected then
+        try
+            Console.OutputEncoding <- utf8
+        with _ ->
+            ()
+
+    if Console.IsErrorRedirected then
+        try
             let writer = new IO.StreamWriter(Console.OpenStandardError(), utf8)
             writer.AutoFlush <- true
             Console.SetError(writer)
+        with _ ->
+            ()
 
-        if Console.IsInputRedirected then
+    if Console.IsInputRedirected then
+        try
             Console.InputEncoding <- utf8
-    with _ ->
-        ()
+        with _ ->
+            ()
 
 let private runCommand ctx command =
     match command with
