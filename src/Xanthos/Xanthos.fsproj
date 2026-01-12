@@ -86,6 +86,7 @@
     <Compile Include="Interop\ComJvLinkClient.fs" />
     <Compile Include="Interop\ComClientFactory.fs" />
     <Compile Include="Runtime\Configuration.fs" />
+    <Compile Include="Runtime\ConsoleEncoding.fs" />
     <Compile Include="Runtime\DownloadMonitor.fs" />
     <Compile Include="Runtime\Instrumentation.fs" />
     <Compile Include="Runtime\RetryPolicy.fs" />

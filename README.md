@@ -285,6 +285,11 @@ XANTHOS_E2E_MODE=STUB \
   dotnet test tests/Xanthos.Cli.E2E
 ```
 
+### Text Encoding
+
+- **In-memory**: Xanthos represents text as Unicode `string` (UTF-16).
+- **CLI / logs**: `samples/Xanthos.Cli` configures stdout/stderr as UTF-8 (no BOM) to keep Japanese output readable in redirected logs and test harnesses.
+
 ### Test Structure
 
 | Project | Description | Platform |

@@ -819,7 +819,7 @@ let runCaptureFixtures ctx args =
                                 let meta =
                                     $"{{\"timestamp\": {timestampJson}, \"byteLength\": {payload.Data.Length}, \"recordType\": \"{recordType}\", \"parseStatus\": \"{parseStatus}\"}}"
 
-                                File.WriteAllText(metaFilename, meta)
+                                File.WriteAllText(metaFilename, meta, ConsoleEncoding.utf8NoBom)
                                 totalCaptured <- totalCaptured + 1)
                     else
                         printfn "  No records to capture for this spec."
