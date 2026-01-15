@@ -712,23 +712,193 @@ type ComJvLinkClient(?useJvGets: bool) =
         member _.CourseFile key =
             protect "JVCourseFile" (fun () ->
                 // JVCourseFile: key (in), filepath (out ByRef), explanation (out ByRef)
-                let args: obj[] = [| key; ""; "" |]
-                let code = invokeWithByRef "JVCourseFile" args [ 1; 2 ]
+                //
+                // JV-Link COM implementations vary:
+                // - Some allocate fresh BSTRs for out-parameters (standard COM behavior).
+                // - Others appear to write into the provided BSTR buffer (non-standard but observed in the wild).
+                //
+                // Default to the buffered strategy (safer for long strings), but fall back to the allocate strategy
+                // when the decoded explanation looks like obvious mojibake/garbage.
 
-                match ensureSuccess "JVCourseFile" code with
-                | Ok() ->
-                    let filepath =
-                        match args.[1] with
-                        | :? string as s -> s
-                        | _ -> ""
+                let outStringBuffer (size: int) =
+                    if size <= 0 then "" else String(char 0, size)
 
-                    let explanation =
-                        match args.[2] with
-                        | :? string as s -> s
-                        | _ -> ""
+                let isPrivateUseChar (ch: char) =
+                    let code = int ch
+                    code >= 0xE000 && code <= 0xF8FF
 
-                    Ok(filepath, explanation)
-                | Error e -> Error e)
+                let japaneseCount (s: string) =
+                    if String.IsNullOrEmpty s then
+                        0
+                    else
+                        s
+                        |> Seq.sumBy (fun ch ->
+                            let code = int ch
+
+                            if
+                                (code >= 0x3040 && code <= 0x309F) // Hiragana
+                                || (code >= 0x30A0 && code <= 0x30FF) // Katakana
+                                || (code >= 0x4E00 && code <= 0x9FFF)
+                            then // Kanji
+                                1
+                            else
+                                0)
+
+                let garbledScore (s: string) =
+                    if String.IsNullOrWhiteSpace s then
+                        Int32.MinValue
+                    else
+                        let mutable privateUse = 0
+                        let mutable control = 0
+                        let mutable replacement = 0
+                        let mutable ascii = 0
+
+                        for ch in s do
+                            if ch = '\uFFFD' then
+                                replacement <- replacement + 1
+                            elif isPrivateUseChar ch then
+                                privateUse <- privateUse + 1
+                            elif Char.IsControl ch && ch <> '\r' && ch <> '\n' && ch <> '\t' then
+                                control <- control + 1
+                            else
+                                let code = int ch
+
+                                if code >= 0x20 && code <= 0x7E then
+                                    ascii <- ascii + 1
+
+                        // Higher is better
+                        (japaneseCount s * 10) + ascii
+                        - (privateUse * 40)
+                        - (replacement * 50)
+                        - (control * 20)
+
+                let looksGarbled (s: string) =
+                    if String.IsNullOrWhiteSpace s then
+                        false
+                    else
+                        let mutable privateUse = 0
+                        let mutable control = 0
+
+                        for ch in s do
+                            if isPrivateUseChar ch then
+                                privateUse <- privateUse + 1
+                            elif Char.IsControl ch && ch <> '\r' && ch <> '\n' && ch <> '\t' then
+                                control <- control + 1
+
+                        privateUse >= 8 || control >= 16
+
+                let emitTextSummary (label: string) (text: string) =
+                    let safe = if isNull text then "" else text
+                    let maxHead = min 32 safe.Length
+                    let mutable privateUse = 0
+                    let mutable control = 0
+                    let mutable replacement = 0
+
+                    for ch in safe do
+                        if ch = '\uFFFD' then
+                            replacement <- replacement + 1
+                        elif isPrivateUseChar ch then
+                            privateUse <- privateUse + 1
+                        elif Char.IsControl ch && ch <> '\r' && ch <> '\n' && ch <> '\t' then
+                            control <- control + 1
+
+                    let headU16 =
+                        [ 0 .. maxHead - 1 ]
+                        |> List.map (fun i -> (int safe.[i]).ToString("X4"))
+                        |> String.concat " "
+
+                    Diagnostics.emit
+                        $"JVCourseFile {label}: len={safe.Length} jp={japaneseCount safe} privateUse={privateUse} control={control} repl={replacement} score={garbledScore safe} headU16={headU16}"
+
+                let callBuffered () =
+                    let args: obj[] =
+                        [| key
+                           outStringBuffer 512 // filepath
+                           outStringBuffer 16384 |] // explanation (can be long)
+
+                    let code = invokeWithByRef "JVCourseFile" args [ 1; 2 ]
+
+                    match ensureSuccess "JVCourseFile" code with
+                    | Ok() ->
+                        let filepath =
+                            match args.[1] with
+                            | :? string as s -> s
+                            | _ -> ""
+
+                        let explanation =
+                            match args.[2] with
+                            | :? string as s -> s
+                            | _ -> ""
+
+                        Ok(
+                            Text.decodeShiftJisBstrBytesIfNeeded filepath,
+                            Text.decodeShiftJisBstrBytesIfNeeded explanation
+                        )
+                    | Error e -> Error e
+
+                let callAllocate () =
+                    // Use empty placeholders for ByRef string out-parameters and let COM allocate BSTRs.
+                    let args: obj[] = [| key; ""; "" |]
+                    let code = invokeWithByRef "JVCourseFile" args [ 1; 2 ]
+
+                    match ensureSuccess "JVCourseFile" code with
+                    | Ok() ->
+                        let filepath =
+                            match args.[1] with
+                            | :? string as s -> s
+                            | _ -> ""
+
+                        let explanation =
+                            match args.[2] with
+                            | :? string as s -> s
+                            | _ -> ""
+
+                        Ok(
+                            Text.decodeShiftJisBstrBytesIfNeeded filepath,
+                            Text.decodeShiftJisBstrBytesIfNeeded explanation
+                        )
+                    | Error e -> Error e
+
+                let mode =
+                    match Environment.GetEnvironmentVariable("XANTHOS_COM_COURSEFILE_OUT_MODE") with
+                    | null
+                    | "" -> "auto"
+                    | v -> v.Trim().ToLowerInvariant()
+
+                match mode with
+                | "allocate" -> callAllocate ()
+                | "buffer"
+                | "buffered" -> callBuffered ()
+                | _ ->
+                    match callBuffered () with
+                    | Ok(p1, e1) as ok1 ->
+                        if looksGarbled e1 then
+                            Diagnostics.emit
+                                $"JVCourseFile explanation looks garbled (buffered). Retrying with allocate mode. score={garbledScore e1}"
+
+                            match callAllocate () with
+                            | Ok(p2, e2) as ok2 ->
+                                let s1 = garbledScore e1
+                                let s2 = garbledScore e2
+
+                                emitTextSummary "buffered/explanation" e1
+                                emitTextSummary "allocate/explanation" e2
+
+                                if s2 > s1 then
+                                    Diagnostics.emit $"JVCourseFile chose allocate mode (score {s2} > {s1})."
+                                    ok2
+                                else
+                                    Diagnostics.emit $"JVCourseFile kept buffered mode (score {s1} >= {s2})."
+                                    ok1
+                            | Error _ -> ok1
+                        else
+                            ok1
+                    | Error e1 ->
+                        Diagnostics.emit $"JVCourseFile buffered call failed: {e1}. Retrying with allocate mode."
+
+                        match callAllocate () with
+                        | Ok _ as ok -> ok
+                        | Error _ -> Error e1)
 
         member _.CourseFile2(key, filepath) =
             protect "JVCourseFile2" (fun () ->

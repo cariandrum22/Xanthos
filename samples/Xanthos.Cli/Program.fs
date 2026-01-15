@@ -154,6 +154,9 @@ let private runCommand ctx command =
 [<STAThread>]
 [<EntryPoint>]
 let main argv =
+    // Ensure all CLI output (stdout/stderr) is UTF-8 to avoid mojibake in logs and test harnesses.
+    Xanthos.Runtime.ConsoleEncoding.configureUtf8 ()
+
     match parseInput argv with
     | Error msg ->
         printfn "%s\n%s" msg (usage.Trim())

@@ -385,7 +385,6 @@ let runCourseFile ctx key =
         match service.GetCourseDiagram key with
         | Ok diagram ->
             let explanation = diagram.Explanation |> Option.defaultValue "(no explanation)"
-
             printfn "Course file [%s]: Path=%s Explanation=%s" key diagram.FilePath explanation
             0
         | Error err -> reportError "Failed to get course file" err)
@@ -820,7 +819,7 @@ let runCaptureFixtures ctx args =
                                 let meta =
                                     $"{{\"timestamp\": {timestampJson}, \"byteLength\": {payload.Data.Length}, \"recordType\": \"{recordType}\", \"parseStatus\": \"{parseStatus}\"}}"
 
-                                File.WriteAllText(metaFilename, meta)
+                                File.WriteAllText(metaFilename, meta, ConsoleEncoding.utf8NoBom)
                                 totalCaptured <- totalCaptured + 1)
                     else
                         printfn "  No records to capture for this spec."

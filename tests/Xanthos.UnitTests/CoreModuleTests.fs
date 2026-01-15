@@ -789,6 +789,57 @@ module TextModuleTests =
         Assert.NotNull(result)
 
     [<Fact>]
+    let ``decodeShiftJisBstrBytesIfNeeded should keep already-decoded Japanese text`` () =
+        let text = "東京芝/芝1200m"
+        let result = decodeShiftJisBstrBytesIfNeeded text
+        Assert.Equal(text, result)
+
+    [<Fact>]
+    let ``decodeShiftJisBstrBytesIfNeeded should decode low-byte-per-char Shift-JIS stuffing`` () =
+        let expected = "東京芝/芝1200m"
+        let bytes = System.Text.Encoding.GetEncoding(932).GetBytes(expected)
+        let stuffed = bytes |> Array.map char |> (fun chars -> new string (chars))
+        let result = decodeShiftJisBstrBytesIfNeeded stuffed
+        Assert.Equal(expected, result)
+
+    [<Fact>]
+    let ``decodeShiftJisBstrBytesIfNeeded should stop at NUL terminator`` () =
+        let expected = "東京芝/芝1200m"
+        let bytes = System.Text.Encoding.GetEncoding(932).GetBytes(expected)
+        let stuffedBytes = Array.concat [ bytes; [| 0uy; 0x80uy; 0xFFuy; 0uy |] ]
+        let stuffed = stuffedBytes |> Array.map char |> (fun chars -> new string (chars))
+        let result = decodeShiftJisBstrBytesIfNeeded stuffed
+        Assert.Equal(expected, result)
+
+    [<Fact>]
+    let ``decodeShiftJisBstrBytesIfNeeded should decode raw Shift-JIS bytes copied into UTF-16 buffer`` () =
+        let expected = "東京芝/芝1200m"
+        let bytes = System.Text.Encoding.GetEncoding(932).GetBytes(expected)
+
+        let padded =
+            if bytes.Length % 2 = 0 then
+                bytes
+            else
+                Array.append bytes [| 0uy |]
+
+        let stuffed = System.Text.Encoding.Unicode.GetString(padded)
+        let result = decodeShiftJisBstrBytesIfNeeded stuffed
+        Assert.Equal(expected, result)
+
+    [<Fact>]
+    let ``decodeShiftJisBstrBytesIfNeeded should decode high-byte-per-char Shift-JIS stuffing`` () =
+        let expected = "東京芝/芝1200m"
+        let bytes = System.Text.Encoding.GetEncoding(932).GetBytes(expected)
+
+        let stuffed =
+            bytes
+            |> Array.map (fun b -> char (int b <<< 8))
+            |> fun chars -> new string (chars)
+
+        let result = decodeShiftJisBstrBytesIfNeeded stuffed
+        Assert.Equal(expected, result)
+
+    [<Fact>]
     let ``encodeShiftJis should encode valid text`` () =
         let result = encodeShiftJis "テスト"
         let decoded = System.Text.Encoding.GetEncoding(932).GetString(result)

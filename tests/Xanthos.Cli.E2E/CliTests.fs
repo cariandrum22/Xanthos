@@ -3,6 +3,7 @@ namespace Xanthos.Cli.E2E
 open System
 open System.Diagnostics
 open System.IO
+open System.Text
 open Xunit
 open Xunit.Abstractions
 
@@ -19,6 +20,52 @@ type CliResult =
       LogFile: string }
 
 module Harness =
+    type private OutputEncodingMode =
+        | Utf8
+        | Cp932
+
+    let private outputEncodingMode =
+        match Environment.GetEnvironmentVariable "XANTHOS_E2E_OUTPUT_ENCODING" with
+        // CLI output is expected to be UTF-8 (see Xanthos.Runtime.ConsoleEncoding).
+        // Keep CP932 only as an explicit escape hatch for debugging legacy behaviour.
+        | v when not (isNull v) && v.Equals("cp932", StringComparison.OrdinalIgnoreCase) -> Cp932
+        | _ -> Utf8
+
+    let private utf8NoBom = UTF8Encoding(false)
+    let private utf8Strict = UTF8Encoding(false, true)
+
+    let private decodeProcessOutput (bytes: byte[]) =
+        if isNull bytes || bytes.Length = 0 then
+            ""
+        else
+            let decodeUtf8Strict (data: byte[]) = utf8Strict.GetString data
+
+            let decodeUtf8Lenient (data: byte[]) = Encoding.UTF8.GetString data
+
+            let decodeCp932 (data: byte[]) =
+                try
+                    Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)
+                    Encoding.GetEncoding(932).GetString data
+                with _ ->
+                    ""
+
+            match outputEncodingMode with
+            | Cp932 -> decodeCp932 bytes
+            | Utf8 ->
+                // The CLI forces UTF-8 output. If decoding fails, treat it as a test failure signal
+                // by preserving bytes via lenient UTF-8 (replacement chars) rather than silently
+                // interpreting as CP932.
+                try
+                    decodeUtf8Strict bytes
+                with :? DecoderFallbackException ->
+                    decodeUtf8Lenient bytes
+
+    let private readAllBytesAsync (stream: Stream) =
+        System.Threading.Tasks.Task.Run(fun () ->
+            use ms = new MemoryStream()
+            stream.CopyTo(ms)
+            ms.ToArray())
+
     let rec private findRepoRoot startDir dir =
         if File.Exists(Path.Combine(dir, "Xanthos.sln")) then
             dir
@@ -124,7 +171,8 @@ module Harness =
                 + stdout
                 + "\n---\nSTDERR:\n"
                 + stderr
-                + "\n"
+                + "\n",
+                utf8NoBom
             )
 
             Some file
@@ -349,7 +397,7 @@ module Harness =
                   $"fallbackReason={fallbackReasonValue}"
                   $"appBaseDir={AppContext.BaseDirectory}" ]
 
-            File.WriteAllLines(harnessInitLogFile, lines)
+            File.WriteAllLines(harnessInitLogFile, lines, utf8NoBom)
         with _ ->
             ()
 
@@ -453,7 +501,7 @@ module Harness =
         Directory.CreateDirectory logsDir |> ignore
         let name = commandArgs |> String.concat "_" |> sanitizeFileName
         let file = Path.Combine(logsDir, name + ".log")
-        File.WriteAllText(file, "STDOUT:\n" + stdout + "\n---\nSTDERR:\n" + stderr)
+        File.WriteAllText(file, "STDOUT:\n" + stdout + "\n---\nSTDERR:\n" + stderr, utf8NoBom)
         file
 
     let private createProcessStartInfo mode commandArgs =
@@ -532,8 +580,8 @@ module Harness =
                 | true, ms when ms > 0 -> ms
                 | _ -> 60000
 
-        let out = proc.StandardOutput.ReadToEnd()
-        let err = proc.StandardError.ReadToEnd()
+        let stdoutTask = readAllBytesAsync proc.StandardOutput.BaseStream
+        let stderrTask = readAllBytesAsync proc.StandardError.BaseStream
         let exited = proc.WaitForExit(timeoutMs)
 
         if not exited then
@@ -541,6 +589,11 @@ module Harness =
                 proc.Kill(true)
             with _ ->
                 ()
+
+        let outBytes = stdoutTask.GetAwaiter().GetResult()
+        let errBytes = stderrTask.GetAwaiter().GetResult()
+        let out = decodeProcessOutput outBytes
+        let err = decodeProcessOutput errBytes
 
         let exitCode = if exited then proc.ExitCode else -1
         let logFile = writeLog commandArgs out err
@@ -568,8 +621,8 @@ module Harness =
                 | true, ms when ms > 0 -> ms
                 | _ -> 60000
 
-        let out = proc.StandardOutput.ReadToEnd()
-        let err = proc.StandardError.ReadToEnd()
+        let stdoutTask = readAllBytesAsync proc.StandardOutput.BaseStream
+        let stderrTask = readAllBytesAsync proc.StandardError.BaseStream
         let exited = proc.WaitForExit(timeoutMs)
 
         if not exited then
@@ -577,6 +630,11 @@ module Harness =
                 proc.Kill(true)
             with _ ->
                 ()
+
+        let outBytes = stdoutTask.GetAwaiter().GetResult()
+        let errBytes = stderrTask.GetAwaiter().GetResult()
+        let out = decodeProcessOutput outBytes
+        let err = decodeProcessOutput errBytes
 
         let exitCode = if exited then proc.ExitCode else -1
         let logFile = writeLog ("setup-" :: commandArgs) out err
@@ -709,8 +767,8 @@ type CliTests(output: ITestOutputHelper, fixture: ServiceKeySetupFixture) =
             if hasCom then
                 // Real COM mode - should not have stub payloads
                 Assert.DoesNotContain("Stub payload", stdout)
+            // COM fallback to Stub - should have stub payloads
             else if hasStub && hasComFallback then
-                // COM fallback to Stub - should have stub payloads
                 Assert.Contains("Stub payload", stdout)
             else
                 Assert.Fail(

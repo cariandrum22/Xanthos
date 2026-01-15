@@ -14,6 +14,12 @@ functional programming style.
 - **Stub mode**: Test without COM dependencies on any platform
 - **Cross-platform**: Core library works on Windows, macOS, and Linux (COM features Windows-only)
 
+## Text Encoding
+
+- **In-memory**: Xanthos represents text as Unicode `string` (UTF-16).
+- **JV-Link input boundary**: JV-Link returns CP932/Shift-JIS for “text”; Xanthos decodes it into `string` via `Xanthos.Core.Text`.
+- **Output boundary**: console/log/file text is UTF-8 (no BOM). `samples/Xanthos.Cli` configures stdout/stderr accordingly.
+
 ## Quick Start
 
 ```fsharp
