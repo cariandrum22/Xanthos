@@ -164,7 +164,32 @@ let runDownload ctx args =
     withService ctx (fun service ->
         let _ = printEvidence ctx service
 
-        match service.FetchPayloads(args.Request) with
+        // When --max-records is set, use StreamPayloads (lazy seq) so that JV-Link
+        // stops reading after N records instead of fetching all 1000+ files first.
+        let fetchResult =
+            match args.MaxRecords with
+            | Some n ->
+                let mutable firstError: XanthosError option = None
+
+                let payloads =
+                    service.StreamPayloads(args.Request)
+                    |> Seq.choose (fun r ->
+                        match r with
+                        | Ok p -> Some p
+                        | Error err ->
+                            if firstError.IsNone then
+                                firstError <- Some err
+
+                            None)
+                    |> Seq.truncate n
+                    |> Seq.toList
+
+                match firstError with
+                | Some err when payloads.IsEmpty -> Error err
+                | _ -> Ok payloads
+            | None -> service.FetchPayloads(args.Request)
+
+        match fetchResult with
         | Ok payloads ->
             payloads
             |> List.iteri (fun idx payload ->
@@ -757,10 +782,38 @@ let runCaptureFixtures ctx args =
 
                 let request = Validation.createOpenRequest spec args.FromTime 1
 
-                match service.FetchPayloads(request) with
+                // Use StreamPayloads with a total read cap to avoid reading all
+                // records (which can exceed the E2E timeout for large datasets).
+                let totalReadCap = args.MaxRecordsPerType * knownRecordTypes.Length * 3
+                let mutable firstError: XanthosError option = None
+
+                let payloads =
+                    service.StreamPayloads(request)
+                    |> Seq.choose (fun r ->
+                        match r with
+                        | Ok p -> Some p
+                        | Error err ->
+                            if firstError.IsNone then
+                                firstError <- Some err
+
+                            None)
+                    |> Seq.truncate totalReadCap
+                    |> Seq.toList
+
+                let fetchResult =
+                    match firstError with
+                    | Some err when payloads.IsEmpty -> Error err
+                    | _ -> Ok payloads
+
+                match fetchResult with
                 | Ok payloads ->
                     let filteredPayloads = filterByToTime payloads
-                    printfn "  Fetched %d payload(s) (after filter: %d)" payloads.Length filteredPayloads.Length
+
+                    printfn
+                        "  Fetched %d payload(s) (after filter: %d, read cap: %d)"
+                        payloads.Length
+                        filteredPayloads.Length
+                        totalReadCap
 
                     // Group by record type
                     let grouped =

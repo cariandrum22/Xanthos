@@ -28,6 +28,7 @@ Commands:
       --from <timestamp>    Start time YYYYMMDDHHmmss (required).
       --option <1-4>        JVOpen option (default: 1).
       --output <dir>        Output directory for persisted files.
+      --max-records <n>     Max payloads to process (optional, all by default).
 
     realtime              Stream realtime payloads via JVRTOpen.
       --spec <dataspec>     Data specification (required, e.g., 0B12, 0B11).
@@ -109,6 +110,7 @@ Commands:
       --to <timestamp>      End time YYYYMMDDHHmmss (optional).
       --max-records <n>     Max records per type (default: 10).
       --use-jvgets          Force JVGets (default).
+
 """
 
 let private printHelp () =
