@@ -789,6 +789,57 @@ module TextModuleTests =
         Assert.NotNull(result)
 
     [<Fact>]
+    let ``decodeShiftJisBstrBytesIfNeeded should keep already-decoded Japanese text`` () =
+        let text = "東京芝/芝1200m"
+        let result = decodeShiftJisBstrBytesIfNeeded text
+        Assert.Equal(text, result)
+
+    [<Fact>]
+    let ``decodeShiftJisBstrBytesIfNeeded should decode low-byte-per-char Shift-JIS stuffing`` () =
+        let expected = "東京芝/芝1200m"
+        let bytes = System.Text.Encoding.GetEncoding(932).GetBytes(expected)
+        let stuffed = bytes |> Array.map char |> (fun chars -> new string (chars))
+        let result = decodeShiftJisBstrBytesIfNeeded stuffed
+        Assert.Equal(expected, result)
+
+    [<Fact>]
+    let ``decodeShiftJisBstrBytesIfNeeded should stop at NUL terminator`` () =
+        let expected = "東京芝/芝1200m"
+        let bytes = System.Text.Encoding.GetEncoding(932).GetBytes(expected)
+        let stuffedBytes = Array.concat [ bytes; [| 0uy; 0x80uy; 0xFFuy; 0uy |] ]
+        let stuffed = stuffedBytes |> Array.map char |> (fun chars -> new string (chars))
+        let result = decodeShiftJisBstrBytesIfNeeded stuffed
+        Assert.Equal(expected, result)
+
+    [<Fact>]
+    let ``decodeShiftJisBstrBytesIfNeeded should decode raw Shift-JIS bytes copied into UTF-16 buffer`` () =
+        let expected = "東京芝/芝1200m"
+        let bytes = System.Text.Encoding.GetEncoding(932).GetBytes(expected)
+
+        let padded =
+            if bytes.Length % 2 = 0 then
+                bytes
+            else
+                Array.append bytes [| 0uy |]
+
+        let stuffed = System.Text.Encoding.Unicode.GetString(padded)
+        let result = decodeShiftJisBstrBytesIfNeeded stuffed
+        Assert.Equal(expected, result)
+
+    [<Fact>]
+    let ``decodeShiftJisBstrBytesIfNeeded should decode high-byte-per-char Shift-JIS stuffing`` () =
+        let expected = "東京芝/芝1200m"
+        let bytes = System.Text.Encoding.GetEncoding(932).GetBytes(expected)
+
+        let stuffed =
+            bytes
+            |> Array.map (fun b -> char (int b <<< 8))
+            |> fun chars -> new string (chars)
+
+        let result = decodeShiftJisBstrBytesIfNeeded stuffed
+        Assert.Equal(expected, result)
+
+    [<Fact>]
     let ``encodeShiftJis should encode valid text`` () =
         let result = encodeShiftJis "テスト"
         let decoded = System.Text.Encoding.GetEncoding(932).GetString(result)
@@ -1226,3 +1277,23 @@ module TextBranchCoverageTests =
         let mixed = "\uFF10\uFF21\uFF41テスト" // 0, A, a, テスト
         let result = normalizeJvText mixed
         Assert.Equal("0Aaテスト", result)
+
+    [<Fact>]
+    let ``decodeShiftJis with truncated Shift-JIS 2-byte char uses lenient fallback`` () =
+        // Encode a Shift-JIS string then chop off the last byte of a 2-byte character.
+        // Lenient Shift-JIS should decode the leading valid characters without U+FFFD.
+        let enc = System.Text.Encoding.GetEncoding(932)
+        let fullBytes = enc.GetBytes("タイキシャトル")
+        // Drop the last byte to simulate a mid-character truncation
+        let truncated = fullBytes.[0 .. fullBytes.Length - 2]
+        let result = decodeShiftJis truncated
+        // The valid leading characters should be present and no U+FFFD replacement chars
+        Assert.True(result.Contains("タイキシャト"), $"Expected leading chars present, got: {result}")
+        Assert.False(result.Contains("\uFFFD"), $"Should not contain U+FFFD, got: {result}")
+
+    [<Fact>]
+    let ``decodeShiftJis with lone invalid byte 0x80 uses lenient Shift-JIS fallback`` () =
+        // 0x80 is invalid as a standalone byte in strict Shift-JIS.
+        // Lenient Shift-JIS (code page 932) maps it to a character without producing U+FFFD.
+        let result = decodeShiftJis [| 0x80uy |]
+        Assert.False(result.Contains("\uFFFD"), $"Should not contain U+FFFD, got: {result}")
