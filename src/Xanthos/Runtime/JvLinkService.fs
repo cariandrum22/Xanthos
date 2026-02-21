@@ -1556,7 +1556,7 @@ type JvLinkService
             |> Result.map (fun (path, explanation) ->
                 { FilePath = path
                   Explanation =
-                    if String.IsNullOrWhiteSpace explanation then
+                    if String.IsNullOrWhiteSpace explanation || Text.looksGarbledJvText explanation then
                         None
                     else
                         Some explanation }))

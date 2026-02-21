@@ -70,7 +70,7 @@ This section provides expected return values, error codes, and specification ref
 | JVCourseFile | File path + explanation | -1 (not found) | [methods.md](../specs/methods.md#jvcoursefile) |
 | JVCourseFile2 | File path string | -1 (not found) | [methods.md](../specs/methods.md#jvcoursefile2) |
 
-**Implementation notes**: Implemented in `JvLinkService.GetCourseDiagram` / `GetCourseDiagramBasic`.
+**Implementation notes**: Implemented in `JvLinkService.GetCourseDiagram` / `GetCourseDiagramBasic`. In practice, some JV-Link COM environments return a non-text `explanation` payload for `JVCourseFile`; Xanthos treats this value as best-effort and may suppress obviously garbled strings. For an authoritative course description, prefer parsing `COMM`/`CS` records (course information) via `JVOpen`.
 
 ## Exposed Properties
 

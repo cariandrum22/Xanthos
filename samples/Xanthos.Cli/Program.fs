@@ -168,8 +168,10 @@ let main argv =
             match createExecutionContext parsed.Globals with
             | Error err -> reportError "Configuration error" err
             | Ok ctx ->
-                printfn "[diag] Client mode = %s" (describeMode ctx.Activation)
                 configureDiagnostics ctx.Globals.EnableDiagnostics ctx.Logger
+
+                if ctx.Globals.EnableDiagnostics then
+                    printfn "[diag] Client mode = %s" (describeMode ctx.Activation)
                 // Each command creates its own service with a fresh client.
                 // The service owns the client and disposes it when done.
                 runCommand ctx parsed.Command
