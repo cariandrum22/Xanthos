@@ -59,6 +59,8 @@ open Xanthos.Runtime
 open Xanthos.Interop
 
 // Create configuration
+// UseJvGets = None defaults to true (JVGets mode).
+// Set to Some false to use JVRead instead, or set XANTHOS_USE_JVREAD=1.
 let config =
     { Sid = "YOUR_SID"
       SavePath = Some @"C:\JVData"
