@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-02-22
+
 ### Breaking Changes
 
 - Make `IJvLinkClient.SavePath` property read-only ([#1](https://github.com/cariandrum22/Xanthos/issues/1), [#4](https://github.com/cariandrum22/Xanthos/pull/4))
@@ -21,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reduce excessive diagnostic logging in `checkUseJvGets()` by caching the resolved value ([#2](https://github.com/cariandrum22/Xanthos/issues/2))
 - Avoid unsupported COM property access for `ParentHWnd` (write-only) and `m_payflag` (read-only); return clear `Unsupported` errors from `JvLinkService` in COM mode ([#14](https://github.com/cariandrum22/Xanthos/issues/14))
 - Improve CLI E2E harness diagnostics for exe-mode builds on Windows ([#17](https://github.com/cariandrum22/Xanthos/issues/17))
+- Fix CLI mojibake for Japanese text when stdout is redirected ([#19](https://github.com/cariandrum22/Xanthos/issues/19))
 
 ## [0.1.0] - 2025-12-10
 
@@ -47,4 +50,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Error catalog generated from JV-Link specifications
 - API documentation with fsdocs
 
+[0.2.0]: https://github.com/cariandrum22/Xanthos/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/cariandrum22/Xanthos/releases/tag/v0.1.0
