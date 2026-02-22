@@ -2,6 +2,7 @@ module Xanthos.UnitTests.PropertyTests
 
 open System
 open FsCheck
+open FsCheck.FSharp
 open FsCheck.Xunit
 open Xanthos.Core
 open Xanthos.Core.Text
@@ -40,8 +41,10 @@ let horseIdGen =
     }
 
 /// Generate valid byte arrays with specific size
+let private defaults = ArbMap.defaults
+
 let byteArrayGen size =
-    Gen.arrayOfLength size Arb.generate<byte>
+    Gen.arrayOfLength size (ArbMap.generate<byte> defaults)
 
 // ============================================================================
 // Property-Based Tests for RecordParser Core Functions

@@ -15,8 +15,8 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
-    <PackageReference Include="FsCheck" Version="2.16.6" />
-    <PackageReference Include="FsCheck.Xunit" Version="2.16.6" />
+    <PackageReference Include="FsCheck" Version="3.3.2" />
+    <PackageReference Include="FsCheck.Xunit" Version="3.3.2" />
     <PackageReference Include="Xunit.SkippableFact" Version="1.5.61" />
   </ItemGroup>
 
