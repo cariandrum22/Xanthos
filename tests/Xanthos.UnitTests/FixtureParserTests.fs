@@ -161,7 +161,7 @@ module KnownRecordTypes =
 ///     --sid YOUR_SID capture-fixtures \
 ///     --output tests/fixtures \
 ///     --specs "RACE,DIFF" \
-///     --from "2024-01-01" \
+///     --from "20240101" \
 ///     --max-records 5
 /// </summary>
 type FixtureParserTests() =

@@ -142,7 +142,8 @@ module Parsing =
         { Spec: string option
           From: string option
           OptionText: string option
-          Output: string option }
+          Output: string option
+          MaxRecords: string option }
 
     let rec parseDownloadArgs (state: DownloadRaw) (tokens: string list) : Result<DownloadRaw, string> =
         match tokens with
@@ -155,6 +156,8 @@ module Parsing =
         | "--option" :: v :: rest -> parseDownloadArgs { state with OptionText = Some v } rest
         | "--output" :: [] -> Error "download: option '--output' requires a value."
         | "--output" :: v :: rest -> parseDownloadArgs { state with Output = Some v } rest
+        | "--max-records" :: [] -> Error "download: option '--max-records' requires a value."
+        | "--max-records" :: v :: rest -> parseDownloadArgs { state with MaxRecords = Some v } rest
         | u :: _ -> Error $"download: unknown option '{u}'."
 
     let parseDownload (tokens: string list) : Result<Command, string> =
@@ -164,7 +167,8 @@ module Parsing =
                     { Spec = None
                       From = None
                       OptionText = None
-                      Output = None }
+                      Output = None
+                      MaxRecords = None }
                     tokens
 
             let! rawSpec = raw.Spec |> requireValue "download: --spec is required."
@@ -180,10 +184,18 @@ module Parsing =
             let request = createOpenRequest spec fromTime openOption
             let outputDir = raw.Output |> Option.orElse (readEnv "XANTHOS_JVLINK_OUTPUT")
 
+            let maxRecords =
+                raw.MaxRecords
+                |> Option.bind (fun s ->
+                    match Int32.TryParse s with
+                    | true, v when v > 0 -> Some v
+                    | _ -> None)
+
             return
                 Download
                     { Request = request
-                      OutputDirectory = outputDir }
+                      OutputDirectory = outputDir
+                      MaxRecords = maxRecords }
         }
 
     // Realtime parsing

@@ -16,14 +16,14 @@ This document defines the end-to-end scenarios that the command-line tool must e
 
 | Command | JV-Link APIs | Purpose / Expected Outcome | Stub Coverage |
 | --- | --- | --- | --- |
-| `download --spec <dataspec> --from <ts> [--option <1-4>] [--output <dir>]` | `JVOpen`, repeated `JVRead`, `JVClose` | Materialises all payloads for a dataspec, logs download counts, handles `FileBoundary`/`DownloadPending`. | Yes |
-| `realtime --spec <dataspec> [--from <ts>]` | `JVRTOpen`, repeated `JVRead`, `JVCancel` | Streams realtime payloads until cancelled. | Yes |
+| `download --spec <dataspec> --from <ts> [--option <1-4>] [--output <dir>]` | `JVOpen`, repeated `JVRead`/`JVGets`, `JVClose` | Materialises all payloads for a dataspec, logs download counts, handles `FileBoundary`/`DownloadPending`. | Yes |
+| `realtime --spec <dataspec> --key <key> [--continuous]` | `JVRTOpen`, repeated `JVRead`/`JVGets`, `JVCancel` | Streams realtime payloads (continuous mode polls until cancelled). | Yes |
 | `status` | `JVStatus` | Reports current download status. | Yes |
 | `skip` | `JVSkip` | Skips current file in session. | Yes |
 | `cancel` | `JVCancel` | Cancels current session. | Yes |
 | `delete-file --name <filename>` | `JVFiledelete` | Deletes an existing file and reports success. | Yes |
 | `watch-events [--duration <sec>] [--open-after]` | `JVWatchEvent`, `JVWatchEventClose` | Subscribes to watch events for specified duration; optionally opens realtime session on event trigger. | Partial (events require stub triggers) |
-| `course-file --key <id>` | `JVCourseFile` | Retrieves course diagram path. | Yes |
+| `course-file --key <id>` | `JVCourseFile` | Retrieves course diagram path (explanation is best-effort and may be omitted if unreadable). | Yes |
 | `course-file2 --key <id>` | `JVCourseFile2` | Retrieves course diagram path (v2). | Yes |
 | `silks-file --pattern <text> --output <path>` | `JVFukuFile` | Generates a bitmap file for the supplied pattern. | Yes |
 | `silks-binary --pattern <text>` | `JVFuku` | Returns silks image bytes (hex encoded). | Yes |
@@ -32,13 +32,18 @@ This document defines the end-to-end scenarios that the command-line tool must e
 | `movie-play --key <search>` | `JVMVPlay` | Requests movie playback. | Stub: simulated |
 | `movie-play-with-type --movie-type <code> --key <search>` | `JVMVPlayWithType` | Requests movie playback by type. | Stub: simulated |
 | `movie-open --movie-type <code> --search-key <key>` | `JVMVOpen`, `JVMVRead` | Retrieves all workout video listings in one call via `FetchWorkoutVideos`. | Yes |
-| `version` | `JVLink.Version` | Displays JV-Link version information. | Yes |
+| `version` | `m_JVLinkVersion` | Displays JV-Link version information. | Yes |
 | `set-save-flag --value <bool>` | `JVSetSaveFlag` | Sets save flag. | Yes |
-| `get-save-flag` | `JVGetSaveFlag` | Gets current save flag. | Yes |
+| `get-save-flag` | `m_saveflag` | Gets current save flag. | Yes |
 | `set-save-path --value <path>` | `JVSetSavePath` | Sets save path directory. | Yes |
-| `get-save-path` | `JVGetSavePath` | Gets current save path. | Yes |
+| `get-save-path` | `m_savepath` | Gets current save path. | Yes |
 | `set-service-key --value <key>` | `JVSetServiceKey` | Sets service key. | Yes |
-| `get-service-key` | `JVGetServiceKey` | Gets current service key. | Yes |
+| `get-service-key` | `m_servicekey` | Gets current service key. | Yes |
+| `set-parent-hwnd --value <handle>` | `ParentHWnd` (set) | Sets dialog owner window handle. | Yes |
+| `get-parent-hwnd` | `ParentHWnd` (get) | Gets dialog owner window handle (not supported in COM; `ParentHWnd` is write-only). | Yes (stub only) |
+| `set-payoff-dialog --value <bool>` | `m_payflag` (set) | Suppresses payoff dialogs (not supported in COM; `m_payflag` is read-only). | Yes (stub only) |
+| `get-payoff-dialog` | `m_payflag` (get) | Gets payoff dialog suppression setting. | Yes |
+| `set-ui-properties` | `JVSetUIProperties` | Shows JV-Link configuration dialog and updates registry. | Stub: simulated |
 | `capture-fixtures --output <dir> --specs <list> --from <ts> [--to <ts>] [--max-records <n>] [--use-jvgets]` | `JVOpen`, `JVRead`/`JVGets` | Captures real COM records as test fixtures (Windows only). | No (requires COM) |
 
 ## Execution Flow

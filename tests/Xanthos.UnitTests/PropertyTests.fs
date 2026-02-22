@@ -2,6 +2,7 @@ module Xanthos.UnitTests.PropertyTests
 
 open System
 open FsCheck
+open FsCheck.FSharp
 open FsCheck.Xunit
 open Xanthos.Core
 open Xanthos.Core.Text
@@ -40,8 +41,10 @@ let horseIdGen =
     }
 
 /// Generate valid byte arrays with specific size
+let private defaults = ArbMap.defaults
+
 let byteArrayGen size =
-    Gen.arrayOfLength size Arb.generate<byte>
+    Gen.arrayOfLength size (ArbMap.generate<byte> defaults)
 
 // ============================================================================
 // Property-Based Tests for RecordParser Core Functions
@@ -156,12 +159,15 @@ let ``parseCode SexCode accepts valid codes`` () =
 
 [<Property>]
 let ``parseCode SexCode rejects invalid codes`` (code: string) =
-    let validCodes = [ "1"; "2"; "3" ]
-
-    if List.contains code validCodes then
-        true // Valid codes are tested separately
-    else
-        parseCode<SexCode> code = None
+    match parseCode<SexCode> code with
+    | Some parsed ->
+        // If parsing succeeds, the result must be a defined enum value
+        Enum.IsDefined(typeof<SexCode>, parsed)
+    | None ->
+        // If parsing fails, the code must not be parseable as a valid enum int
+        match Int32.TryParse code with
+        | true, n -> not (Enum.IsDefined(typeof<SexCode>, n))
+        | false, _ -> true
 
 [<Property>]
 let ``parseCode RacecourseCode accepts valid numeric codes`` () =

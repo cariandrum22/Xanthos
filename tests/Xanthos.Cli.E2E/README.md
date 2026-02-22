@@ -12,7 +12,7 @@ End-to-end test project that runs `samples/Xanthos.Cli` via `dotnet run` and ver
 |----------|-------|----------|
 | Basic | 5 | `version`, `download`, `set-save-flag`, `help` |
 | Realtime | 1 | `realtime` |
-| Config Round-trip | 5 | `get/set-save-flag`, `get/set-save-path`, `get/set-service-key`, `get/set-payoff-dialog`, `get/set-parent-hwnd` |
+| Config | 5 | `get/set-save-flag`, `get/set-save-path`, `get-service-key`, `get-payoff-dialog`, `set-parent-hwnd` |
 | Course Diagram | 2 | `course-file`, `course-file2` |
 | Silks | 2 | `silks-file`, `silks-binary` |
 | Movie | 5 | `movie-check`, `movie-check-with-type`, `movie-play`, `movie-play-with-type`, `movie-open` |
@@ -32,6 +32,10 @@ End-to-end test project that runs `samples/Xanthos.Cli` via `dotnet run` and ver
 |------|-------------|------------|
 | Stub (default) | Runs CLI with `--stub` to verify command structure without COM | `dotnet test tests/Xanthos.Cli.E2E` |
 | COM | Runs on Windows with real JV-Link installation | Set `XANTHOS_E2E_MODE=COM` and required env vars |
+
+> **Note:** Some configuration commands are not fully round-trippable in COM mode due to JV-Link limitations:
+> - `ParentHWnd` is write-only (so `get-parent-hwnd` is not supported)
+> - `m_payflag` is read-only (so `set-payoff-dialog` is not supported)
 
 ## Environment Variables
 

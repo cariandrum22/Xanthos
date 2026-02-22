@@ -281,32 +281,54 @@ type ComJvLinkClient(?useJvGets: bool) =
         | _ -> None
 
     // Determines whether to use JVGets (byte array) instead of JVRead (BSTR).
-    // Priority: 1) constructor parameter, 2) XANTHOS_USE_JVGETS environment variable
-    let checkUseJvGets () =
-        match useJvGetsOverride with
-        | Some value ->
-            Diagnostics.emit $"UseJvGets override={value} (from config)"
-            value
-        | None ->
-            let envValue = Environment.GetEnvironmentVariable("XANTHOS_USE_JVGETS")
-            // Normalize: trim whitespace and convert to lowercase for case-insensitive comparison
-            let normalized =
+    // Priority:
+    //  1) constructor parameter (useJvGets)
+    //  2) XANTHOS_USE_JVREAD environment variable (opt-out; set to 1/true to use JVRead)
+    //  3) XANTHOS_USE_JVGETS environment variable (legacy; set to 0/false to use JVRead)
+    //  4) default: true (use JVGets)
+    //
+    // The decision is cached because it does not change within a session and emitting this
+    // diagnostic on every record creates excessive log noise.
+    let useJvGetsCached =
+        lazy
+            (let parseEnvBool (envValue: string) : bool option =
                 if isNull envValue then
-                    ""
+                    None
                 else
-                    envValue.Trim().ToLowerInvariant()
+                    let normalized = envValue.Trim().ToLowerInvariant()
 
-            let result =
-                match normalized with
-                | ""
-                | "0"
-                | "false"
-                | "no"
-                | "off" -> false
-                | _ -> true
+                    match normalized with
+                    | "" -> None
+                    | "0"
+                    | "false"
+                    | "no"
+                    | "off" -> Some false
+                    | _ -> Some true
 
-            Diagnostics.emit $"XANTHOS_USE_JVGETS env='{envValue}' -> useJvGets={result}"
-            result
+             match useJvGetsOverride with
+             | Some value ->
+                 Diagnostics.emit $"UseJvGets override={value} (from config)"
+                 value
+             | None ->
+                 let jvReadEnv = Environment.GetEnvironmentVariable("XANTHOS_USE_JVREAD")
+
+                 match parseEnvBool jvReadEnv with
+                 | Some useJvRead ->
+                     let useJvGets = not useJvRead
+                     Diagnostics.emit $"XANTHOS_USE_JVREAD env='{jvReadEnv}' -> useJvGets={useJvGets}"
+                     useJvGets
+                 | None ->
+                     let jvGetsEnv = Environment.GetEnvironmentVariable("XANTHOS_USE_JVGETS")
+
+                     match parseEnvBool jvGetsEnv with
+                     | Some useJvGets ->
+                         Diagnostics.emit $"XANTHOS_USE_JVGETS env='{jvGetsEnv}' -> useJvGets={useJvGets}"
+                         useJvGets
+                     | None ->
+                         Diagnostics.emit "UseJvGets default=true (JVGets)"
+                         true)
+
+    let checkUseJvGets () = useJvGetsCached.Value
 
     // JVRead implementation: uses BSTR with UTF-16 byte extraction
     // JVRead returns data as BSTR. JV-Link writes Shift-JIS bytes to the BSTR buffer, but COM
@@ -413,10 +435,9 @@ type ComJvLinkClient(?useJvGets: bool) =
     // Note: Avoid forced GC here - unpinning the handle is sufficient.
     // Forced GC per-record causes significant performance degradation.
 
-    // Main read dispatcher - selects implementation based on environment variable
+    // Main read dispatcher - selects implementation based on cached decision.
     let readRecord () : Result<JvReadOutcome, ComError> =
         if checkUseJvGets () then
-            Diagnostics.emit "Using JVGets path (XANTHOS_USE_JVGETS=1)"
             readRecordViaJvGets ()
         else
             readRecordViaJvRead ()
@@ -680,29 +701,189 @@ type ComJvLinkClient(?useJvGets: bool) =
         member _.SetParentWindowHandleDirect handle =
             setPropertyInt "ParentHWnd" (int handle)
 
-        member _.SetPayoffDialogSuppressedDirect suppressed =
-            setPropertyInt "m_payflag" (if suppressed then 1 else 0)
+        member _.SetPayoffDialogSuppressedDirect _suppressed =
+            // NOTE: In COM mode, the m_payflag property is effectively read-only (write fails).
+            // Users can still change this setting via JVSetUIProperties (interactive dialog).
+            Error(
+                InvalidState
+                    "m_payflag cannot be set programmatically in COM mode (property is read-only). Use JVSetUIProperties to change this setting."
+            )
 
         member _.CourseFile key =
             protect "JVCourseFile" (fun () ->
                 // JVCourseFile: key (in), filepath (out ByRef), explanation (out ByRef)
-                let args: obj[] = [| key; ""; "" |]
-                let code = invokeWithByRef "JVCourseFile" args [ 1; 2 ]
+                //
+                // JV-Link COM implementations vary:
+                // - Some allocate fresh BSTRs for out-parameters (standard COM behavior).
+                // - Others appear to write into the provided BSTR buffer (non-standard but observed in the wild).
+                //
+                // Default to the buffered strategy (safer for long strings), but fall back to the allocate strategy
+                // when the decoded explanation looks like obvious mojibake/garbage.
 
-                match ensureSuccess "JVCourseFile" code with
-                | Ok() ->
-                    let filepath =
-                        match args.[1] with
-                        | :? string as s -> s
-                        | _ -> ""
+                let outStringBuffer (size: int) =
+                    if size <= 0 then "" else String(char 0, size)
 
-                    let explanation =
-                        match args.[2] with
-                        | :? string as s -> s
-                        | _ -> ""
+                let isPrivateUseChar (ch: char) =
+                    let code = int ch
+                    code >= 0xE000 && code <= 0xF8FF
 
-                    Ok(filepath, explanation)
-                | Error e -> Error e)
+                let japaneseCount (s: string) =
+                    if String.IsNullOrEmpty s then
+                        0
+                    else
+                        s
+                        |> Seq.sumBy (fun ch ->
+                            let code = int ch
+
+                            if
+                                (code >= 0x3040 && code <= 0x309F) // Hiragana
+                                || (code >= 0x30A0 && code <= 0x30FF) // Katakana
+                                || (code >= 0x4E00 && code <= 0x9FFF)
+                            then // Kanji
+                                1
+                            else
+                                0)
+
+                let garbledScore (s: string) =
+                    if String.IsNullOrWhiteSpace s then
+                        Int32.MinValue
+                    else
+                        let mutable privateUse = 0
+                        let mutable control = 0
+                        let mutable replacement = 0
+                        let mutable ascii = 0
+
+                        for ch in s do
+                            if ch = '\uFFFD' then
+                                replacement <- replacement + 1
+                            elif isPrivateUseChar ch then
+                                privateUse <- privateUse + 1
+                            elif Char.IsControl ch && ch <> '\r' && ch <> '\n' && ch <> '\t' then
+                                control <- control + 1
+                            else
+                                let code = int ch
+
+                                if code >= 0x20 && code <= 0x7E then
+                                    ascii <- ascii + 1
+
+                        // Higher is better
+                        (japaneseCount s * 10) + ascii
+                        - (privateUse * 40)
+                        - (replacement * 50)
+                        - (control * 20)
+
+                let emitTextSummary (label: string) (text: string) =
+                    let safe = if isNull text then "" else text
+                    let maxHead = min 32 safe.Length
+                    let mutable privateUse = 0
+                    let mutable control = 0
+                    let mutable replacement = 0
+
+                    for ch in safe do
+                        if ch = '\uFFFD' then
+                            replacement <- replacement + 1
+                        elif isPrivateUseChar ch then
+                            privateUse <- privateUse + 1
+                        elif Char.IsControl ch && ch <> '\r' && ch <> '\n' && ch <> '\t' then
+                            control <- control + 1
+
+                    let headU16 =
+                        [ 0 .. maxHead - 1 ]
+                        |> List.map (fun i -> (int safe.[i]).ToString("X4"))
+                        |> String.concat " "
+
+                    Diagnostics.emit
+                        $"JVCourseFile {label}: len={safe.Length} jp={japaneseCount safe} privateUse={privateUse} control={control} repl={replacement} score={garbledScore safe} headU16={headU16}"
+
+                let callBuffered () =
+                    let args: obj[] =
+                        [| key
+                           outStringBuffer 512 // filepath
+                           outStringBuffer 16384 |] // explanation (can be long)
+
+                    let code = invokeWithByRef "JVCourseFile" args [ 1; 2 ]
+
+                    match ensureSuccess "JVCourseFile" code with
+                    | Ok() ->
+                        let filepath =
+                            match args.[1] with
+                            | :? string as s -> s
+                            | _ -> ""
+
+                        let explanation =
+                            match args.[2] with
+                            | :? string as s -> s
+                            | _ -> ""
+
+                        Ok(
+                            Text.decodeShiftJisBstrBytesIfNeeded filepath,
+                            Text.decodeShiftJisBstrBytesIfNeeded explanation
+                        )
+                    | Error e -> Error e
+
+                let callAllocate () =
+                    // Use empty placeholders for ByRef string out-parameters and let COM allocate BSTRs.
+                    let args: obj[] = [| key; ""; "" |]
+                    let code = invokeWithByRef "JVCourseFile" args [ 1; 2 ]
+
+                    match ensureSuccess "JVCourseFile" code with
+                    | Ok() ->
+                        let filepath =
+                            match args.[1] with
+                            | :? string as s -> s
+                            | _ -> ""
+
+                        let explanation =
+                            match args.[2] with
+                            | :? string as s -> s
+                            | _ -> ""
+
+                        Ok(
+                            Text.decodeShiftJisBstrBytesIfNeeded filepath,
+                            Text.decodeShiftJisBstrBytesIfNeeded explanation
+                        )
+                    | Error e -> Error e
+
+                let mode =
+                    match Environment.GetEnvironmentVariable("XANTHOS_COM_COURSEFILE_OUT_MODE") with
+                    | null
+                    | "" -> "auto"
+                    | v -> v.Trim().ToLowerInvariant()
+
+                match mode with
+                | "allocate" -> callAllocate ()
+                | "buffer"
+                | "buffered" -> callBuffered ()
+                | _ ->
+                    match callBuffered () with
+                    | Ok(p1, e1) as ok1 ->
+                        if Text.looksGarbledJvText e1 then
+                            Diagnostics.emit
+                                $"JVCourseFile explanation looks garbled (buffered). Retrying with allocate mode. score={garbledScore e1}"
+
+                            match callAllocate () with
+                            | Ok(p2, e2) as ok2 ->
+                                let s1 = garbledScore e1
+                                let s2 = garbledScore e2
+
+                                emitTextSummary "buffered/explanation" e1
+                                emitTextSummary "allocate/explanation" e2
+
+                                if s2 > s1 then
+                                    Diagnostics.emit $"JVCourseFile chose allocate mode (score {s2} > {s1})."
+                                    ok2
+                                else
+                                    Diagnostics.emit $"JVCourseFile kept buffered mode (score {s1} >= {s2})."
+                                    ok1
+                            | Error _ -> ok1
+                        else
+                            ok1
+                    | Error e1 ->
+                        Diagnostics.emit $"JVCourseFile buffered call failed: {e1}. Retrying with allocate mode."
+
+                        match callAllocate () with
+                        | Ok _ as ok -> ok
+                        | Error _ -> Error e1)
 
         member _.CourseFile2(key, filepath) =
             protect "JVCourseFile2" (fun () ->
@@ -866,9 +1047,7 @@ type ComJvLinkClient(?useJvGets: bool) =
 
         member _.SavePath = getPropertyString "m_savepath"
 
-        member _.ServiceKey
-            with get () = getPropertyString "m_servicekey"
-            and set value = setPropertyString "m_servicekey" value |> ignore
+        member _.ServiceKey = getPropertyString "m_servicekey"
 
         member _.TryGetSaveFlag() =
             tryGetPropertyInt "m_saveflag" |> Result.map (fun v -> v <> 0)
@@ -900,7 +1079,10 @@ type ComJvLinkClient(?useJvGets: bool) =
                     | true, dt -> Some dt
                     | false, _ -> None)
 
-        member _.TryGetParentWindowHandle() = tryGetPropertyIntPtr "ParentHWnd"
+        member _.TryGetParentWindowHandle() =
+            // NOTE: ParentHWnd is write-only in COM mode; reading fails.
+            Error(InvalidState "ParentHWnd cannot be read in COM mode (property is write-only).")
+
         member _.TryGetPayoffDialogSuppressed() = tryGetPropertyBool "m_payflag"
 
         member _.JVLinkVersion = getPropertyString "m_JVLinkVersion"
@@ -925,12 +1107,18 @@ type ComJvLinkClient(?useJvGets: bool) =
                 | false, _ -> None
 
         member _.ParentWindowHandle
-            with get () = IntPtr(getPropertyInt "ParentHWnd")
+            with get () =
+                // NOTE: ParentHWnd is write-only in COM mode; return a safe default.
+                IntPtr.Zero
             and set value = setPropertyInt "ParentHWnd" (int value) |> ignore
 
         member _.PayoffDialogSuppressed
             with get () = getPropertyInt "m_payflag" <> 0
-            and set value = setPropertyInt "m_payflag" (if value then 1 else 0) |> ignore
+            and set _ =
+                // NOTE: In COM mode, the m_payflag property is effectively read-only (write fails).
+                // Keep the setter as a no-op to avoid spurious COM errors when consumers use property syntax.
+                Diagnostics.emit "WARN m_payflag is read-only in COM mode; ignoring PayoffDialogSuppressed set."
+                ()
 
     /// <summary>
     /// Releases COM resources and disconnects event subscriptions.

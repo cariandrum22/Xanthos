@@ -16,16 +16,19 @@ Global Options:
   --save-path <path>      Directory for persisted files (or XANTHOS_JVLINK_SAVE_PATH).
   --stub                  Force stub mode (default on non-Windows).
   --diag                  Enable COM diagnostics output.
+  --use-jvgets            Force JVGets (default) regardless of env vars.
+  --no-jvgets             Force JVRead (equivalent to XANTHOS_USE_JVREAD=1).
   --help                  Show this help text.
 
 Commands:
 
   Data Retrieval:
-    download              Bulk download payloads via JVOpen + JVRead.
+    download              Bulk download payloads via JVOpen + JVRead/JVGets.
       --spec <dataspec>     Data specification (required, e.g., RACE, TOKU).
       --from <timestamp>    Start time YYYYMMDDHHmmss (required).
       --option <1-4>        JVOpen option (default: 1).
       --output <dir>        Output directory for persisted files.
+      --max-records <n>     Max payloads to process (optional, all by default).
 
     realtime              Stream realtime payloads via JVRTOpen.
       --spec <dataspec>     Data specification (required, e.g., 0B12, 0B11).
@@ -59,8 +62,8 @@ Commands:
     get-service-key       Get current service key.
     set-parent-hwnd       Set parent window handle.
       --value <handle>      Handle value as integer (required).
-    get-parent-hwnd       Get current parent window handle.
-    set-payoff-dialog     Control payoff dialog display.
+    get-parent-hwnd       Get current parent window handle (not supported in COM).
+    set-payoff-dialog     Control payoff dialog display (not supported in COM; use set-ui-properties).
       --value <bool>        Enable/disable (required).
     get-payoff-dialog     Get payoff dialog setting.
     set-ui-properties     Synchronize UI state.
@@ -106,7 +109,8 @@ Commands:
       --from <timestamp>    Start time YYYYMMDDHHmmss (default: 30 days ago).
       --to <timestamp>      End time YYYYMMDDHHmmss (optional).
       --max-records <n>     Max records per type (default: 10).
-      --use-jvgets          Use JVGets instead of JVRead.
+      --use-jvgets          Force JVGets (default).
+
 """
 
 let private printHelp () =
@@ -152,6 +156,9 @@ let private runCommand ctx command =
 [<STAThread>]
 [<EntryPoint>]
 let main argv =
+    // Ensure all CLI output (stdout/stderr) is UTF-8 to avoid mojibake in logs and test harnesses.
+    Xanthos.Runtime.ConsoleEncoding.configureUtf8 ()
+
     match parseInput argv with
     | Error msg ->
         printfn "%s\n%s" msg (usage.Trim())
@@ -163,8 +170,10 @@ let main argv =
             match createExecutionContext parsed.Globals with
             | Error err -> reportError "Configuration error" err
             | Ok ctx ->
-                printfn "[diag] Client mode = %s" (describeMode ctx.Activation)
                 configureDiagnostics ctx.Globals.EnableDiagnostics ctx.Logger
+
+                if ctx.Globals.EnableDiagnostics then
+                    printfn "[diag] Client mode = %s" (describeMode ctx.Activation)
                 // Each command creates its own service with a fresh client.
                 // The service owns the client and disposes it when done.
                 runCommand ctx parsed.Command
