@@ -28,6 +28,7 @@ Commands:
       --from <timestamp>    Start time YYYYMMDDHHmmss (required).
       --option <1-4>        JVOpen option (default: 1).
       --output <dir>        Output directory for persisted files.
+      --max-records <n>     Max payloads to process (optional, all by default).
 
     realtime              Stream realtime payloads via JVRTOpen.
       --spec <dataspec>     Data specification (required, e.g., 0B12, 0B11).
@@ -109,6 +110,7 @@ Commands:
       --to <timestamp>      End time YYYYMMDDHHmmss (optional).
       --max-records <n>     Max records per type (default: 10).
       --use-jvgets          Force JVGets (default).
+
 """
 
 let private printHelp () =
@@ -154,6 +156,9 @@ let private runCommand ctx command =
 [<STAThread>]
 [<EntryPoint>]
 let main argv =
+    // Ensure all CLI output (stdout/stderr) is UTF-8 to avoid mojibake in logs and test harnesses.
+    Xanthos.Runtime.ConsoleEncoding.configureUtf8 ()
+
     match parseInput argv with
     | Error msg ->
         printfn "%s\n%s" msg (usage.Trim())
@@ -165,8 +170,10 @@ let main argv =
             match createExecutionContext parsed.Globals with
             | Error err -> reportError "Configuration error" err
             | Ok ctx ->
-                printfn "[diag] Client mode = %s" (describeMode ctx.Activation)
                 configureDiagnostics ctx.Globals.EnableDiagnostics ctx.Logger
+
+                if ctx.Globals.EnableDiagnostics then
+                    printfn "[diag] Client mode = %s" (describeMode ctx.Activation)
                 // Each command creates its own service with a fresh client.
                 // The service owns the client and disposes it when done.
                 runCommand ctx parsed.Command

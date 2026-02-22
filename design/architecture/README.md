@@ -91,6 +91,15 @@ tests/
 
 ---
 
+## 3.1 Text Encoding Policy
+
+Xanthos uses a strict boundary-based encoding policy to prevent mojibake and to keep record parsing deterministic.
+
+- **In-memory text**: Unicode `string` (UTF-16). This is the only supported internal text representation.
+- **JV-Link boundary (input)**: treat JV-Link “text” as CP932/Shift-JIS and decode into `string` via `Xanthos.Core.Text` helpers (including COM BSTR recovery for buggy out-params).
+- **Binary payloads**: keep raw `byte[]` as-is; record parsers decode specific field slices from Shift-JIS when (and only when) they are text.
+- **Output boundary (text output)**: console/log/file text is UTF-8 (no BOM). Console apps should call `Xanthos.Runtime.ConsoleEncoding.configureUtf8()` at startup.
+
 ## 4. Layered Architecture
 
 The library consists of three internal layers. Consumers (applications) are external and interact only with the Runtime layer's public API.

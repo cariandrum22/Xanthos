@@ -23,7 +23,7 @@ This document defines the end-to-end scenarios that the command-line tool must e
 | `cancel` | `JVCancel` | Cancels current session. | Yes |
 | `delete-file --name <filename>` | `JVFiledelete` | Deletes an existing file and reports success. | Yes |
 | `watch-events [--duration <sec>] [--open-after]` | `JVWatchEvent`, `JVWatchEventClose` | Subscribes to watch events for specified duration; optionally opens realtime session on event trigger. | Partial (events require stub triggers) |
-| `course-file --key <id>` | `JVCourseFile` | Retrieves course diagram path. | Yes |
+| `course-file --key <id>` | `JVCourseFile` | Retrieves course diagram path (explanation is best-effort and may be omitted if unreadable). | Yes |
 | `course-file2 --key <id>` | `JVCourseFile2` | Retrieves course diagram path (v2). | Yes |
 | `silks-file --pattern <text> --output <path>` | `JVFukuFile` | Generates a bitmap file for the supplied pattern. | Yes |
 | `silks-binary --pattern <text>` | `JVFuku` | Returns silks image bytes (hex encoded). | Yes |

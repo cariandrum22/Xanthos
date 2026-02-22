@@ -40,7 +40,8 @@ type GlobalSettings =
 
 type DownloadArgs =
     { Request: JvOpenRequest
-      OutputDirectory: string option }
+      OutputDirectory: string option
+      MaxRecords: int option }
 
 type RealtimeRaw =
     { RealtimeSpec: string option

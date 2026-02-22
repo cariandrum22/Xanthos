@@ -164,15 +164,42 @@ let runDownload ctx args =
     withService ctx (fun service ->
         let _ = printEvidence ctx service
 
-        match service.FetchPayloads(args.Request) with
+        // When --max-records is set, use StreamPayloads (lazy seq) so that JV-Link
+        // stops reading after N records instead of fetching all 1000+ files first.
+        let fetchResult =
+            match args.MaxRecords with
+            | Some n ->
+                let mutable firstError: XanthosError option = None
+
+                let payloads =
+                    service.StreamPayloads(args.Request)
+                    |> Seq.choose (fun r ->
+                        match r with
+                        | Ok p -> Some p
+                        | Error err ->
+                            if firstError.IsNone then
+                                firstError <- Some err
+
+                            None)
+                    |> Seq.truncate n
+                    |> Seq.toList
+
+                match firstError with
+                | Some err when payloads.IsEmpty -> Error err
+                | _ -> Ok payloads
+            | None -> service.FetchPayloads(args.Request)
+
+        match fetchResult with
         | Ok payloads ->
             payloads
             |> List.iteri (fun idx payload ->
+                let fullText = Text.decodeShiftJis payload.Data
+
                 let preview =
-                    if payload.Data.Length > 50 then
-                        Text.decodeShiftJis payload.Data.[0..49] + "..."
+                    if fullText.Length > 40 then
+                        fullText.[..39] + "..."
                     else
-                        Text.decodeShiftJis payload.Data
+                        fullText
 
                 printfn "Payload %d: %d bytes - %s" (idx + 1) payload.Data.Length preview)
 
@@ -384,13 +411,14 @@ let runCourseFile ctx key =
 
         match service.GetCourseDiagram key with
         | Ok diagram ->
-            let explanation = diagram.Explanation |> Option.defaultValue "(no explanation)"
+            match diagram.Explanation with
+            | Some explanation -> printfn "Course file [%s]: Path=%s Explanation=%s" key diagram.FilePath explanation
+            | None -> printfn "Course file [%s]: Path=%s" key diagram.FilePath
 
-            printfn "Course file [%s]: Path=%s Explanation=%s" key diagram.FilePath explanation
             0
         | Error err -> reportError "Failed to get course file" err)
 
-let runCourseFile2 ctx args =
+let runCourseFile2 ctx (args: CourseFile2Args) =
     withService ctx (fun service ->
         let _ = printEvidence ctx service
 
@@ -754,10 +782,38 @@ let runCaptureFixtures ctx args =
 
                 let request = Validation.createOpenRequest spec args.FromTime 1
 
-                match service.FetchPayloads(request) with
+                // Use StreamPayloads with a total read cap to avoid reading all
+                // records (which can exceed the E2E timeout for large datasets).
+                let totalReadCap = args.MaxRecordsPerType * knownRecordTypes.Length * 3
+                let mutable firstError: XanthosError option = None
+
+                let payloads =
+                    service.StreamPayloads(request)
+                    |> Seq.choose (fun r ->
+                        match r with
+                        | Ok p -> Some p
+                        | Error err ->
+                            if firstError.IsNone then
+                                firstError <- Some err
+
+                            None)
+                    |> Seq.truncate totalReadCap
+                    |> Seq.toList
+
+                let fetchResult =
+                    match firstError with
+                    | Some err when payloads.IsEmpty -> Error err
+                    | _ -> Ok payloads
+
+                match fetchResult with
                 | Ok payloads ->
                     let filteredPayloads = filterByToTime payloads
-                    printfn "  Fetched %d payload(s) (after filter: %d)" payloads.Length filteredPayloads.Length
+
+                    printfn
+                        "  Fetched %d payload(s) (after filter: %d, read cap: %d)"
+                        payloads.Length
+                        filteredPayloads.Length
+                        totalReadCap
 
                     // Group by record type
                     let grouped =
@@ -820,7 +876,7 @@ let runCaptureFixtures ctx args =
                                 let meta =
                                     $"{{\"timestamp\": {timestampJson}, \"byteLength\": {payload.Data.Length}, \"recordType\": \"{recordType}\", \"parseStatus\": \"{parseStatus}\"}}"
 
-                                File.WriteAllText(metaFilename, meta)
+                                File.WriteAllText(metaFilename, meta, ConsoleEncoding.utf8NoBom)
                                 totalCaptured <- totalCaptured + 1)
                     else
                         printfn "  No records to capture for this spec."
