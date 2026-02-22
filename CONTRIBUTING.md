@@ -7,7 +7,7 @@ This document explains how to contribute to the project.
 
 ### Prerequisites
 
-- .NET 10 SDK (preview)
+- .NET 10 SDK
 - Git
 
 ### Using Nix (Recommended)
