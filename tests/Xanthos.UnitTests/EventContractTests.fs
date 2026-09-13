@@ -426,10 +426,13 @@ module EventContractTests =
             use second = JvLink.subscribe ignore session |> success
             let dispose = Task.Run(fun () -> JvLink.disconnect session)
 
-            awaitCondition (fun () ->
-                match JvLink.getVersion session with
-                | Error error -> error.Kind = JvErrorKind.Disposed
-                | _ -> false)
+            // Observe disposal without taking the SDK operation gate: polling
+            // getVersion can win the gate and make Disconnect return Busy.
+            awaitCondition (fun () -> session.IsDisposed)
+
+            match JvLink.getVersion session with
+            | Error error -> Assert.Equal(JvErrorKind.Disposed, error.Kind)
+            | Ok _ -> Assert.Fail("A disconnecting session must reject SDK calls")
 
             Assert.False(native.Disposed)
             release.Set()
