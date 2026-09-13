@@ -1,6 +1,7 @@
 name: CI
 
 on:
+  workflow_dispatch:
   push:
     branches: [main, develop]
   pull_request:
@@ -50,93 +51,28 @@ jobs:
       - name: Build solution
         run: dotnet build --no-restore --configuration Release
 
-      - name: Run unit tests (with coverage)
-        run: |
-          mkdir -p coverage/unit coverage/property
-          dotnet test tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj \
-            --no-build \
-            --configuration Release \
-            -p:CollectCoverage=true \
-            -p:CoverletOutput="${GITHUB_WORKSPACE}/coverage/unit/" \
-            -p:CoverletOutputFormat=cobertura \
-            --logger "trx;LogFileName=unit-test-results.trx" \
-            --results-directory ./TestResults
-        shell: bash
+      - name: Run required Fast suites
+        shell: pwsh
+        run: ./scripts/run-test-profile.ps1 -Profile Fast -RunId "ci-${{ github.run_id }}-${{ github.run_attempt }}" -NoBuild
 
-      - name: Run property tests (with coverage)
-        run: |
-          dotnet test tests/Xanthos.PropertyTests/Xanthos.PropertyTests.fsproj \
-            --no-build \
-            --configuration Release \
-            -p:CollectCoverage=true \
-            -p:MergeWith="${GITHUB_WORKSPACE}/coverage/unit/coverage.cobertura.xml" \
-            -p:CoverletOutput="${GITHUB_WORKSPACE}/coverage/property/" \
-            -p:CoverletOutputFormat=cobertura \
-            --logger "trx;LogFileName=property-test-results.trx" \
-            --results-directory ./TestResults
-        shell: bash
+      - name: Run required managed coverage suites
+        shell: pwsh
+        run: ./scripts/run-test-profile.ps1 -Profile Coverage -RunId "ci-${{ github.run_id }}-${{ github.run_attempt }}" -NoBuild
 
-      - name: Run CLI E2E tests (Stub mode, no coverage)
-        run: |
-          dotnet test tests/Xanthos.Cli.E2E \
-            --no-build \
-            --configuration Release \
-            --logger "trx;LogFileName=e2e-stub-results.trx" \
-            --logger "console;verbosity=normal" \
-            --results-directory ./TestResults \
-            -- xunit.parallelizeTestCollections=false
-        shell: bash
+      - name: Run Windows x64 managed boundaries without JV-Link
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/run-test-profile.ps1 -Profile WindowsManaged -RunId "ci-${{ github.run_id }}-${{ github.run_attempt }}"
 
-      - name: Install ReportGenerator
-        run: dotnet tool install --global dotnet-reportgenerator-globaltool
-        shell: bash
-
-      - name: Generate coverage report
-        run: |
-          # Collect available coverage files
-          COVERAGE_FILES=""
-          if [ -f "coverage/unit/coverage.cobertura.xml" ]; then
-            COVERAGE_FILES="coverage/unit/coverage.cobertura.xml"
-          fi
-          if [ -f "coverage/property/coverage.cobertura.xml" ]; then
-            if [ -n "$COVERAGE_FILES" ]; then
-              COVERAGE_FILES="$COVERAGE_FILES;coverage/property/coverage.cobertura.xml"
-            else
-              COVERAGE_FILES="coverage/property/coverage.cobertura.xml"
-            fi
-          fi
-
-          if [ -n "$COVERAGE_FILES" ]; then
-            reportgenerator \
-              -reports:"$COVERAGE_FILES" \
-              -targetdir:"coverage/report" \
-              -reporttypes:"HtmlInline_AzurePipelines;TextSummary;Cobertura;MarkdownSummary"
-            echo "==== Coverage Summary ===="
-            cat coverage/report/Summary.txt || true
-          else
-            echo "No coverage files found, skipping report generation"
-          fi
-        shell: bash
-
-      - name: Upload test results
+      - name: Upload complete evidence and diagnostics
         uses: actions/upload-artifact@v4
         if: always()
         with:
-            name: test-results-${{ matrix.platform }}
-            path: ./TestResults/*.trx
-            retention-days: 7
-
-      - name: Upload coverage artifacts
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: coverage-${{ matrix.platform }}
-          path: |
-            coverage/report/**
-            coverage/**/*.xml
-            coverage/**/*.json
+          name: quality-${{ matrix.platform }}
+          path: .artifacts/test-quality/ci-${{ github.run_id }}-${{ github.run_attempt }}/${{ matrix.platform }}/
+          include-hidden-files: true
           retention-days: 7
-          if-no-files-found: ignore
+          if-no-files-found: error
 
       - name: Upload test logs (on failure)
         uses: actions/upload-artifact@v4
@@ -180,37 +116,28 @@ jobs:
     needs: [build-and-test]
     if: always()
     steps:
-      - name: Download all test results
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download OS artifacts into separate directories
         uses: actions/download-artifact@v4
         with:
-          pattern: test-results-*
-          path: ./TestResults
-          merge-multiple: true
+          pattern: quality-*
+          path: ./QualityArtifacts
+          merge-multiple: false
 
-      - name: Download coverage artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: coverage-*
-          path: ./CoverageArtifacts
-          merge-multiple: true
-
-      - name: Extract coverage summary
+      - name: Verify every required run, case and coverage report
+        shell: pwsh
         run: |
-          echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Build and Test**: ${{ needs.build-and-test.result == 'success' && '✅ All platforms passed' || '❌ Some platforms failed' }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          ./scripts/assert-ci-artifacts.ps1 -ArtifactsDirectory QualityArtifacts -RunId "ci-${{ github.run_id }}-${{ github.run_attempt }}" -Commit '${{ github.sha }}' -JobResult '${{ needs.build-and-test.result }}'
+          'All required Fast, Coverage and WindowsManaged evidence passed. OptionalFixtures, Com, Interactive and Live were not run by CI.' >> $env:GITHUB_STEP_SUMMARY
 
-          # Find coverage summary file (path may vary after merge-multiple)
-          SUMMARY_FILE=$(find CoverageArtifacts -name "Summary.txt" -type f 2>/dev/null | head -1)
-          if [ -n "$SUMMARY_FILE" ] && [ -f "$SUMMARY_FILE" ]; then
-            echo "### Coverage Summary" >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            cat "$SUMMARY_FILE" >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-          else
-            echo "_No coverage summary available_" >> $GITHUB_STEP_SUMMARY
-          fi
+      - name: Preserve verified artifact manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-manifest
+          path: QualityArtifacts/artifact-manifest.json
+          if-no-files-found: error
 
   docs:
     name: Build Documentation

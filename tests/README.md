@@ -18,7 +18,7 @@ are written beneath `.artifacts/test-quality/<run>/<os>/<tfm>/<profile>/`.
 | Fast | Unit/Contract, FsCheck, functional CLI scenarios, legacy Stub smoke | All three CI operating systems; SDK unnecessary |
 | Coverage | Unit, Property and FunctionalScenario projects with VSTest Coverlet collector | Production module and individual results required |
 | WindowsManaged | Actual WINDOWS assembly, STA, locale, HWND, BSTR/SAFEARRAY and registration rollback | Windows x64, no JV-Link activation or key |
-| Stress | Official record generators, all existing FsCheck properties and session models | Recorded FsCheck seed; fixed record/model seeds |
+| Stress | Official record generators, all existing FsCheck properties and session models | Recorded FsCheck seed; fixed record/model seeds; scheduled or local runs |
 | OptionalFixtures | Exact 13-case fixture allowlist | Missing data is `not-run`, never a passing real-data test |
 | Com | Existing 15 required/negative tests against published CLI | Registered JV-Link 5.0 x64; explicit publication interval |
 | Interactive | Exclusive real settings change, fresh-session verification and restoration | Signed-in desktop; notification collector must have ended |
@@ -80,9 +80,9 @@ update the inventory when tests change; CI cannot regenerate it to excuse loss.
 ```
 
 These controls use artificial results or isolated source snapshots and must not
-be reported as real SDK evidence. The dependent CI PR adds three-OS artifact
-aggregation and its negative controls. A hosted CI run is still required to
-establish cross-platform success; local results cannot replace its run ID.
+be reported as real SDK evidence. `assert-ci-artifacts.ps1` rechecks all three
+OS artifacts without merging directories. A hosted CI run is still required
+to establish cross-platform success; local results cannot replace its run ID.
 
 ## Generators and replay
 

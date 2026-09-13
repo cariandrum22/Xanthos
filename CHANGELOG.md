@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Prepare three-OS Fast/Coverage gates, separate artifact verification and scheduled managed Stress; hosted verification remains pending.
+
 - Add controlled functional CLI scenarios, deterministic record and Session properties, and SDK-free Windows x64 boundary tests.
 - Add reviewed test inventories and Fast/Coverage/WindowsManaged/Stress profiles that reject missing cases, unexpected skips and invalid evidence; provide isolated SDK-free Windows CI verification.
 

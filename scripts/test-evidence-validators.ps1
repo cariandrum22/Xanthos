@@ -68,6 +68,35 @@ foreach ($fault in @('valid', 'missing-case', 'zero', 'skip', 'fail', 'duplicate
     if (($fault -eq 'valid' -and $code -ne 0) -or ($fault -ne 'valid' -and $code -eq 0)) { throw "Unexpected validator outcome: $fault ($code)" }
     $results += @{ fault = $fault; exitCode = $code; synthetic = $true }
 }
+$artifacts = Join-Path $root 'artifacts'
+foreach ($os in @('linux', 'macos', 'windows')) {
+    foreach ($case in $cases | Where-Object { $os -in $_.os }) {
+        foreach ($profile in $case.profiles) {
+            $name = $case.project.Split('/')[1].Substring(8)
+            Write-SyntheticRun (Join-Path $artifacts "quality-$os/$($case.tfm)/$profile/$name") $case $os $profile
+        }
+    }
+}
+$before = @(Get-ChildItem $artifacts -Recurse -File -Filter results.trx | ForEach-Object { @{ path = $_.FullName; hash = (Get-FileHash $_.FullName).Hash } })
+& "$PSScriptRoot/assert-ci-artifacts.ps1" -ArtifactsDirectory $artifacts -RunId $RunId -Commit synthetic-commit -JobResult success -PlanPath $planPath *> (Join-Path $root 'artifacts-valid.log')
+foreach ($file in $before) { if ((Get-FileHash $file.path).Hash -cne $file.hash) { throw 'Artifact hash changed during collection.' } }
+$results += @{ fault = 'three-os-same-filenames'; exitCode = 0; preservedFiles = $before.Count; synthetic = $true }
+foreach ($fault in @('missing-os', 'overwritten-trx', 'job-failure', 'job-cancelled', 'wrong-commit')) {
+    $directory = Join-Path $root "artifacts-$fault"
+    Copy-Item -LiteralPath $artifacts -Destination $directory -Recurse
+    $job = 'success'; $commit = 'synthetic-commit'
+    switch ($fault) {
+        'missing-os' { Rename-Item -LiteralPath (Join-Path $directory 'quality-macos') -NewName 'missing-macos' }
+        'overwritten-trx' { Copy-Item -LiteralPath (Join-Path $directory 'quality-linux/net10.0/Fast/UnitTests/results.trx') -Destination (Join-Path $directory 'quality-windows/net10.0/Fast/UnitTests/results.trx') }
+        'job-failure' { $job = 'failure' }
+        'job-cancelled' { $job = 'cancelled' }
+        'wrong-commit' { $commit = 'another-commit' }
+    }
+    & (Join-Path $PSHOME 'pwsh') -NoProfile -File "$PSScriptRoot/assert-ci-artifacts.ps1" -ArtifactsDirectory $directory -RunId $RunId -Commit $commit -JobResult $job -PlanPath $planPath *> (Join-Path $directory 'validator.log')
+    $code = $LASTEXITCODE
+    if ($code -eq 0) { throw "Artifact fault accepted: $fault" }
+    $results += @{ fault = $fault; exitCode = $code; synthetic = $true }
+}
 $results | ConvertTo-Json -Depth 8 | Set-Content (Join-Path $root 'gate-negative-cases.json') -Encoding utf8
 Write-Output "PASS: $($results.Count) synthetic evidence controls."
 
