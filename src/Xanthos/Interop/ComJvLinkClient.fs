@@ -12,7 +12,7 @@ open Xanthos.Interop.ComInterop
 exception ComActivationException of ComFault
 
 #if WINDOWS
-module private JvLinkLocale =
+module internal JvLinkLocale =
     [<DllImport("kernel32.dll", SetLastError = true)>]
     extern bool SetThreadLocale(uint32 locale)
 
@@ -28,12 +28,22 @@ module private JvLinkLocale =
 
 /// Reflection-based JV-Link COM client implementation that avoids static COM references.
 /// Implements IDisposable to properly release COM resources and prevent RCW leaks.
-type ComJvLinkClient(?useJvGets: bool, ?progId: string) as this =
+type internal ComClientActivation =
+    { Resolve: string -> Type
+      Create: Type -> obj
+      Release: obj -> unit }
+
+    static member Default =
+        { Resolve = fun id -> Type.GetTypeFromProgID(id, throwOnError = false)
+          Create = fun nativeType -> Activator.CreateInstance nativeType
+          Release = fun instance -> Marshal.FinalReleaseComObject(instance) |> ignore }
+
+type ComJvLinkClient internal (activation: ComClientActivation, ?useJvGets: bool, ?progId: string) as this =
     let useJvGetsOverride = useJvGets
     // Note: The ProgID is "JVDTLab.JVLink" (not "JVDTLabLib.JVLink")
     // JVDTLabLib is the type library name used in VB6 references
     let progId = defaultArg progId "JVDTLab.JVLink"
-    let jvType = Type.GetTypeFromProgID(progId, throwOnError = false)
+    let jvType = activation.Resolve progId
 
     do
         if isNull jvType then
@@ -62,7 +72,7 @@ type ComJvLinkClient(?useJvGets: bool, ?progId: string) as this =
                 "JVLink.Activate",
                 fun () ->
                     JvLinkLocale.initialize ()
-                    let instance = Activator.CreateInstance jvType
+                    let instance = activation.Create jvType
                     Diagnostics.emit $"COM activation succeeded for ProgID '{progId}' ({IntPtr.Size * 8}-bit)."
                     instance
             )
@@ -213,6 +223,9 @@ type ComJvLinkClient(?useJvGets: bool, ?progId: string) as this =
             if not (isNull read) then not (isTrue read)
             elif not (isNull gets) then isTrue gets
             else true
+
+    new(?useJvGets: bool, ?progId: string) =
+        new ComJvLinkClient(ComClientActivation.Default, ?useJvGets = useJvGets, ?progId = progId)
 
     interface IJvLinkClient with
         member _.Init sid = run (Xanthos.SdkOperations.init sid)
@@ -422,7 +435,7 @@ type ComJvLinkClient(?useJvGets: bool, ?progId: string) as this =
         let release () =
             if not (isNull comObj) then
                 Diagnostics.emit "DISPOSE FinalReleaseComObject begin"
-                Marshal.FinalReleaseComObject(comObj) |> ignore
+                activation.Release comObj
                 Diagnostics.emit $"COM object released for ProgID '{progId}'."
 
         lifetime.Cleanup(close, detach, release)
