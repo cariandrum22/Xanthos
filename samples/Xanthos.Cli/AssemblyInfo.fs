@@ -1,7 +1,6 @@
-namespace Xanthos
+namespace Xanthos.Cli
 
 open System.Runtime.CompilerServices
 
-[<assembly: InternalsVisibleTo("Xanthos.UnitTests")>]
 [<assembly: InternalsVisibleTo("Xanthos.FunctionalScenarioTests")>]
 do ()
