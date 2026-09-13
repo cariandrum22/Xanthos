@@ -16,7 +16,7 @@ module RaceRecordContractTests =
         | Error e -> e
         | Ok _ -> failwith "Expected a parsing error"
 
-    let private mapping =
+    let internal mapping =
         [ "1", "Header.RecordId"
           "2", "Header.DataCategory"
           "3", "Header.CreatedDateRaw"
@@ -48,7 +48,7 @@ module RaceRecordContractTests =
           "22.h", "Holders[{i}].JockeyId"
           "22.i", "Holders[{i}].JockeyName" ]
 
-    let private fixture () =
+    let internal fixture () =
         let layout = RecordOracle.layout "RC"
         let data = RecordOracle.blank layout
 

@@ -52,7 +52,7 @@ module IdentifierFormatTests =
             Length = (if id = "BR" then 537 else 1577)
             Fields = Array.map change current.Fields }
 
-    let private fixture id =
+    let internal fixture id =
         let old = layout id
         let data = RecordOracle.blank old
 

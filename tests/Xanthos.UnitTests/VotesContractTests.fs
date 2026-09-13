@@ -14,7 +14,7 @@ module VotesContractTests =
     let private bets =
         [ "Win"; "Place"; "BracketQuinella"; "Quinella"; "Wide"; "Exacta"; "Trio" ]
 
-    let private mappings id =
+    let internal mappings id =
         [ "1", "Header.RecordId"
           "2", "Header.DataCategory"
           "3", "Header.CreatedDateRaw"
@@ -84,7 +84,7 @@ module VotesContractTests =
                                sprintf "%02d%02d%02d" a b c |]
         | other -> failwith other
 
-    let private fixture id =
+    let internal fixture id =
         let layout = RecordOracle.layout id
         let data = RecordOracle.blank layout
 

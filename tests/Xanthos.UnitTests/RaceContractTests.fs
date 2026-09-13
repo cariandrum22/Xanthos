@@ -15,7 +15,7 @@ module RaceContractTests =
     let private put id index raw data =
         RecordOracle.write layout id index raw data
 
-    let private mappings =
+    let internal mappings =
         [ "1", "Header.RecordId"
           "2", "Header.DataCategory"
           "3", "Header.CreatedDateRaw"
@@ -78,7 +78,7 @@ module RaceContractTests =
           "58.c", "Corners[{i}].Order"
           "59", "RecordUpdateCategory" ]
 
-    let private fixture () =
+    let internal fixture () =
         let data = RecordOracle.blank layout
 
         for id, raw in

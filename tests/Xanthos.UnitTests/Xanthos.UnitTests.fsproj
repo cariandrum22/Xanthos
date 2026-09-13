@@ -74,12 +74,20 @@
     <Compile Include="Tests.fs" />
     <Compile Include="WatchEventFromTimeTests.fs" />
     <Compile Include="FixtureParserTests.fs" />
+    <Compile Include="GeneratedFailure.fs" />
+    <Compile Include="OfficialRecordProperties.fs" />
+    <Compile Include="RecordFieldBoundaryProperties.fs" />
+    <Compile Include="FieldCategoryProperties.fs" />
+    <Compile Include="FieldApplicabilityProperties.fs" />
+    <Compile Include="FormatAndDataSpecProperties.fs" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="Contracts/sdk-return-codes.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Contracts/official-codes.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Contracts/record-layouts.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Contracts/field-categories.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Contracts/field-applicability.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Contracts/dataspecs.json" CopyToOutputDirectory="PreserveNewest" />
     <ProjectReference Include="..\..\src\Xanthos\Xanthos.fsproj" />
     <ProjectReference Include="..\..\samples\Xanthos.Functional\Xanthos.Functional.fsproj" />

@@ -79,7 +79,7 @@ module HorseContractTests =
           "61", "RunningStyleCounts[{i}]"
           "62", "RecordedRaceCount" ]
 
-    let private fixture () =
+    let internal fixture () =
         let layout = RecordOracle.layout "UM"
         let data = RecordOracle.blank layout
 

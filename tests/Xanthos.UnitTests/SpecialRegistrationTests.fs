@@ -18,7 +18,7 @@ module SpecialRegistrationTests =
 
     let private raw id index bytes = RecordOracle.text layout id index bytes
 
-    let private fixture () =
+    let internal fixture () =
         let data = RecordOracle.blank layout
 
         for id, text in
