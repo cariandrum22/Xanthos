@@ -148,7 +148,7 @@ let private isValidRunnerIdFormat (s: string) =
         let trimmed = s.Trim()
         trimmed.Length = 10 && trimmed |> Seq.forall Char.IsDigit
 
-[<Property(Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = true)>]
+[<Property(Replay = "104729,130363", EndSize = 100, Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = false)>]
 let ``RaceId value round-trips`` (NonEmptyString value) =
     let trimmed = value.Trim()
     let result = trimmed |> RaceId.create |> Result.map RaceId.value
@@ -157,7 +157,7 @@ let ``RaceId value round-trips`` (NonEmptyString value) =
     | Ok actual -> actual = trimmed && isValidRaceIdFormat trimmed
     | Error _ -> not (isValidRaceIdFormat trimmed)
 
-[<Property(Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = true)>]
+[<Property(Replay = "104729,130363", EndSize = 100, Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = false)>]
 let ``RunnerId value round-trips`` (NonEmptyString value) =
     let trimmed = value.Trim()
     let result = trimmed |> RunnerId.create |> Result.map RunnerId.value
@@ -166,7 +166,7 @@ let ``RunnerId value round-trips`` (NonEmptyString value) =
     | Ok actual -> actual = trimmed && isValidRunnerIdFormat trimmed
     | Error _ -> not (isValidRunnerIdFormat trimmed)
 
-[<Property(Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = true)>]
+[<Property(Replay = "104729,130363", EndSize = 100, Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = false)>]
 let ``RunnerId arbitrary produces valid 10-digit values`` (runnerId: RunnerId) =
     let value = RunnerId.value runnerId
 
@@ -175,7 +175,7 @@ let ``RunnerId arbitrary produces valid 10-digit values`` (runnerId: RunnerId) =
     && value.Length = 10
     && value |> Seq.forall Char.IsDigit
 
-[<Property(Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = true)>]
+[<Property(Replay = "104729,130363", EndSize = 100, Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = false)>]
 let ``RaceInfo generator produces canonical values`` (info: RaceInfo) =
     let nameTrimmed = info.Name.Trim()
     let raceIdValue = RaceId.value info.Id
@@ -207,7 +207,7 @@ let ``RaceInfo generator produces canonical values`` (info: RaceInfo) =
     && distanceValid
     && scheduledValid
 
-[<Property(Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = true)>]
+[<Property(Replay = "104729,130363", EndSize = 100, Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = false)>]
 let ``RaceInfo generator renders consistent surface and condition`` (info: RaceInfo) =
     let surfaceName = info.Surface.ToString()
     let conditionName = info.Condition.ToString()
@@ -215,7 +215,7 @@ let ``RaceInfo generator renders consistent surface and condition`` (info: RaceI
     not (String.IsNullOrWhiteSpace surfaceName)
     && not (String.IsNullOrWhiteSpace conditionName)
 
-[<Property(Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = true)>]
+[<Property(Replay = "104729,130363", EndSize = 100, Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = false)>]
 let ``RunnerOdds generator yields non-negative odds`` (odds: RunnerOdds) =
     let isValid = Option.forall (fun v -> v >= 0M)
     let runnerValue = RunnerId.value odds.Runner
@@ -225,7 +225,7 @@ let ``RunnerOdds generator yields non-negative odds`` (odds: RunnerOdds) =
     && runnerValue = runnerValue.Trim()
     && not (String.IsNullOrWhiteSpace runnerValue)
 
-[<Property(Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = true)>]
+[<Property(Replay = "104729,130363", EndSize = 100, Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = false)>]
 let ``RaceOdds generator yields consistent snapshots`` (snapshot: RaceOdds) =
     let raceValue = RaceId.value snapshot.Race
 
@@ -249,14 +249,14 @@ let ``RaceOdds generator yields consistent snapshots`` (snapshot: RaceOdds) =
     && uniqueRunners
 
 // Additional strictness: Distance upper bound for generated RaceInfo values (if present)
-[<Property(Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = true)>]
+[<Property(Replay = "104729,130363", EndSize = 100, Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = false)>]
 let ``RaceInfo generator enforces reasonable distance upper bound`` (info: RaceInfo) =
     match info.DistanceMeters with
     | None -> true
     | Some d -> d >= 0 && d <= 10000
 
 // Verify parseOdds output maintains unique runnerIds per snapshot
-[<Property(Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = true)>]
+[<Property(Replay = "104729,130363", EndSize = 100, Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = false)>]
 let ``parseOdds enforces unique runnerIds per snapshot`` (snapshots: RaceOdds list) =
     let normalized = normalizeRaceSnapshots snapshots
     let payload = encodeRaceOdds normalized
@@ -270,7 +270,7 @@ let ``parseOdds enforces unique runnerIds per snapshot`` (snapshots: RaceOdds li
     | Error err -> failwithf "parseOdds failed unexpectedly: %A" err
 
 // Verify parseRaceCard preserves distance upper bound
-[<Property(Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = true)>]
+[<Property(Replay = "104729,130363", EndSize = 100, Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = false)>]
 let ``parseRaceCard preserves distance invariants`` (cards: RaceInfo list) =
     let payload = encodeRaceInfo cards
 
@@ -278,9 +278,9 @@ let ``parseRaceCard preserves distance invariants`` (cards: RaceInfo list) =
     | Ok parsed ->
         parsed
         |> List.forall (fun c -> c.DistanceMeters |> Option.forall (fun d -> d >= 0 && d <= 10000))
-    | Error _ -> true
+    | Error error -> failwithf "Valid generated card was rejected: %A" error
 
-[<Property(Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = true)>]
+[<Property(Replay = "104729,130363", EndSize = 100, Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = false)>]
 let ``serialiseOdds and deserialiseOdds round-trip`` (snapshots: RaceOdds list) =
     let normalized = normalizeRaceSnapshots snapshots
 
@@ -291,10 +291,10 @@ let ``serialiseOdds and deserialiseOdds round-trip`` (snapshots: RaceOdds list) 
         | Error _ -> false
     | Error _ -> false
 
-[<Property(QuietOnSuccess = true)>]
+[<Property(Replay = "104729,130363", EndSize = 100, QuietOnSuccess = false)>]
 let ``parseOdds returns empty list for empty payload`` () = parseOdds Array.empty = Ok []
 
-[<Property(Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = true)>]
+[<Property(Replay = "104729,130363", EndSize = 100, Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = false)>]
 let ``parseOdds round-trips JSON payload`` (snapshots: RaceOdds list) =
     let normalized = normalizeRaceSnapshots snapshots
     let payload = encodeRaceOdds normalized
@@ -307,7 +307,7 @@ let ``parseOdds round-trips JSON payload`` (snapshots: RaceOdds list) =
         let json = Encoding.UTF8.GetString(payload)
         failwithf "parseOdds failed: %A. JSON: %s" err json
 
-[<Property(Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = true)>]
+[<Property(Replay = "104729,130363", EndSize = 100, Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = false)>]
 let ``parseRaceCard round-trips JSON payload`` (cards: RaceInfo list) =
     let payload = encodeRaceInfo cards
 
@@ -319,7 +319,7 @@ let ``parseRaceCard round-trips JSON payload`` (cards: RaceInfo list) =
         let json = Encoding.UTF8.GetString(payload)
         failwithf "parseRaceCard failed: %A. JSON: %s" err json
 
-[<Property(Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = true)>]
+[<Property(Replay = "104729,130363", EndSize = 100, Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = false)>]
 let ``JvLinkStub streams payloads sequentially`` (payloads: byte[] list) =
     let client = JvLinkStub.FromPayloads payloads :> IJvLinkClient
 
@@ -339,7 +339,7 @@ let ``JvLinkStub streams payloads sequentially`` (payloads: byte[] list) =
     | _ -> false
 
 // Property: async realtime stream eventually yields payload after DownloadPending streak
-[<Property(MaxTest = 50, QuietOnSuccess = true)>]
+[<Property(Replay = "104729,130363", EndSize = 100, MaxTest = 50, QuietOnSuccess = false)>]
 let ``StreamRealtimeAsync backoff yields eventual payload`` (NonNegativeInt n) =
     let streak = min n 8
 
@@ -387,7 +387,7 @@ let ``StreamRealtimeAsync backoff yields eventual payload`` (NonNegativeInt n) =
     collected.Count = 1 && collected.[0] = [| 0x11uy |]
 
 // Property: async realtime stream respects cancellation during prolonged DownloadPending without throwing
-[<Property(MaxTest = 30, QuietOnSuccess = true)>]
+[<Property(Replay = "104729,130363", EndSize = 100, MaxTest = 30, QuietOnSuccess = false)>]
 let ``StreamRealtimeAsync cancels gracefully during prolonged DownloadPending`` (PositiveInt n) =
     let streak = min n 50
     let outcomes = [ for _ in 1..streak -> Ok DownloadPending ] @ [ Ok EndOfStream ]
@@ -452,7 +452,7 @@ let ``StreamRealtimeAsync cancels gracefully during prolonged DownloadPending`` 
             "Unexpected exceptions during cancellation: %s"
             (String.Join(";", agg.InnerExceptions |> Seq.map (fun e -> e.GetType().Name)))
 
-[<Property(Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = true)>]
+[<Property(Replay = "104729,130363", EndSize = 100, Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = false)>]
 let ``RaceInfo generator enforces name constraints`` (info: RaceInfo) =
     let name = info.Name
     let invalidChars = [ '/'; '\\'; ':'; '*'; '?'; '"'; '<'; '>'; '|' ]
@@ -462,7 +462,7 @@ let ``RaceInfo generator enforces name constraints`` (info: RaceInfo) =
     && name.Length <= 64
     && invalidChars |> List.forall (fun ch -> not (name.Contains(ch)))
 
-[<Property(Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = true)>]
+[<Property(Replay = "104729,130363", EndSize = 100, Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = false)>]
 let ``Surface/Condition ToString are canonical and non-empty`` (info: RaceInfo) =
     let s = info.Surface.ToString()
     let c = info.Condition.ToString()
@@ -474,7 +474,7 @@ let ``Surface/Condition ToString are canonical and non-empty`` (info: RaceInfo) 
     && c = c.Trim()
     && c.Length <= 32
 
-[<Property(Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = true)>]
+[<Property(Replay = "104729,130363", EndSize = 100, Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = false)>]
 let ``RaceId/RunnerId enforce length and format constraints`` (raceId: RaceId, runnerId: RunnerId) =
     let rv = RaceId.value raceId
     let uv = RunnerId.value runnerId
@@ -487,11 +487,11 @@ let ``RaceId/RunnerId enforce length and format constraints`` (raceId: RaceId, r
     && uv.Length = 10
     && uv |> Seq.forall Char.IsDigit
 
-[<Property(Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = true)>]
+[<Property(Replay = "104729,130363", EndSize = 100, Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = false)>]
 let ``RaceOdds timestamps are UTC`` (snapshot: RaceOdds) =
     snapshot.Timestamp.Kind = DateTimeKind.Utc
 
-[<Property(Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = true)>]
+[<Property(Replay = "104729,130363", EndSize = 100, Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = false)>]
 let ``Surface/Condition round-trip ToString casing`` (info: RaceInfo) =
     let sText = info.Surface.ToString()
     let cText = info.Condition.ToString()
@@ -501,17 +501,17 @@ let ``Surface/Condition round-trip ToString casing`` (info: RaceInfo) =
     && not (String.IsNullOrWhiteSpace sText)
     && not (String.IsNullOrWhiteSpace cText)
 
-[<Property(Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = true)>]
+[<Property(Replay = "104729,130363", EndSize = 100, Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = false)>]
 let ``RunnerOdds do not have both odds None`` (odds: RunnerOdds) =
     match odds.WinOdds, odds.PlaceOdds with
     | None, None -> false
     | _ -> true
 
-[<Property(Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = true)>]
+[<Property(Replay = "104729,130363", EndSize = 100, Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = false)>]
 let ``RaceInfo distance respects inclusive bounds when present`` (info: RaceInfo) =
     info.DistanceMeters |> Option.forall (fun d -> d >= 0 && d <= 10000)
 
-[<Property(Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = true)>]
+[<Property(Replay = "104729,130363", EndSize = 100, Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = false)>]
 let ``parseRaceCard preserves name and id invariants`` (cards: RaceInfo list) =
     let payload = encodeRaceInfo cards
 
@@ -522,21 +522,46 @@ let ``parseRaceCard preserves name and id invariants`` (cards: RaceInfo list) =
             let nameOk = not (String.IsNullOrWhiteSpace actual.Name)
             let idOk = RaceId.value actual.Id = (RaceId.value original.Id).Trim()
             nameOk && idOk)
-    | Error _ -> true
+    | Error error -> failwithf "Valid generated card was rejected: %A" error
 
-[<Property(Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = true)>]
+[<Property(Replay = "104729,130363", EndSize = 100, Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = false)>]
 let ``DistanceMeters includes boundary values when present`` (info: RaceInfo) =
-    match info.DistanceMeters with
-    | None -> true
-    | Some d -> d = 0 || d = 10000 || (d > 0 && d < 10000)
+    let valid =
+        match parseRaceCard (encodeRaceInfo [ info ]) with
+        | Ok [ actual ] -> actual.DistanceMeters = info.DistanceMeters
+        | _ -> false
 
-[<Property(Arbitrary = [| typeof<CustomArbitraries> |], MaxTest = 50, QuietOnSuccess = true)>]
+    valid
+    |> FsCheck.FSharp.Prop.classify (info.DistanceMeters = Some 0) "zero"
+    |> FsCheck.FSharp.Prop.classify (info.DistanceMeters = Some 10000) "upper-bound"
+    |> FsCheck.FSharp.Prop.classify info.DistanceMeters.IsNone "missing"
+
+[<Theory; InlineData(0); InlineData(10000)>]
+let ``parseRaceCard preserves fixed distance boundaries`` distance =
+    let card =
+        { Id = RaceId.unsafe "202609130601"
+          Name = "Boundary"
+          Course = None
+          DistanceMeters = Some distance
+          Surface = TrackSurface.Turf
+          Condition = TrackCondition.Fast
+          ScheduledStart = None }
+
+    match parseRaceCard (encodeRaceInfo [ card ]) with
+    | Ok [ actual ] -> Assert.Equal(Some distance, actual.DistanceMeters)
+    | result -> failwithf "Expected one valid boundary card, received %A" result
+
+[<Property(Replay = "104729,130363",
+           EndSize = 100,
+           Arbitrary = [| typeof<CustomArbitraries> |],
+           MaxTest = 50,
+           QuietOnSuccess = false)>]
 let ``parseOdds reports details on failure (shrink-friendly)`` (snapshots: RaceOdds list) =
     let normalized = normalizeRaceSnapshots snapshots
     let payload = encodeRaceOdds normalized
 
     match parseOdds payload with
-    | Ok parsed -> parsed.Length >= 0 // no-op, success
+    | Ok parsed -> parsed = normalized
     | Error err ->
         let json = Encoding.UTF8.GetString(payload)
         // include bounded slice to aid shrinking/debug
@@ -551,12 +576,16 @@ let ``parseOdds reports details on failure (shrink-friendly)`` (snapshots: RaceO
 
         failwithf "parseOdds failed: %A. JSON(head): %s%s" err head tail
 
-[<Property(Arbitrary = [| typeof<CustomArbitraries> |], MaxTest = 50, QuietOnSuccess = true)>]
+[<Property(Replay = "104729,130363",
+           EndSize = 100,
+           Arbitrary = [| typeof<CustomArbitraries> |],
+           MaxTest = 50,
+           QuietOnSuccess = false)>]
 let ``parseRaceCard reports details on failure (shrink-friendly)`` (cards: RaceInfo list) =
     let payload = encodeRaceInfo cards
 
     match parseRaceCard payload with
-    | Ok parsed -> parsed.Length >= 0 // success
+    | Ok parsed -> parsed = cards
     | Error err ->
         let json = Encoding.UTF8.GetString(payload)
         let preview = if json.Length > 128 then json.Substring(0, 128) else json
