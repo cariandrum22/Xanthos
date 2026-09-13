@@ -177,14 +177,16 @@ dotnet fsharplint lint Xanthos.sln
 | Unit | Pure F# unit tests | CI (any OS) |
 | Property | FsCheck property-based tests | CI (any OS) |
 | Fixtures | Fixture-based parser tests | CI (if fixtures exist) |
-| E2E (Stub) | CLI tests with mock COM | CI (any OS) |
+| Functional scenarios | Production CLI/F# functions with controlled native calls | CI (any OS) |
+| WindowsManaged | WINDOWS assembly, STA and ABI without JV-Link | CI (Windows x64) |
+| E2E (Stub) | Legacy CLI smoke | CI (any OS) |
 | E2E (COM) | CLI tests with real COM | Windows only |
 
 ### Running Tests
 
 ```bash
-# All tests (CI-compatible)
-dotnet test
+# Required managed tests (PowerShell 7)
+pwsh scripts/run-test-profile.ps1 -Profile Fast -RunId local-fast-01
 
 # Unit tests only
 dotnet test tests/Xanthos.UnitTests
@@ -193,12 +195,12 @@ dotnet test tests/Xanthos.UnitTests
 dotnet test tests/Xanthos.Cli.E2E
 
 # E2E tests (COM mode - Windows only)
-XANTHOS_E2E_MODE=COM XANTHOS_SID=YOUR_SID dotnet test tests/Xanthos.Cli.E2E
+pwsh scripts/run-test-profile.ps1 -Profile Com -RunId local-com-01 -FromTime 20260905000000
 ```
 
 ### Writing Tests
 
-- Use `JvLinkStub` for unit tests
+- Use pure inputs or a controlled native boundary for functional tests; keep legacy Stub smoke explicitly classified
 - Add corresponding tests for new features
 - E2E tests verify CLI command behavior
 - See [tests/README.md](tests/README.md) for detailed guidelines
@@ -224,7 +226,7 @@ for:
 ### Test Coverage
 
 ```bash
-dotnet test --collect:"XPlat Code Coverage"
+pwsh scripts/run-test-profile.ps1 -Profile Coverage -RunId local-coverage-01
 ```
 
 ## Pull Requests
