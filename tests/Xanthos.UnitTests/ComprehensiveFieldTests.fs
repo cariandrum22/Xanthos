@@ -4,14 +4,14 @@ open System
 open Xunit
 open Xanthos.Core
 open Xanthos.Core.Text
-open Xanthos.Core.Records
-open Xanthos.Core.Records.RecordParser
-open Xanthos.Core.Records.CodeTables
-open Xanthos.Core.Records.TK
-open Xanthos.Core.Records.RA
-open Xanthos.Core.Records.SE
-open Xanthos.Core.Records.O1
-open Xanthos.Core.Records.H1
+open Xanthos.Legacy.Records
+open Xanthos.Legacy.Records.RecordParser
+open Xanthos.Legacy.Records.CodeTables
+open Xanthos.Legacy.Records.TK
+open Xanthos.Legacy.Records.RA
+open Xanthos.Legacy.Records.SE
+open Xanthos.Legacy.Records.O1
+open Xanthos.Legacy.Records.H1
 
 // ============================================================================
 // TK Record - Comprehensive Field Tests (12 fields)

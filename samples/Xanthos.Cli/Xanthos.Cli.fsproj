@@ -6,16 +6,17 @@
     <Nullable>disable</Nullable>
   </PropertyGroup>
 
-  <!-- Define WINDOWS constant and force x86 for Windows target (JV-Link is 32-bit COM) -->
+  <!-- The Windows CLI uses the JV-Link 5.0 x64 COM registration. -->
   <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-windows'">
     <DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
-    <PlatformTarget>x86</PlatformTarget>
+    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="Types.fs" />
     <Compile Include="Parsing.fs" />
     <Compile Include="Execution.fs" />
+    <Compile Include="FunctionalExecution.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

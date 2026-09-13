@@ -205,229 +205,41 @@ Fixtures should be refreshed periodically (recommended: every 6 months) to ensur
 ### Maintaining Fixtures
 
 1. **Capture on Windows**: Run `capture-fixtures` on a Windows machine with JV-Link
-2. **Commit to repo**: Check fixtures into `tests/fixtures/` directory
-3. **Upload as artifact**: Optionally upload as GitHub Action artifact for larger datasets
+2. **Keep real captures local**: Use ignored `.artifacts/fixtures/`; commit specification-based synthetic fixtures only.
+3. **Retain evidence**: Keep acquisition metadata and hashes with the local captures.
 4. **Track coverage**: Monitor the fixture coverage report in CI logs
 
 ---
 
 # Manual COM Verification
 
-Some tests require real JV-Link COM access and cannot be automated in CI. This section documents the manual verification procedures.
-
-## Test Environment Requirements
-
-| Requirement | Description |
-|-------------|-------------|
-| OS | Windows 10/11 |
-| JV-Link | Installed and configured |
-| SID | Valid JRA-VAN subscription ID |
-| IDE | Visual Studio 2022+ or VS Code with Ionide |
-
-## Manual Verification Procedures
-
-### 1. CLI E2E Tests (COM Mode)
-
-Run the E2E test suite in COM mode on Windows:
+Use Windows, JV-Link 5.0 x64, a registered x64 service key and the repository's .NET 10 SDK. Run from the signed-in desktop. A software SID is distinct from the service subscription key.
 
 ```powershell
-# Set environment for COM mode
-$env:XANTHOS_E2E_MODE = "COM"
-$env:XANTHOS_E2E_SID = "YOUR_SID"
-$env:XANTHOS_E2E_SERVICE_KEY = "YOUR_SERVICE_KEY"
-
-# Run E2E tests
-dotnet test tests/Xanthos.Cli.E2E --filter "Category=E2E"
+./scripts/run-com-verification.ps1 -FromTime 20260905000000
 ```
 
-Expected: All tests pass or skip appropriately based on COM availability.
+Choose a RACE publication interval containing available data. The script publishes the Windows x64 CLI and runs the separate `Xanthos.ComTests` project: 15 required/negative tests, with no skipped cases or COM-to-Stub fallback. Setting `XANTHOS_E2E_MODE=COM` does not turn the explicit Stub E2E project into a COM suite. See [the COM test guide](Xanthos.ComTests/README.md).
 
-### 2. Visual Studio COM Execution Test
+## Data and state verification
 
-1. Open `Xanthos.sln` in Visual Studio
-2. Set `Xanthos.Cli` as startup project
-3. Configure launch settings with your SID:
-   ```json
-   {
-       "profiles": {
-         "Xanthos.Cli": {
-         "commandLineArgs": "--sid YOUR_SID download --spec RACE --from 20240101",
-         "environmentVariables": {
-           "XANTHOS_USE_JVREAD": "1"
-         }
-       }
-     }
-   }
-   ```
-4. Run with F5 (Debug) or Ctrl+F5 (Release)
-5. Verify output shows fetched records without COM errors
-
-### 3. Capture Fixtures Verification
+Use `session-check` to execute open, status, parsed read, skip, cancel, close and reopen in one Session. Repeat with `--no-jvgets` to verify JVRead. Separate CLI invocations of status/skip/cancel cannot certify an open session's behavior.
 
 ```powershell
-# Run fixture capture
-.\scripts\capture-fixtures.ps1 -Sid "YOUR_SID" -Specs "RACE,DIFF" -From "20240101"
-
-# Verify captured files
-Get-ChildItem -Recurse ./fixtures/*.bin | Measure-Object
+.artifacts/com-verification/cli-x64/Xanthos.Cli.exe --com --diag session-check --spec RACE --from 20260905000000 --max-records 1
+.artifacts/com-verification/cli-x64/Xanthos.Cli.exe --com capture-fixtures --specs RACE --from 20260905000000 --max-records 1 --use-jvgets --output .artifacts/fixtures
 ```
 
-Expected: `.bin` and `.meta.json` files created for each record type.
+Validate captured `.bin` files against their `.meta.json` sidecars: source stream/interval, SDK version, record ID, byte length, SHA-256 and official parser result. Preserve original bytes. Restore any changed SDK configuration and verify restoration from a fresh instance.
 
-### 4. JVRead Mode Verification
+## Interactive and service-dependent evidence
 
-Test the JVRead API path (opt-out):
+Image normal/NoImage/error outcomes are separate. Playback requests returning zero do not establish that video displayed; record the user's observation. For real notifications, subscribe before publication, retain origin/raw key, retrieve with that same key and parse the result. Synthetic events certify only deterministic behavior.
 
-```powershell
-$env:XANTHOS_USE_JVREAD = "1"
-dotnet run --project samples/Xanthos.Cli -- --sid YOUR_SID download --spec RACE --from 20240101
-```
+SDK consent waits for the user's decision without an automatic timeout. Refusal ends the request. Do not automate agreement. Record actual errors and deferred conditions without counting them as passes. A filtered subset is not the full COM gate.
 
-Expected: Data fetched using JVRead instead of JVGets.
+## Reporting and release checks
 
-## Verification Checklist
+Record SDK/runtime versions, CLI architecture, mode, command, test discovery/pass/failure/skip counts and cleanup results. Keep machine-specific logs and licensed captures in ignored local storage; share only suitable summaries without service keys.
 
-Use this checklist before releases:
-
-```markdown
-## COM Verification Checklist - v{VERSION}
-
-**Environment:**
-- [ ] Windows version: ___________
-- [ ] JV-Link version: ___________
-- [ ] .NET version: ___________
-
-**Tests Executed:**
-- [ ] CLI E2E (COM mode) - All pass
-- [ ] Visual Studio debug run - Success
-- [ ] Fixture capture - Files generated
-- [ ] JVGets mode (default) - Data fetched
-- [ ] JVRead mode (XANTHOS_USE_JVREAD=1) - Data fetched
-
-**Record Types Verified:**
-- [ ] TK (Track info)
-- [ ] RA (Race info)
-- [ ] SE (Entry info)
-- [ ] HR (Race results)
-- [ ] O1-O6 (Odds)
-
-**Issues Found:**
-(List any issues encountered)
-
-**Verified By:** ___________
-**Date:** ___________
-```
-
-## Reporting Verification Results
-
-### For Pull Requests
-
-Add verification results as a PR comment:
-
-```markdown
-## Manual COM Verification
-
-✅ Tested on Windows 11 with JV-Link v4.x
-- CLI E2E (COM): 15/15 passed
-- Fixture capture: 47 files generated
-- JVGets mode: Working
-
-No issues found.
-```
-
-### For Releases
-
-Include verification evidence in release notes:
-
-```markdown
-## Release Verification
-
-This release was verified on Windows with real JV-Link COM:
-- All E2E tests passed in COM mode
-- Fixture capture verified for RACE, DIFF specs
-- JVGets mode tested and working
-
-Test log: [link to gist or artifact]
-```
-
-## Troubleshooting COM Issues
-
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| `ComException: 0x80040154` | COM not registered | Reinstall JV-Link |
-| `InvalidSID` | Expired or invalid SID | Renew JRA-VAN subscription |
-| `ServerBusy` | JV-Link occupied | Close other JV-Link apps |
-| `FileNotFound` | Missing DLL | Check JV-Link installation path |
-
-## CI vs Manual Test Separation
-
-| Test Category | CI (Linux/macOS) | Manual (Windows) |
-|---------------|------------------|------------------|
-| Unit Tests | ✅ Always run | ✅ Optional |
-| Property Tests | ✅ Always run | ✅ Optional |
-| Fixture Tests | ✅ If fixtures exist | ✅ Optional |
-| E2E (Stub) | ✅ Always run | ✅ Optional |
-| E2E (COM) | ❌ Not possible | ✅ **Required for release** |
-| Visual Studio COM | ❌ Not possible | ✅ **Recommended** |
-
----
-
-# Release Gate Requirements
-
-Before tagging a release, the following COM smoke tests **MUST** pass on a Windows machine with JV-Link installed. These tests cannot run in CI and require manual verification.
-
-## Minimum Smoke Test Suite
-
-```powershell
-# Set environment for COM mode
-$env:XANTHOS_E2E_MODE = "COM"
-$env:XANTHOS_E2E_SID = "YOUR_SID"
-$env:XANTHOS_E2E_SERVICE_KEY = "YOUR_SERVICE_KEY"
-
-# 1. Verify COM instantiation works
-dotnet run --project samples/Xanthos.Cli -- --sid $env:XANTHOS_E2E_SID version
-
-# 2. Verify data fetching (JVRead path / opt-out)
-$env:XANTHOS_USE_JVREAD = "1"
-dotnet run --project samples/Xanthos.Cli -- --sid $env:XANTHOS_E2E_SID --service-key $env:XANTHOS_E2E_SERVICE_KEY download --spec RACE --from 20240101
-
-# 3. Verify JVGets path (default / opt-in)
-$env:XANTHOS_USE_JVREAD = "0"
-dotnet run --project samples/Xanthos.Cli -- --sid $env:XANTHOS_E2E_SID --service-key $env:XANTHOS_E2E_SERVICE_KEY download --spec RACE --from 20240101
-
-# 4. Run E2E test suite in COM mode
-dotnet test tests/Xanthos.Cli.E2E --filter "Category=E2E"
-```
-
-## Release Checklist
-
-Before each release, fill out and include in the release notes:
-
-```markdown
-## COM Smoke Test Results - v{VERSION}
-
-**Test Environment:**
-- Windows Version: [e.g., Windows 11 23H2]
-- JV-Link Version: [e.g., 4.x.x]
-- .NET SDK Version: [e.g., 10.0.100]
-
-**Smoke Test Results:**
-- [ ] `version` command: COM client instantiated successfully
-- [ ] `download` command (JVRead): Data retrieved and parsed
-- [ ] `download` command (JVGets): Data retrieved via JVGets (default)
-- [ ] E2E test suite (COM mode): All tests pass
-
-**Verified By:** ____________
-**Date:** ____________
-```
-
-## Why This Matters
-
-The CI test suite uses `JvLinkStub` for all tests, which ensures the F# wrapper logic is correct but does NOT verify:
-
-1. **COM Interop works**: The actual `ComJvLinkClient` uses reflection-based COM calls
-2. **Property mappings are correct**: COM property names like `m_savepath` must match exactly
-3. **Threading model is correct**: STA threading requirements for COM
-4. **Error code translation**: Real JV-Link COM error codes map correctly
-
-A release **must not** be tagged without confirming these work against real JV-Link.
+Before release, require successful builds for both targets, Contract/Stub results, the full COM gate, independent package consumption, and completed or explicitly documented interactive/service conditions. An unresolved required COM check prevents reporting all DoD complete. See [scenario coverage](Xanthos.Cli.E2E/scenarios.md) and [the functional contract](../docs/functional-api.md).

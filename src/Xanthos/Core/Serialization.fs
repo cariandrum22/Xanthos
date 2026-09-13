@@ -148,13 +148,38 @@ module Serialization =
         | "HEAVY" -> TrackCondition.Heavy
         | _ -> TrackCondition.UnknownCondition
 
+    /// Adapts the same official key parser used by JvLink.parseEvent to the legacy domain record.
+    let parseNativeWatchEvent (event: Xanthos.JvEvent) =
+        Xanthos.EventKeys.parse event
+        |> Result.map (fun parsed ->
+            let eventType, recordType =
+                match event.Kind with
+                | Xanthos.EventKind.Pay -> WatchEventType.PayoffConfirmed, None
+                | Xanthos.EventKind.Weight -> WatchEventType.HorseWeight, None
+                | Xanthos.EventKind.JockeyChange -> WatchEventType.JockeyChange, Some "JC"
+                | Xanthos.EventKind.Weather -> WatchEventType.WeatherChange, Some "WE"
+                | Xanthos.EventKind.CourseChange -> WatchEventType.CourseChange, Some "CC"
+                | Xanthos.EventKind.Avoid -> WatchEventType.AvoidedRace, Some "AV"
+                | Xanthos.EventKind.TimeChange -> WatchEventType.StartTimeChange, Some "TC"
+                | Xanthos.EventKind.Unknown origin -> WatchEventType.UnknownEvent origin, None
+
+            { Event = eventType
+              RawKey = event.RawKey
+              Timestamp = parsed.SentAt
+              MeetingDate = Some parsed.MeetingDate
+              CourseCode = Some parsed.CourseCode
+              RaceNumber = Some parsed.RaceNumber
+              RecordType = recordType
+              ParticipantId = None
+              AdditionalData = None })
+
     /// <summary>
-    /// Parses a raw JV watch event key string into a typed WatchEvent.
+    /// Parses historical application-formatted watch strings. For SDK callbacks use parseNativeWatchEvent.
     /// </summary>
     /// <param name="rawKey">The raw key string from JVWatchEvent callback.</param>
     /// <returns>A WatchEvent with parsed fields including event type, meeting date, course code, etc.</returns>
     /// <remarks>
-    /// JVWatchEvent returns keys in formats like "0B12RA20240101010112..." where:
+    /// Historical application strings used formats like "0B12RA20240101010112..." where:
     /// <list type="bullet">
     /// <item>0B12/0B11/0B16 = dataspec prefix indicating event category</item>
     /// <item>RA/JC/WE/CC/AV/TC = record type (optional)</item>

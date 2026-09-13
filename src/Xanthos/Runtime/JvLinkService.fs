@@ -204,8 +204,8 @@ type JvLinkService
     /// within each iteration still block.
     ///
     /// Note: This function does not accept a CancellationToken because COM calls cannot be interrupted
-    /// mid-execution. The internal timeout provides the only mechanism to abort a hung COM call, which
-    /// results in the service becoming poisoned. Callers should check cancellation between COM calls
+    /// mid-execution. UI-capable calls wait for the user's decision without a timeout. Other calls
+    /// may time out and poison the service; this does not abort the native call. Check cancellation between COM calls
     /// rather than expecting cancellation to interrupt an in-progress COM operation.
     let executeCom policy name (call: unit -> Result<'a, ComError>) : Result<'a, ComError> =
         // Fail fast if poisoned
@@ -228,8 +228,17 @@ type JvLinkService
                     | Some dispatcher -> dispatcher.InvokeAsync(name, work)
                     | None -> Task.Run<Result<'a, ComError>>(fun () -> work ())
 
-                let timeoutTask = Task.Delay(policy.Timeout)
-                let completedTask = Task.WhenAny(task, timeoutTask).Result
+                let mayWaitForUser =
+                    comDispatcher.IsSome
+                    && List.contains name [ "JVOpen"; "JVRTOpen"; "JVSetUIProperties"; "JVMVPlay"; "JVMVPlayWithType" ]
+
+                let completedTask =
+                    if mayWaitForUser then
+                        // SDK dialogs are completed by the user, including refusal.
+                        // A timer cannot safely cancel an in-progress native COM call.
+                        task :> Task
+                    else
+                        Task.WhenAny(task, Task.Delay(policy.Timeout)).Result
 
                 if obj.ReferenceEquals(completedTask, task) then
                     let result =
@@ -621,6 +630,9 @@ type JvLinkService
     /// </summary>
     let guardedWithInitialisation operationName work =
         guardOperation operationName (fun () -> withInitialisation work)
+
+    /// Initializes the owned client without opening a data session.
+    member _.Initialize() = guardOperation "Initialize" initialize
 
     /// <summary>
     /// Fetches all available payloads for the specified request, returning them as a materialised list.

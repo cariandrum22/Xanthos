@@ -1,719 +1,13 @@
 namespace Xanthos.Cli.E2E
 
 open System
-open System.Diagnostics
 open System.IO
-open System.Text
 open Xunit
 open Xunit.Abstractions
 
-// Extended E2E harness verifying COM/STUB evidence markers and diagnostics.
-
-type RunMode =
-    | Stub
-    | Com
-
-type CliResult =
-    { ExitCode: int
-      StdOut: string
-      StdErr: string
-      LogFile: string }
-
-module Harness =
-    type private OutputEncodingMode =
-        | Utf8
-        | Cp932
-
-    let private outputEncodingMode =
-        match Environment.GetEnvironmentVariable "XANTHOS_E2E_OUTPUT_ENCODING" with
-        // CLI output is expected to be UTF-8 (see Xanthos.Runtime.ConsoleEncoding).
-        // Keep CP932 only as an explicit escape hatch for debugging legacy behaviour.
-        | v when not (isNull v) && v.Equals("cp932", StringComparison.OrdinalIgnoreCase) -> Cp932
-        | _ -> Utf8
-
-    let private utf8NoBom = UTF8Encoding(false)
-    let private utf8Strict = UTF8Encoding(false, true)
-
-    let private decodeProcessOutput (bytes: byte[]) =
-        if isNull bytes || bytes.Length = 0 then
-            ""
-        else
-            let decodeUtf8Strict (data: byte[]) = utf8Strict.GetString data
-
-            let decodeUtf8Lenient (data: byte[]) = Encoding.UTF8.GetString data
-
-            let decodeCp932 (data: byte[]) =
-                try
-                    Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)
-                    Encoding.GetEncoding(932).GetString data
-                with _ ->
-                    ""
-
-            match outputEncodingMode with
-            | Cp932 -> decodeCp932 bytes
-            | Utf8 ->
-                // The CLI forces UTF-8 output. If decoding fails, treat it as a test failure signal
-                // by preserving bytes via lenient UTF-8 (replacement chars) rather than silently
-                // interpreting as CP932.
-                try
-                    decodeUtf8Strict bytes
-                with :? DecoderFallbackException ->
-                    decodeUtf8Lenient bytes
-
-    let private readAllBytesAsync (stream: Stream) =
-        System.Threading.Tasks.Task.Run(fun () ->
-            use ms = new MemoryStream()
-            stream.CopyTo(ms)
-            ms.ToArray())
-
-    let rec private findRepoRoot startDir dir =
-        if File.Exists(Path.Combine(dir, "Xanthos.sln")) then
-            dir
-        else
-            let parent = Directory.GetParent dir
-
-            if isNull parent then
-                failwith $"Could not locate Xanthos.sln starting from '{startDir}'."
-            else
-                findRepoRoot startDir parent.FullName
-
-    let repoRoot =
-        let baseDir = AppContext.BaseDirectory
-        findRepoRoot baseDir baseDir
-
-    let cliProject =
-        Path.Combine(repoRoot, "samples", "Xanthos.Cli", "Xanthos.Cli.fsproj")
-
-    let dotnetExe =
-        Environment.GetEnvironmentVariable "DOTNET_EXE"
-        |> function
-            | null
-            | "" -> "dotnet"
-            | v -> v
-
-    // Check if JV-Link COM is registered (Windows only)
-    // We check for the ProgID registration which is more reliable
-    let private tryOpenProgId (view: Microsoft.Win32.RegistryView) =
-        try
-            use root =
-                Microsoft.Win32.RegistryKey.OpenBaseKey(Microsoft.Win32.RegistryHive.ClassesRoot, view)
-
-            use key = root.OpenSubKey("JVDTLab.JVLink")
-            not (isNull key)
-        with _ ->
-            false
-
-    let private isJvLinkComRegistered () =
-        if not (OperatingSystem.IsWindows()) then
-            false
-        else
-            // NOTE: JV-Link is a 32-bit COM server. When the test runner is 64-bit (default in VS),
-            // the ProgID can exist only in the 32-bit registry view. Probe both views.
-            let has32 = tryOpenProgId Microsoft.Win32.RegistryView.Registry32
-            let has64 = tryOpenProgId Microsoft.Win32.RegistryView.Registry64
-
-            if has32 || has64 then
-                printfn "[E2E] JV-Link ProgID registration detected (Registry32=%b, Registry64=%b)" has32 has64
-
-            has32 || has64
-
-    // When XANTHOS_E2E_USE_EXE=true (or auto-detected), run the built exe directly instead of dotnet run
-    // This is required for COM to work on Windows (32-bit exe for 32-bit COM)
-    type ExeModeSetting =
-        | ForcedExe
-        | ForcedDotnet
-        | Auto
-
-    let private readRequestedModeFromEnv () =
-        match Environment.GetEnvironmentVariable "XANTHOS_E2E_MODE" with
-        | v when not (isNull v) && v.Equals("COM", StringComparison.OrdinalIgnoreCase) -> Some Com
-        | v when not (isNull v) && v.Equals("STUB", StringComparison.OrdinalIgnoreCase) -> Some Stub
-        | _ -> None
-
-    let exeModeSetting =
-        match Environment.GetEnvironmentVariable "XANTHOS_E2E_USE_EXE" with
-        | v when not (isNull v) && v.Equals("true", StringComparison.OrdinalIgnoreCase) -> ForcedExe
-        | v when not (isNull v) && v.Equals("false", StringComparison.OrdinalIgnoreCase) -> ForcedDotnet
-        | _ -> Auto
-
-    let mutable useBuiltExe =
-        match exeModeSetting with
-        | ForcedExe -> true
-        | ForcedDotnet -> false
-        | Auto ->
-            // Prefer exe mode only when COM is the requested mode.
-            // - COM requires the net10.0-windows (x86) CLI build to talk to JV-Link.
-            // - STUB mode should keep using `dotnet run --framework net10.0` so it works in x64-only
-            //   environments like GitHub Actions runners.
-            if not (OperatingSystem.IsWindows()) then
-                false
-            else
-                match readRequestedModeFromEnv () with
-                | Some Stub -> false
-                | Some Com
-                | None -> true
-
-    let private artifactsDir = Path.Combine(repoRoot, ".artifacts", "cli-e2e")
-    let private buildCliLogFile = Path.Combine(artifactsDir, "build-cli.log")
-    let private harnessInitLogFile = Path.Combine(artifactsDir, "harness-init.log")
-    let private cliBuildDir = Path.Combine(artifactsDir, "cli-build")
-
-    let private writeBootstrapLog (fileName: string) (commandLine: string) (stdout: string) (stderr: string) =
-        try
-            Directory.CreateDirectory artifactsDir |> ignore
-            let file = Path.Combine(artifactsDir, fileName)
-
-            File.WriteAllText(
-                file,
-                "COMMAND:\n"
-                + commandLine
-                + "\n\nSTDOUT:\n"
-                + stdout
-                + "\n---\nSTDERR:\n"
-                + stderr
-                + "\n",
-                utf8NoBom
-            )
-
-            Some file
-        with _ ->
-            None
-
-    let private cliExePath =
-        let exeName =
-            if OperatingSystem.IsWindows() then
-                "Xanthos.Cli.exe"
-            else
-                "Xanthos.Cli"
-
-        Path.Combine(cliBuildDir, exeName)
-
-    type CliBuildResult =
-        { Attempted: bool
-          ExitCode: int option
-          LogFile: string option
-          Error: string option }
-
-    let private buildCliIfNeeded () : CliBuildResult =
-        if not (useBuiltExe && OperatingSystem.IsWindows()) then
-            { Attempted = false
-              ExitCode = None
-              LogFile = None
-              Error = None }
-        else
-            printfn "[E2E] Building CLI with net10.0-windows target..."
-
-            try
-                if Directory.Exists cliBuildDir then
-                    Directory.Delete(cliBuildDir, true)
-
-                Directory.CreateDirectory cliBuildDir |> ignore
-
-                let args =
-                    [ "build"
-                      cliProject
-                      "-c"
-                      "Release"
-                      "-f"
-                      "net10.0-windows"
-                      "-o"
-                      cliBuildDir ]
-
-                let commandLine = dotnetExe + " " + (args |> String.concat " ")
-                let si = ProcessStartInfo(dotnetExe)
-                si.WorkingDirectory <- repoRoot
-                si.RedirectStandardOutput <- true
-                si.RedirectStandardError <- true
-                si.UseShellExecute <- false
-                args |> List.iter si.ArgumentList.Add
-
-                use proc = new Process()
-                proc.StartInfo <- si
-
-                let started = proc.Start()
-
-                if not started then
-                    let logFile =
-                        writeBootstrapLog "build-cli.log" commandLine "" "Failed to start dotnet process."
-
-                    { Attempted = true
-                      ExitCode = Some -1
-                      LogFile = logFile
-                      Error = Some "Failed to start dotnet process." }
-                else
-                    let stdoutTask = proc.StandardOutput.ReadToEndAsync()
-                    let stderrTask = proc.StandardError.ReadToEndAsync()
-                    let exited = proc.WaitForExit(120000)
-
-                    if not exited then
-                        try
-                            proc.Kill(true)
-                        with _ ->
-                            ()
-
-                    let stdout = stdoutTask.GetAwaiter().GetResult()
-                    let stderr = stderrTask.GetAwaiter().GetResult()
-                    let exitCode = if exited then proc.ExitCode else -1
-                    let logFile = writeBootstrapLog "build-cli.log" commandLine stdout stderr
-
-                    if exitCode <> 0 then
-                        let logFileHint =
-                            logFile |> Option.map (fun p -> $" See log: {p}") |> Option.defaultValue ""
-
-                        printfn "[E2E] Build FAILED with exit code %d.%s" exitCode logFileHint
-                    else
-                        printfn "[E2E] Build succeeded"
-
-                    { Attempted = true
-                      ExitCode = Some exitCode
-                      LogFile = logFile
-                      Error = None }
-            with ex ->
-                let args =
-                    [ "build"
-                      cliProject
-                      "-c"
-                      "Release"
-                      "-f"
-                      "net10.0-windows"
-                      "-o"
-                      cliBuildDir ]
-
-                let commandLine = dotnetExe + " " + (args |> String.concat " ")
-
-                let logFile = writeBootstrapLog "build-cli.log" commandLine "" $"Exception: {ex}"
-
-                { Attempted = true
-                  ExitCode = Some -1
-                  LogFile = logFile
-                  Error = Some ex.Message }
-
-    // Build once at module initialization
-    do
-        printfn "[E2E] =============================================="
-        printfn "[E2E] E2E Test Harness Initialization"
-
-        let platform =
-            if OperatingSystem.IsWindows() then
-                "Windows"
-            else
-                "Non-Windows"
-
-        printfn "[E2E] Platform: %s" platform
-
-        printfn "[E2E] exeModeSetting: %A" exeModeSetting
-        printfn "[E2E] useBuiltExe: %b" useBuiltExe
-
-        let jvLinkRegistered =
-            if OperatingSystem.IsWindows() then
-                Some(isJvLinkComRegistered ())
-            else
-                None
-
-        let buildResult = buildCliIfNeeded ()
-        let cliExeExists = File.Exists(cliExePath)
-        let mutable fallbackReason: string option = None
-
-        if useBuiltExe && OperatingSystem.IsWindows() then
-            let buildFailed = buildResult.ExitCode |> Option.exists (fun code -> code <> 0)
-
-            if buildFailed then
-                let message =
-                    "Failed to build CLI for E2E tests.\n"
-                    + "Try running:\n"
-                    + $"  {dotnetExe} build {cliProject} -c Release -f net10.0-windows -o {cliBuildDir}\n"
-                    + $"See {buildCliLogFile} for details."
-
-                fallbackReason <- Some "CLI build failed"
-
-                match exeModeSetting with
-                | ForcedExe -> failwith message
-                | Auto ->
-                    printfn "[E2E] WARNING: %s" message
-                    printfn "[E2E] Falling back to 'dotnet run' mode."
-                    useBuiltExe <- false
-                | ForcedDotnet -> ()
-
-        if useBuiltExe && OperatingSystem.IsWindows() then
-            // Verify the exe exists
-            if cliExeExists then
-                printfn "[E2E] CLI exe found: %s" cliExePath
-            else
-                let message =
-                    "CLI exe not found after build.\n"
-                    + $"Expected: {cliExePath}\n"
-                    + "Try running:\n"
-                    + $"  {dotnetExe} build {cliProject} -c Release -f net10.0-windows -o {cliBuildDir}\n"
-                    + $"See {buildCliLogFile} for details."
-
-                fallbackReason <- Some "CLI exe missing after build"
-
-                match exeModeSetting with
-                | ForcedExe -> failwith message
-                | Auto ->
-                    printfn "[E2E] WARNING: %s" message
-                    printfn "[E2E] Falling back to 'dotnet run' mode."
-                    useBuiltExe <- false
-                | ForcedDotnet -> ()
-        else
-            printfn "[E2E] Using 'dotnet run' mode (COM may fall back to Stub)"
-
-        try
-            Directory.CreateDirectory artifactsDir |> ignore
-
-            let platformValue =
-                if OperatingSystem.IsWindows() then
-                    "windows"
-                else
-                    "non-windows"
-
-            let jvLinkRegisteredValue =
-                jvLinkRegistered |> Option.map string |> Option.defaultValue "n/a"
-
-            let buildAttemptedValue = if buildResult.Attempted then "true" else "false"
-
-            let buildExitCodeValue =
-                buildResult.ExitCode |> Option.map string |> Option.defaultValue "n/a"
-
-            let buildLogValue = buildResult.LogFile |> Option.defaultValue "n/a"
-
-            let fallbackReasonValue = fallbackReason |> Option.defaultValue "n/a"
-
-            let lines =
-                [ $"platform={platformValue}"
-                  $"process64Bit={Environment.Is64BitProcess}"
-                  $"exeModeSetting={exeModeSetting}"
-                  $"useBuiltExe={useBuiltExe}"
-                  $"jvLinkProgIdRegistered={jvLinkRegisteredValue}"
-                  $"dotnetExe={dotnetExe}"
-                  $"repoRoot={repoRoot}"
-                  $"cliProject={cliProject}"
-                  $"cliBuildDir={cliBuildDir}"
-                  $"cliExePath={cliExePath}"
-                  $"cliExeExists={cliExeExists}"
-                  $"buildAttempted={buildAttemptedValue}"
-                  $"buildExitCode={buildExitCodeValue}"
-                  $"buildLogFile={buildLogValue}"
-                  $"fallbackReason={fallbackReasonValue}"
-                  $"appBaseDir={AppContext.BaseDirectory}" ]
-
-            File.WriteAllLines(harnessInitLogFile, lines, utf8NoBom)
-        with _ ->
-            ()
-
-        printfn "[E2E] =============================================="
-
-    let private envOrDefault names fallback =
-        names
-        |> List.tryPick (fun n ->
-            match Environment.GetEnvironmentVariable n with
-            | null
-            | "" -> None
-            | v -> Some v)
-        |> Option.defaultValue fallback
-
-    let sid =
-        envOrDefault [ "XANTHOS_E2E_SID"; "XANTHOS_JVLINK_SID" ] "XANTHOS_JVLINK_SID"
-
-    let serviceKey =
-        envOrDefault [ "XANTHOS_E2E_SERVICE_KEY"; "XANTHOS_JVLINK_SERVICE_KEY" ] "XANTHOS_JVLINK_SERVICE_KEY"
-
-    let savePath =
-        let path =
-            envOrDefault
-                [ "XANTHOS_E2E_SAVE_PATH"; "XANTHOS_JVLINK_SAVE_PATH" ]
-                (Path.Combine(repoRoot, ".artifacts", "cli-e2e"))
-
-        Directory.CreateDirectory path |> ignore
-        path
-
-    let dataspec = envOrDefault [ "XANTHOS_E2E_SPEC" ] "RACE"
-    let fromTime = envOrDefault [ "XANTHOS_E2E_FROM" ] "20240101000000"
-    let openOption = envOrDefault [ "XANTHOS_E2E_OPTION" ] "1"
-
-    // Realtime-specific settings (use 0Bxx spec format and YYYYMMDDJJKKHHRR key format)
-    // Key format: YYYYMMDD=date, JJ=venue, KK=meeting, HH=day, RR=race (e.g., 2024010105010101)
-    let realtimeSpec = envOrDefault [ "XANTHOS_E2E_RT_SPEC" ] "0B12"
-    let realtimeKey = envOrDefault [ "XANTHOS_E2E_RT_KEY" ] "2024010105010101"
-
-    /// JRA Racing Viewer license flag.
-    /// Set XANTHOS_E2E_MOVIE_LICENSE=true when the account has movie API license registered.
-    let hasMovieLicense =
-        match Environment.GetEnvironmentVariable "XANTHOS_E2E_MOVIE_LICENSE" with
-        | v when not (isNull v) && v.Equals("true", StringComparison.OrdinalIgnoreCase) -> true
-        | _ -> false
-
-    // Force diagnostics ON for evidence tests unless explicitly disabled
-    do Environment.SetEnvironmentVariable("XANTHOS_E2E_DIAG", "true")
-    let diagnosticsEnabled = true
-
-    // Pre-test cleanup: clear transient folders to avoid flaky assertions
-    do
-        try
-            let logsDir = Path.Combine(savePath, "test-logs")
-
-            if Directory.Exists logsDir then
-                Directory.Delete(logsDir, true)
-
-            Directory.CreateDirectory logsDir |> ignore
-            let persistDir = Path.Combine(savePath, "persist")
-
-            if Directory.Exists persistDir then
-                Directory.Delete(persistDir, true)
-        with _ ->
-            ()
-
-    let requestedMode = readRequestedModeFromEnv ()
-
-    let resolveMode () =
-        requestedMode
-        |> Option.orElse (if OperatingSystem.IsWindows() then Some Com else Some Stub)
-        |> Option.defaultValue Stub
-
-    /// Global args for normal test commands.
-    /// NOTE: Does NOT include --service-key to avoid JVSetServiceKey call on every command.
-    /// Service key is assumed to be already registered (set by ServiceKeySetup test or manually).
-    let globalArgs mode =
-        [ "--sid"; sid; "--save-path"; savePath ]
-        @ (if diagnosticsEnabled then [ "--diag" ] else [])
-        @ (match mode with
-           | Stub -> [ "--stub" ]
-           | Com -> [])
-
-    /// Global args that include service key (for initial setup only).
-    let globalArgsWithServiceKey mode =
-        [ "--sid"; sid; "--service-key"; serviceKey; "--save-path"; savePath ]
-        @ (if diagnosticsEnabled then [ "--diag" ] else [])
-        @ (match mode with
-           | Stub -> [ "--stub" ]
-           | Com -> [])
-
-    let private invalidFileNameChars = Path.GetInvalidFileNameChars()
-
-    let private sanitizeFileName (name: string) =
-        name
-        |> Seq.map (fun c -> if invalidFileNameChars |> Array.contains c then '_' else c)
-        |> Seq.toArray
-        |> fun chars -> new string (chars)
-
-    let private writeLog (commandArgs: string list) (stdout: string) (stderr: string) =
-        let logsDir = Path.Combine(savePath, "test-logs")
-        Directory.CreateDirectory logsDir |> ignore
-        let name = commandArgs |> String.concat "_" |> sanitizeFileName
-        let file = Path.Combine(logsDir, name + ".log")
-        File.WriteAllText(file, "STDOUT:\n" + stdout + "\n---\nSTDERR:\n" + stderr, utf8NoBom)
-        file
-
-    let private createProcessStartInfo mode commandArgs =
-        let si =
-            if useBuiltExe && OperatingSystem.IsWindows() && File.Exists(cliExePath) then
-                // Run the built 32-bit exe directly for COM support
-                ProcessStartInfo(cliExePath)
-            else
-                ProcessStartInfo(dotnetExe)
-
-        si.WorkingDirectory <- repoRoot
-        si.RedirectStandardOutput <- true
-        si.RedirectStandardError <- true
-        si.UseShellExecute <- false
-
-        if not (useBuiltExe && OperatingSystem.IsWindows() && File.Exists(cliExePath)) then
-            // When not using built exe (i.e., no COM support), always use net10.0
-            // to avoid x86 architecture constraints of net10.0-windows.
-            // COM-dependent features won't work in this mode anyway.
-            let tfm = "net10.0"
-
-            // Use --no-build in CI to avoid redundant builds (project already built by CI workflow).
-            // Locally, run 'dotnet build -c Release' first if tests fail due to missing build output.
-            let noBuild =
-                match Environment.GetEnvironmentVariable "CI" with
-                | null
-                | "" -> []
-                | _ -> [ "--no-build"; "-c"; "Release" ]
-
-            ([ "run"; "--project"; cliProject; "--framework"; tfm ] @ noBuild @ [ "--" ])
-            |> List.iter si.ArgumentList.Add
-
-        (globalArgs mode @ commandArgs) |> List.iter si.ArgumentList.Add
-        si
-
-    let private createProcessStartInfoWithServiceKey mode commandArgs =
-        let si =
-            if useBuiltExe && OperatingSystem.IsWindows() && File.Exists(cliExePath) then
-                ProcessStartInfo(cliExePath)
-            else
-                ProcessStartInfo(dotnetExe)
-
-        si.WorkingDirectory <- repoRoot
-        si.RedirectStandardOutput <- true
-        si.RedirectStandardError <- true
-        si.UseShellExecute <- false
-
-        if not (useBuiltExe && OperatingSystem.IsWindows() && File.Exists(cliExePath)) then
-            let tfm = "net10.0"
-
-            let noBuild =
-                match Environment.GetEnvironmentVariable "CI" with
-                | null
-                | "" -> []
-                | _ -> [ "--no-build"; "-c"; "Release" ]
-
-            ([ "run"; "--project"; cliProject; "--framework"; tfm ] @ noBuild @ [ "--" ])
-            |> List.iter si.ArgumentList.Add
-
-        (globalArgsWithServiceKey mode @ commandArgs) |> List.iter si.ArgumentList.Add
-        si
-
-    let runCli mode (commandArgs: string list) =
-        use proc = new Process()
-        proc.StartInfo <- createProcessStartInfo mode commandArgs
-
-        if not (proc.Start()) then
-            failwith "Failed to start CLI process."
-        // Apply timeout to avoid hanging tests in unstable environments
-        let timeoutMs =
-            match Environment.GetEnvironmentVariable "XANTHOS_E2E_TIMEOUT_MS" with
-            | null
-            | "" -> 60000 // default 60s
-            | v ->
-                match Int32.TryParse v with
-                | true, ms when ms > 0 -> ms
-                | _ -> 60000
-
-        let stdoutTask = readAllBytesAsync proc.StandardOutput.BaseStream
-        let stderrTask = readAllBytesAsync proc.StandardError.BaseStream
-        let exited = proc.WaitForExit(timeoutMs)
-
-        if not exited then
-            try
-                proc.Kill(true)
-            with _ ->
-                ()
-
-        let outBytes = stdoutTask.GetAwaiter().GetResult()
-        let errBytes = stderrTask.GetAwaiter().GetResult()
-        let out = decodeProcessOutput outBytes
-        let err = decodeProcessOutput errBytes
-
-        let exitCode = if exited then proc.ExitCode else -1
-        let logFile = writeLog commandArgs out err
-
-        { ExitCode = exitCode
-          StdOut = out
-          StdErr = err
-          LogFile = logFile }
-
-    /// Runs CLI with service key included (for initial setup only).
-    /// Use this ONLY in the ServiceKeySetup test.
-    let runCliWithServiceKey mode (commandArgs: string list) =
-        use proc = new Process()
-        proc.StartInfo <- createProcessStartInfoWithServiceKey mode commandArgs
-
-        if not (proc.Start()) then
-            failwith "Failed to start CLI process."
-
-        let timeoutMs =
-            match Environment.GetEnvironmentVariable "XANTHOS_E2E_TIMEOUT_MS" with
-            | null
-            | "" -> 60000
-            | v ->
-                match Int32.TryParse v with
-                | true, ms when ms > 0 -> ms
-                | _ -> 60000
-
-        let stdoutTask = readAllBytesAsync proc.StandardOutput.BaseStream
-        let stderrTask = readAllBytesAsync proc.StandardError.BaseStream
-        let exited = proc.WaitForExit(timeoutMs)
-
-        if not exited then
-            try
-                proc.Kill(true)
-            with _ ->
-                ()
-
-        let outBytes = stdoutTask.GetAwaiter().GetResult()
-        let errBytes = stderrTask.GetAwaiter().GetResult()
-        let out = decodeProcessOutput outBytes
-        let err = decodeProcessOutput errBytes
-
-        let exitCode = if exited then proc.ExitCode else -1
-        let logFile = writeLog ("setup-" :: commandArgs) out err
-
-        { ExitCode = exitCode
-          StdOut = out
-          StdErr = err
-          LogFile = logFile }
-
-    // Command arg sets covering all exposed features (expandable)
-    let downloadArgs () =
-        [ "download"
-          "--spec"
-          dataspec
-          "--option"
-          openOption
-          "--from"
-          fromTime
-          "--max-records"
-          "30" ]
-
-    let downloadPersistArgs () =
-        [ "download"
-          "--spec"
-          dataspec
-          "--option"
-          openOption
-          "--from"
-          fromTime
-          "--max-records"
-          "30"
-          "--output"
-          Path.Combine(savePath, "persist") ]
-
-    let versionArgs () = [ "version" ]
-    let setSaveFlagArgs () = [ "set-save-flag"; "--value"; "true" ]
-
-    let realtimeArgs () =
-        [ "realtime"; "--spec"; realtimeSpec; "--key"; realtimeKey ]
-
-/// Collection fixture that runs service key setup once before all tests.
-/// This ensures the service key is registered before any other test runs.
-type ServiceKeySetupFixture() =
-    let mutable setupResult: CliResult option = None
-    let mutable setupSucceeded = false
-
-    do
-        let mode = Harness.resolveMode ()
-        printfn "[E2E] ServiceKeySetupFixture: Registering service key..."
-        let result = Harness.runCliWithServiceKey mode [ "version" ]
-        setupResult <- Some result
-
-        // Success conditions:
-        // 1. Exit code 0 - key was set or already valid
-        // 2. Exit code 2 with "code -100" in output - key already registered (this is fine)
-        let keyAlreadyRegistered =
-            result.ExitCode = 2 && result.StdOut.Contains("code -100")
-
-        setupSucceeded <- result.ExitCode = 0 || keyAlreadyRegistered
-
-        if keyAlreadyRegistered then
-            printfn "[E2E] ServiceKeySetupFixture: Service key already registered (code -100) - OK"
-        elif setupSucceeded then
-            printfn "[E2E] ServiceKeySetupFixture: Service key setup succeeded"
-        else
-            printfn "[E2E] ServiceKeySetupFixture: Service key setup FAILED (exit=%d)" result.ExitCode
-
-    member _.SetupSucceeded = setupSucceeded
-    member _.SetupResult = setupResult
-
-/// Collection definition for E2E tests that require service key setup.
-[<CollectionDefinition("E2E")>]
-type E2ECollection() =
-    interface ICollectionFixture<ServiceKeySetupFixture>
-
-// Test class using ITestOutputHelper so stdout appears in TRX/Test Explorer
-[<Collection("E2E")>]
-type CliTests(output: ITestOutputHelper, fixture: ServiceKeySetupFixture) =
-    let mode = Harness.resolveMode ()
+[<Trait("Category", "StubX64")>]
+type CliTests(output: ITestOutputHelper) =
+    let mode = Stub
     let isWindows = OperatingSystem.IsWindows()
 
     /// Combines StdOut and StdErr for comprehensive assertion checks
@@ -724,7 +18,7 @@ type CliTests(output: ITestOutputHelper, fixture: ServiceKeySetupFixture) =
     let shouldSkipMovieTest (mode: RunMode) =
         match mode with
         | Stub -> false // Always run in stub mode
-        | Com -> not Harness.hasMovieLicense
+        | Com -> false
 
     /// Skip message for movie tests
     let movieSkipReason =
@@ -740,57 +34,26 @@ type CliTests(output: ITestOutputHelper, fixture: ServiceKeySetupFixture) =
         Assert.Contains($"EVIDENCE:MODE={expectedMode}", stdout)
         Assert.Contains("EVIDENCE:VERSION=", stdout)
 
-    /// Asserts evidence allowing for COM fallback to Stub mode on Windows
-    /// When COM mode is requested but COM activation fails, CLI falls back to Stub
-    let assertEvidenceAllowingFallback (stdout: string) requestedMode =
-        let hasCom = stdout.Contains("EVIDENCE:MODE=COM")
-        let hasStub = stdout.Contains("EVIDENCE:MODE=STUB")
-        let hasComFallback = stdout.Contains("COM activation failed")
-        Assert.Contains("EVIDENCE:VERSION=", stdout)
+    let assertRequestedEvidence (stdout: string) requestedMode =
+        let expected = if requestedMode = Com then "COM" else "STUB"
+        assertEvidence stdout expected
+        Assert.DoesNotContain("COM activation failed", stdout)
+        Assert.DoesNotContain("EVIDENCE:MODE=" + (if requestedMode = Com then "STUB" else "COM"), stdout)
+        Assert.Contains("EVIDENCE:ARCH=X64", stdout)
+        Assert.Contains("EVIDENCE:POINTER_SIZE=8", stdout)
 
-        match requestedMode with
-        | Com ->
-            // COM mode: accept either COM success or Stub fallback
-            Assert.True(
-                hasCom || (hasStub && hasComFallback),
-                $"Expected COM mode or Stub fallback. Got: hasCom={hasCom}, hasStub={hasStub}, hasComFallback={hasComFallback}"
-            )
-        | Stub -> Assert.True(hasStub, "Expected Stub mode")
+    let assertRequestedPayload stdout requestedMode =
+        assertRequestedEvidence stdout requestedMode
 
-    let assertEvidenceWithPayload (stdout: string) expectedMode =
-        assertEvidence stdout expectedMode
-        // Only commands that output payloads will contain "Stub payload" in stub mode
-        if expectedMode = "COM" then
-            Assert.DoesNotContain("Stub payload", stdout)
+        if requestedMode = Stub then
+            Assert.Contains("Stub payload", stdout)
         else
-            Assert.Contains("Stub payload", stdout)
-
-    /// Asserts evidence with payload allowing for COM fallback to Stub mode on Windows
-    let assertEvidenceWithPayloadAllowingFallback (stdout: string) requestedMode =
-        let hasCom = stdout.Contains("EVIDENCE:MODE=COM")
-        let hasStub = stdout.Contains("EVIDENCE:MODE=STUB")
-        let hasComFallback = stdout.Contains("COM activation failed")
-        Assert.Contains("EVIDENCE:VERSION=", stdout)
-
-        match requestedMode with
-        | Com ->
-            if hasCom then
-                // Real COM mode - should not have stub payloads
-                Assert.DoesNotContain("Stub payload", stdout)
-            // COM fallback to Stub - should have stub payloads
-            else if hasStub && hasComFallback then
-                Assert.Contains("Stub payload", stdout)
-            else
-                Assert.Fail(
-                    $"Expected COM mode or Stub fallback. Got: hasCom={hasCom}, hasStub={hasStub}, hasComFallback={hasComFallback}"
-                )
-        | Stub ->
-            Assert.True(hasStub, "Expected Stub mode")
-            Assert.Contains("Stub payload", stdout)
+            Assert.DoesNotContain("Stub payload", stdout)
 
     /// Asserts that the result indicates success or matches a specific condition in combined output
     let expectSuccessOr (predicate: string -> bool) (message: string) (r: CliResult) =
-        Assert.True(r.ExitCode = 0 || predicate (combinedOutput r), message)
+        Assert.Equal(0, r.ExitCode)
+        Assert.True(predicate (combinedOutput r), message)
 
     /// Asserts that the result contains expected text in StdOut or StdErr
     let assertOutputContains (text: string) (r: CliResult) =
@@ -812,13 +75,32 @@ type CliTests(output: ITestOutputHelper, fixture: ServiceKeySetupFixture) =
     [<Fact>]
     [<Trait("Category", "E2E")>]
     [<Trait("Category", "Basic")>]
+    member _.``session-check rejects an explicit stub without activating COM``() =
+        let result =
+            Harness.runCliWithEnvironment
+                Stub
+                [ "XANTHOS_COM_PROGID", "Xanthos.Unregistered.TestComponent" ]
+                [ "session-check"
+                  "--spec"
+                  "RACE"
+                  "--from"
+                  Harness.fromTime
+                  "--max-records"
+                  "1" ]
+
+        output.WriteLine result.StdOut
+        Assert.Equal(2, result.ExitCode)
+        Assert.Contains("session-check requires explicit COM mode", result.StdOut)
+        Assert.Contains("EVIDENCE:ARCH=X64", result.StdOut)
+        Assert.DoesNotContain("CALL JVOpen", result.StdOut)
+        Assert.DoesNotContain("COM activation", result.StdOut)
+
+    [<Fact; Trait("Category", "E2E"); Trait("Category", "Basic")>]
     member _.``version reports JV-Link version and evidence markers``() =
         let result = Harness.runCli mode (Harness.versionArgs ())
         logResult "version" result
         Assert.Equal(0, result.ExitCode)
-        // Allow COM fallback to Stub if COM activation fails (e.g., 32-bit COM on 64-bit process)
-        assertEvidenceAllowingFallback result.StdOut mode
-        // Only check for real version when COM mode succeeds (not fallback)
+        assertRequestedEvidence result.StdOut mode
         let hasCom = result.StdOut.Contains("EVIDENCE:MODE=COM")
 
         if hasCom && isWindows then
@@ -831,8 +113,7 @@ type CliTests(output: ITestOutputHelper, fixture: ServiceKeySetupFixture) =
         let result = Harness.runCli mode (Harness.downloadArgs ())
         logResult "download" result
         Assert.Equal(0, result.ExitCode)
-        // Allow COM fallback to Stub if COM activation fails (e.g., 32-bit COM on 64-bit process)
-        assertEvidenceWithPayloadAllowingFallback result.StdOut mode
+        assertRequestedPayload result.StdOut mode
 
     [<Fact>]
     [<Trait("Category", "E2E")>]
@@ -860,8 +141,7 @@ type CliTests(output: ITestOutputHelper, fixture: ServiceKeySetupFixture) =
         let result = Harness.runCli mode (Harness.setSaveFlagArgs ())
         logResult "set-save-flag" result
         Assert.Equal(0, result.ExitCode)
-        // Allow COM fallback to Stub if COM activation fails
-        assertEvidenceAllowingFallback result.StdOut mode
+        assertRequestedEvidence result.StdOut mode
 
     [<Fact>]
     [<Trait("Category", "E2E")>]
@@ -873,14 +153,8 @@ type CliTests(output: ITestOutputHelper, fixture: ServiceKeySetupFixture) =
         let hasComCall =
             result.StdOut.Contains("CALL JVInit") || result.StdOut.Contains("CALL JVRead")
 
-        let hasComFallback = result.StdOut.Contains("COM activation failed")
-
-        match mode, isWindows, hasComFallback with
-        | Com, true, false -> Assert.True(hasComCall, "Expected COM CALL diagnostics in COM mode")
-        | Com, true, true -> () // COM fallback to Stub - no COM calls expected
-        | Com, false, _ -> ()
-        | Stub, _, _ -> Assert.False(hasComCall, "Diagnostics should not contain COM CALL in stub mode")
-
+        Assert.Equal(0, result.ExitCode)
+        Assert.False(hasComCall, "STUB mode must not invoke COM.")
     // ==================== Realtime Streaming Tests ====================
 
     [<Fact>]
@@ -890,8 +164,7 @@ type CliTests(output: ITestOutputHelper, fixture: ServiceKeySetupFixture) =
         let result = Harness.runCli mode (Harness.realtimeArgs ())
         logResult "realtime" result
         Assert.Equal(0, result.ExitCode)
-        // Allow COM fallback to Stub if COM activation fails
-        assertEvidenceAllowingFallback result.StdOut mode
+        assertRequestedEvidence result.StdOut mode
         Assert.Contains("Realtime stream completed", result.StdOut)
 
     // ==================== Configuration Round-Trip Tests ====================
@@ -932,17 +205,11 @@ type CliTests(output: ITestOutputHelper, fixture: ServiceKeySetupFixture) =
     [<Fact>]
     [<Trait("Category", "E2E")>]
     [<Trait("Category", "Setup")>]
-    member _.``service key setup succeeded``() =
-        // Log the fixture result if available
-        match fixture.SetupResult with
-        | Some result -> logResult "ServiceKeySetupFixture" result
-        | None -> output.WriteLine("[WARN] No setup result available")
-
-        Assert.True(
-            fixture.SetupSucceeded,
-            "ServiceKeySetupFixture failed. "
-            + "If running COM mode, ensure XANTHOS_E2E_SERVICE_KEY is set to a valid service key."
-        )
+    member _.``initialization reuses configuration without registering a key``() =
+        let result = Harness.runCli mode [ "version" ]
+        logResult "existing-configuration" result
+        Assert.Equal(0, result.ExitCode)
+        Assert.DoesNotContain("CALL JVSetServiceKey", result.StdOut)
 
     /// Get service key - reads the currently registered key (does not set it).
     [<Fact>]
@@ -1116,11 +383,8 @@ type CliTests(output: ITestOutputHelper, fixture: ServiceKeySetupFixture) =
         let result = Harness.runCli mode [ "status" ]
         logResult "status" result
 
-        // Accept success, "invalid state", or "not initialised" (JV-Link COM returns -201 for no session)
-        result
-        |> expectSuccessOr
-            (fun s -> s.Contains("invalid state") || s.Contains("not initialised"))
-            "Expected success or session error"
+        Assert.Equal(0, result.ExitCode)
+        Assert.Contains("Status: Completed 0 file(s).", result.StdOut)
 
     [<Fact>]
     [<Trait("Category", "E2E")>]
@@ -1130,14 +394,8 @@ type CliTests(output: ITestOutputHelper, fixture: ServiceKeySetupFixture) =
         let result = Harness.runCli mode [ "skip" ]
         logResult "skip" result
 
-        // Accept success, "invalid state", "not initialised", or "JVSkip" (JV-Link COM returns -201 for no session)
-        result
-        |> expectSuccessOr
-            (fun s ->
-                s.Contains("invalid state")
-                || s.Contains("not initialised")
-                || s.Contains("JVSkip"))
-            "Expected success or session error"
+        Assert.Equal(2, result.ExitCode)
+        Assert.Contains("Skip requested before opening a dataspec", result.StdOut)
 
     [<Fact>]
     [<Trait("Category", "E2E")>]
@@ -1294,14 +552,8 @@ type CliTests(output: ITestOutputHelper, fixture: ServiceKeySetupFixture) =
         // Use short duration for testing (1 second)
         let result = Harness.runCli mode [ "watch-events"; "--duration"; "1" ]
         logResult "watch-events" result
-        // Allow COM fallback to Stub if COM activation fails (e.g., 32-bit COM on 64-bit process)
-        assertEvidenceAllowingFallback result.StdOut mode
-        // Should succeed in any mode (COM, COM-fallback-to-Stub, or Stub)
-        Assert.True(
-            result.StdOut.Contains("Watch events started successfully")
-            || result.StdOut.Contains("Failed to start watch events"),
-            "Expected success or COM event failure message"
-        )
+        assertRequestedEvidence result.StdOut mode
+        Assert.Contains("Watch events started successfully", result.StdOut)
 
         Assert.Equal(0, result.ExitCode)
 
@@ -1327,28 +579,8 @@ type CliTests(output: ITestOutputHelper, fixture: ServiceKeySetupFixture) =
                   "1" ]
 
         logResult "capture-fixtures" result
-        // Check if COM fallback occurred
-        let comFallbackOccurred = result.StdOut.Contains("COM activation failed")
-
-        match mode with
-        | Stub ->
-            // In stub mode, should fail with error about requiring COM
-            Assert.Equal(2, result.ExitCode)
-            Assert.Contains("requires real COM connection", result.StdOut)
-        | Com when comFallbackOccurred ->
-            // COM mode requested but COM activation failed - falls back to Stub
-            // capture-fixtures should then fail because it requires real COM
-            Assert.Equal(2, result.ExitCode)
-            Assert.Contains("requires real COM connection", result.StdOut)
-        | Com ->
-            // In COM mode on Windows with working COM, should attempt to capture
-            // The actual result depends on whether JV-Link is properly configured
-            Assert.True(
-                result.ExitCode = 0 || result.ExitCode = 1 || result.ExitCode = 2,
-                "Expected exit code 0 (success), 1 (partial failure), or 2 (error)"
-            )
-            // Should have evidence markers
-            assertEvidence result.StdOut "COM"
+        Assert.Equal(2, result.ExitCode)
+        Assert.Contains("requires real COM connection", result.StdOut)
 
     [<Fact>]
     [<Trait("Category", "E2E")>]

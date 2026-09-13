@@ -1,9 +1,9 @@
-namespace Xanthos.Core.Records
+namespace Xanthos.Legacy.Records
 
 open System
 open Xanthos.Core
-open Xanthos.Core.Records.FieldDefinitions
-open Xanthos.Core.Records.RecordParser
+open Xanthos.Legacy.Records.FieldDefinitions
+open Xanthos.Legacy.Records.RecordParser
 
 /// HY Record: 馬名の意味由来 (Horse Name Meaning/Origin)
 /// Record Length: 123 bytes

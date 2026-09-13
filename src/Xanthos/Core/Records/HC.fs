@@ -1,9 +1,9 @@
-namespace Xanthos.Core.Records
+namespace Xanthos.Legacy.Records
 
 open System
 open Xanthos.Core
-open Xanthos.Core.Records.FieldDefinitions
-open Xanthos.Core.Records.RecordParser
+open Xanthos.Legacy.Records.FieldDefinitions
+open Xanthos.Legacy.Records.RecordParser
 
 /// HC Record: 坂路調教 (Slope Training)
 /// Record Length: 60 bytes

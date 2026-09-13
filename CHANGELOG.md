@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Validate CLI backend and x64 evidence centrally in the test harness, with regression cases for fallback, conflicting markers and missing evidence.
+
+- Document the public functional ownership/error/time contract and the SDK-to-function migration map. Verify package consumption independently of project references and keep real COM, Stub and deferred service/UI evidence distinct.
+
+- Add lossless, curried `Records` parsers for all 38 official record types, including complete nested arrays, training/weight/mining sentinels and seven explicit legacy identifier layouts. See `docs/record-migration.md`.
+- Add pure `DataSpecs` metadata, parsing-option selection and optional JVOpen preflight for documented stream/option/time-range combinations.
+
+- Preserve codes from all 19 official tables through `Codes`, and provide byte-oriented `RecordBytes` readers with lossless headers and field-specific errors. See `docs/record-foundations.md`; full record-layout migration remains separate.
+
+### Fixed
+
+- Use an Intel macOS CI runner for the explicit x64 CLI test suite.
+- Include the functional sample in the solution so Release solution builds also compile the sample in Release.
+- Allow the expanded solution's lint scan to finish within the CI time budget; retain its existing non-blocking warning policy.
+
+- Initialize JV-Link's owned STA with a Japanese native thread locale, preserving Japanese COM text and image-pattern arguments when the caller uses an English culture.
+
+- Preserve the seven notification origins and official event keys, report queue/consumer failures, and release partially registered COM handlers and owned delivery threads.
+- Preserve movie-list no-data and download-pending outcomes, and close data sessions after SDK setup cancellation or an empty movie-list open.
+- Retain the native filename and size in `JvError.Outputs` for SDK read failures so callers can identify a damaged file.
+- Avoid a redundant `JVClose` during COM disposal after a successful explicit close, including after event monitoring stops. Track data sessions and event monitoring separately; close sessions that are still open before releasing COM.
+- Preserve the API name and original SDK code when `JvLink.disconnect` encounters a cleanup failure, while still attempting COM reference release and STA shutdown.
+- Return an empty current-file timestamp when the SDK returns a null BSTR before reading data.
+
+### Changed
+
+- Route CLI COM commands through the public functional API. Add `session-check` for open/status/read/skip/cancel/close/reopen in one Session; preserve parsed records, image states and actual movie-list buffers.
+- Capture raw COM fixtures with acquisition metadata and SHA-256 sidecars; prefix filenames with the dataspec to separate streams.
+
+- **Breaking:** isolate previous record modules under `Xanthos.Legacy.Records`; Runtime payload parsing now delegates to `Records`, carries complete official models for all 38 types and preserves located failures in `RecordError`. Unofficial H5 is treated as unknown.
+
+- Functional event subscriptions return `Subscription`; use `JvLink.unsubscribe` and `subscriptionError`. Callbacks run on an owned worker with a bounded queue. See `docs/functional-events.md` for shutdown, cancellation and key handling.
+- The new functional `JvLink.movieOpen` returns `VideoOpenOutcome` (`Opened` / `NoData`). `VideoReadOutcome` now includes `DownloadPending`; callers should wait and read again for that case, and close either open outcome.
+- `JvLink.openRealtime` returns `RealtimeOpenOutcome`, without placeholder file counts or timestamps that JVRTOpen does not provide.
+- Update the build SDK to .NET 10.0.401 and use global.json in CI and release workflows, excluding preview SDKs.
+- Update NuGet test dependencies and F# development tools to stable releases.
+- Refresh the Nix dependency lock and align its SDK with global.json using verified official archives.
+- Point FSharpLint at the solution instead of treating directory names as inline source.
+
 ## [0.2.0] - 2026-02-22
 
 ### Breaking Changes

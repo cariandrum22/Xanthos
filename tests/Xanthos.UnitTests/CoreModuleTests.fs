@@ -3,8 +3,8 @@ module Xanthos.UnitTests.CoreModuleTests
 open System
 open Xunit
 open Xanthos.Core
-open Xanthos.Core.Records
-open Xanthos.Core.Records.CodeTables
+open Xanthos.Legacy.Records
+open Xanthos.Legacy.Records.CodeTables
 
 // ============================================================================
 // MovieType Tests
@@ -757,9 +757,13 @@ module TextModuleTests =
 
     open Xanthos.Core.Text
 
+    let private fixtureEncoding () =
+        System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance)
+        System.Text.Encoding.GetEncoding(932)
+
     [<Fact>]
     let ``decodeShiftJis should decode valid Shift-JIS bytes`` () =
-        let bytes = System.Text.Encoding.GetEncoding(932).GetBytes("テスト")
+        let bytes = (fixtureEncoding ()).GetBytes("テスト")
         let result = decodeShiftJis bytes
         Assert.Equal("テスト", result)
 
@@ -776,7 +780,7 @@ module TextModuleTests =
     [<Fact>]
     let ``decodeShiftJis should trim null terminators`` () =
         let text = "test\u0000\u0000"
-        let bytes = System.Text.Encoding.GetEncoding(932).GetBytes(text)
+        let bytes = (fixtureEncoding ()).GetBytes(text)
         let result = decodeShiftJis bytes
         Assert.Equal("test", result)
 
@@ -797,7 +801,7 @@ module TextModuleTests =
     [<Fact>]
     let ``decodeShiftJisBstrBytesIfNeeded should decode low-byte-per-char Shift-JIS stuffing`` () =
         let expected = "東京芝/芝1200m"
-        let bytes = System.Text.Encoding.GetEncoding(932).GetBytes(expected)
+        let bytes = (fixtureEncoding ()).GetBytes(expected)
         let stuffed = bytes |> Array.map char |> (fun chars -> new string (chars))
         let result = decodeShiftJisBstrBytesIfNeeded stuffed
         Assert.Equal(expected, result)
@@ -805,7 +809,7 @@ module TextModuleTests =
     [<Fact>]
     let ``decodeShiftJisBstrBytesIfNeeded should stop at NUL terminator`` () =
         let expected = "東京芝/芝1200m"
-        let bytes = System.Text.Encoding.GetEncoding(932).GetBytes(expected)
+        let bytes = (fixtureEncoding ()).GetBytes(expected)
         let stuffedBytes = Array.concat [ bytes; [| 0uy; 0x80uy; 0xFFuy; 0uy |] ]
         let stuffed = stuffedBytes |> Array.map char |> (fun chars -> new string (chars))
         let result = decodeShiftJisBstrBytesIfNeeded stuffed
@@ -814,7 +818,7 @@ module TextModuleTests =
     [<Fact>]
     let ``decodeShiftJisBstrBytesIfNeeded should decode raw Shift-JIS bytes copied into UTF-16 buffer`` () =
         let expected = "東京芝/芝1200m"
-        let bytes = System.Text.Encoding.GetEncoding(932).GetBytes(expected)
+        let bytes = (fixtureEncoding ()).GetBytes(expected)
 
         let padded =
             if bytes.Length % 2 = 0 then
@@ -829,7 +833,7 @@ module TextModuleTests =
     [<Fact>]
     let ``decodeShiftJisBstrBytesIfNeeded should decode high-byte-per-char Shift-JIS stuffing`` () =
         let expected = "東京芝/芝1200m"
-        let bytes = System.Text.Encoding.GetEncoding(932).GetBytes(expected)
+        let bytes = (fixtureEncoding ()).GetBytes(expected)
 
         let stuffed =
             bytes
@@ -903,7 +907,7 @@ module TextModuleTests =
 
 module FieldDefinitionsTests =
 
-    open Xanthos.Core.Records.FieldDefinitions
+    open Xanthos.Legacy.Records.FieldDefinitions
 
     [<Fact>]
     let ``text should create Text field spec`` () =
@@ -984,8 +988,8 @@ module FieldDefinitionsTests =
 
 module RecordParsingBranchTests =
 
-    open Xanthos.Core.Records.FieldDefinitions
-    open Xanthos.Core.Records.RecordParser
+    open Xanthos.Legacy.Records.FieldDefinitions
+    open Xanthos.Legacy.Records.RecordParser
 
     // Register the encoding provider to support Shift-JIS (codepage 932)
     do System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance)

@@ -22,6 +22,8 @@ type GlobalRawOptions =
       ServiceKey: string option
       SavePath: string option
       ForceStub: bool
+      ForceCom: bool
+      NonInteractive: bool
       EnableDiagnostics: bool
       ShowHelp: bool
       UseJvGets: bool option }
@@ -33,6 +35,7 @@ type GlobalSettings =
         SavePath: string option
         StubPreference: StubPreference
         EnableDiagnostics: bool
+        NonInteractive: bool
         /// When Some true, use JVGets (byte array) instead of JVRead (BSTR).
         /// When None, falls back to environment variables (XANTHOS_USE_JVREAD opt-out, XANTHOS_USE_JVGETS legacy).
         UseJvGets: bool option
@@ -89,6 +92,7 @@ type CaptureFixturesArgs =
 type Command =
     | Help
     | Download of DownloadArgs
+    | SessionCheck of DownloadArgs
     | Realtime of RealtimeArgs
     | Status
     | Skip

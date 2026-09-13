@@ -152,7 +152,7 @@ dotnet fantomas .
 Check code quality with FSharpLint:
 
 ```bash
-dotnet fsharplint lint src tests
+dotnet fsharplint lint Xanthos.sln
 ```
 
 ### Naming Conventions
@@ -206,6 +206,14 @@ XANTHOS_E2E_MODE=COM XANTHOS_SID=YOUR_SID dotnet test tests/Xanthos.Cli.E2E
 ### Manual COM Verification
 
 Some functionality requires testing with real JV-Link COM on Windows.
+Use `net10.0-windows`, an x64 process and JV-Link 5.0 x64 with its key already
+registered. Run `scripts/run-com-verification.ps1 -FromTime YYYYMMDDHHmmss`
+from the signed-in desktop, choosing an available RACE publication interval.
+Keep captures and machine-specific evidence under ignored `.artifacts/`.
+Separate Contract/explicit Stub tests from actual COM results; deferred image,
+playback or live-notification checks remain unverified. See the
+[COM test guide](tests/Xanthos.ComTests/README.md) and
+[public functional contract](docs/functional-api.md).
 See [tests/README.md - Manual COM Verification](tests/README.md#manual-com-verification)
 for:
 

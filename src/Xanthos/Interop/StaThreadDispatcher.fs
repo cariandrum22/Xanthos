@@ -24,7 +24,7 @@ open System.Runtime.InteropServices
 module private StaNative =
 
     [<Literal>]
-    let COINIT_APARTMENTTHREADED = 0u
+    let COINIT_APARTMENTTHREADED = 0x2u
 
     [<Literal>]
     let WM_QUIT = 0x0012u
@@ -98,6 +98,7 @@ type StaThreadDispatcher(?threadName: string) =
     let shutdownTcs = TaskCompletionSource<unit>()
     let readyTcs = TaskCompletionSource<uint32>() // Signals when thread is ready, returns thread ID
     let workQueue = ConcurrentQueue<WorkItem>()
+    let lifecycleGate = obj ()
 
     let startStaThread () =
         let mutable comInitialized = false
@@ -108,23 +109,13 @@ type StaThreadDispatcher(?threadName: string) =
                     // Get the thread ID for posting messages
                     let threadId = StaNative.GetCurrentThreadId()
 
-                    // Try to initialize COM explicitly. This may fail if:
-                    // - S_FALSE (1): Already initialized with same mode - OK
-                    // - RPC_E_CHANGED_MODE: Already initialized with different mode - try to continue anyway
-                    //   since SetApartmentState(STA) should have set the correct mode
+                    // COM calls require a real STA; incompatible initialization is an error.
                     let hr = StaNative.CoInitializeEx(IntPtr.Zero, StaNative.COINIT_APARTMENTTHREADED)
-
-                    // S_OK (0) or S_FALSE (1) means success
-                    // RPC_E_CHANGED_MODE (0x80010106) means COM is already initialized -
-                    // if SetApartmentState(STA) worked, we should be on an STA thread
                     comInitialized <- (hr = 0 || hr = 1)
 
-                    // Only fail if we get a truly unexpected error (not RPC_E_CHANGED_MODE)
-                    // RPC_E_CHANGED_MODE as signed int32 is -2147417850
-                    let rpcChangedMode = -2147417850
-
-                    if hr < 0 && hr <> rpcChangedMode then
+                    if hr < 0 then
                         readyTcs.SetException(Marshal.GetExceptionForHR(hr))
+                        shutdownTcs.TrySetResult(()) |> ignore
                     else
                         try
                             // Create a message queue for this thread by calling PeekMessage
@@ -142,6 +133,7 @@ type StaThreadDispatcher(?threadName: string) =
                                 let result = StaNative.GetMessage(&msg, IntPtr.Zero, 0u, 0u)
 
                                 if result = 0 || result = -1 then
+                                    Diagnostics.emit $"STA message loop exiting: thread={threadId} GetMessage={result}"
                                     // WM_QUIT received or error - exit the loop
                                     running <- false
                                 else
@@ -152,7 +144,8 @@ type StaThreadDispatcher(?threadName: string) =
 
                                         while workQueue.TryDequeue(&work) do
                                             try
-                                                work.Execute()
+                                                if not work.Completion.Task.IsCompleted then
+                                                    work.Execute()
                                             with _ ->
                                                 ()
                                     | _ ->
@@ -160,8 +153,16 @@ type StaThreadDispatcher(?threadName: string) =
                                         StaNative.TranslateMessage(&msg) |> ignore
                                         StaNative.DispatchMessage(&msg) |> ignore
                         finally
+                            let mutable pending = Unchecked.defaultof<WorkItem>
+
+                            while workQueue.TryDequeue(&pending) do
+                                pending.Completion.TrySetException(ObjectDisposedException("StaThreadDispatcher"))
+                                |> ignore
+
                             if comInitialized then
+                                Diagnostics.emit $"STA CoUninitialize begin: thread={threadId}"
                                 StaNative.CoUninitialize()
+                                Diagnostics.emit $"STA CoUninitialize complete: thread={threadId}"
 
                             shutdownTcs.TrySetResult(()) |> ignore)
             )
@@ -199,21 +200,17 @@ type StaThreadDispatcher(?threadName: string) =
         StaNative.GetCurrentThreadId() = staThreadId
 
     let queueWork (work: WorkItem) =
-        workQueue.Enqueue(work)
-        // Wake up the STA thread to process work
-        if not (StaNative.PostThreadMessage(staThreadId, StaNative.WM_EXECUTE_WORK, IntPtr.Zero, IntPtr.Zero)) then
-            // PostThreadMessage failed - remove the queued item and fail the task
-            // to prevent the caller from hanging forever
-            let errCode = Marshal.GetLastPInvokeError()
-            let mutable discarded = Unchecked.defaultof<WorkItem>
-            // Try to remove the item we just added (best effort - concurrent queue)
-            workQueue.TryDequeue(&discarded) |> ignore
+        lock lifecycleGate (fun () ->
+            ensureNotDisposed ()
+            workQueue.Enqueue(work)
 
-            let errMsg =
-                $"PostThreadMessage failed with error code {errCode}. STA thread may have exited."
+            if not (StaNative.PostThreadMessage(staThreadId, StaNative.WM_EXECUTE_WORK, IntPtr.Zero, IntPtr.Zero)) then
+                let errCode = Marshal.GetLastPInvokeError()
 
-            Diagnostics.emit errMsg
-            work.Completion.TrySetException(InvalidOperationException(errMsg)) |> ignore
+                let errMsg =
+                    $"PostThreadMessage failed with error code {errCode}. STA thread may have exited."
+                // Fail this work item only. Dequeuing here could discard another caller's work.
+                work.Completion.TrySetException(InvalidOperationException(errMsg)) |> ignore)
 
     let execute name (call: unit -> 'T) : 'T =
         ensureNotDisposed ()
@@ -286,21 +283,16 @@ type StaThreadDispatcher(?threadName: string) =
                 }
 
     member private this.Dispose(disposing: bool) =
-        if Interlocked.Exchange(&disposed, 1) = 0 then
-            if readyTcs.Task.IsCompletedSuccessfully then
-                // Post WM_QUIT to exit the message loop
-                if
-                    not (StaNative.PostThreadMessage(staThreadId, uint32 StaNative.WM_QUIT, IntPtr.Zero, IntPtr.Zero))
-                then
-                    // PostThreadMessage failed - thread may have already exited, which is fine during disposal
+        lock lifecycleGate (fun () ->
+            if Interlocked.Exchange(&disposed, 1) = 0 && readyTcs.Task.IsCompletedSuccessfully then
+                if not (StaNative.PostThreadMessage(staThreadId, StaNative.WM_QUIT, IntPtr.Zero, IntPtr.Zero)) then
                     let errCode = Marshal.GetLastPInvokeError()
-                    Diagnostics.emit $"PostThreadMessage(WM_QUIT) failed with error code {errCode} during disposal"
+                    Diagnostics.emit $"PostThreadMessage(WM_QUIT) failed with error code {errCode} during disposal")
 
-            // Wait for message loop to exit (with timeout to avoid hangs during shutdown).
-            shutdownTcs.Task.Wait(TimeSpan.FromSeconds 5.0) |> ignore
-
-            if staThread.IsAlive then
-                staThread.Join(TimeSpan.FromSeconds 5.0) |> ignore
+        // A callback may dispose its own owner. Joining that thread would deadlock.
+        // External deterministic disposal waits for actual termination, not a silent timeout.
+        if disposing && not (isOnStaThread ()) then
+            staThread.Join()
 
     interface IDisposable with
         member this.Dispose() =

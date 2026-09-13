@@ -26,6 +26,8 @@ type ComFault =
 type XanthosError =
     | InteropError of ComError
     | ValidationError of message: string
+    /// Retains the official record, field, original byte position and offending bytes.
+    | RecordError of Xanthos.RecordParseError
     | DataNotFound of key: string
     | Unsupported of feature: string
     | IOError of details: string
@@ -63,6 +65,8 @@ module Errors =
         | InteropError(CommunicationFailure(code, details)) -> $"JV-Link communication failure (code={code}): {details}"
         | InteropError(Unexpected details) -> $"Unexpected JV-Link error: {details}"
         | ValidationError message -> $"Validation error: {message}"
+        | RecordError error ->
+            $"{error.RecordId}.{error.Field} at byte {error.Position}, length {error.Length}: {error.Message}"
         | DataNotFound key -> $"Data not found: {key}"
         | Unsupported feature -> $"Unsupported operation: {feature}"
         | IOError details -> $"File I/O error: {details}"

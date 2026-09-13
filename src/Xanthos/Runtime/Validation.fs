@@ -114,13 +114,12 @@ module Validation =
 
             if String.IsNullOrWhiteSpace normalized then
                 Error(validation "Realtime key must be a non-empty string after normalization.")
-            else if
-                // Check if it's a WatchEvent key (starts with "0B")
-                normalized.StartsWith("0B", StringComparison.OrdinalIgnoreCase)
-            then
-                // WatchEvent keys are allowed through with minimal validation
-                // They have variable format: 0B12RA20240101010112...
-                Ok normalized
+            elif Xanthos.EventKeys.inferChangeKind key |> Option.isSome then
+                let kind = Xanthos.EventKeys.inferChangeKind key |> Option.get
+
+                Xanthos.EventKeys.parse { Kind = kind; RawKey = key }
+                |> Result.map (fun parsed -> parsed.Request.Key)
+                |> Result.mapError (fun error -> validation error.Message)
             else
                 // For non-WatchEvent keys, validate digit-only format
                 let isAllDigits = normalized |> Seq.forall Char.IsDigit

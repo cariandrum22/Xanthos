@@ -1,7 +1,7 @@
 module Xanthos.UnitTests.RecordTypesTests
 
 open Xunit
-open Xanthos.Core.Records.RecordTypes
+open Xanthos.Legacy.Records.RecordTypes
 
 // ============================================================================
 // RecordTypes.parse - All Record Type Branches

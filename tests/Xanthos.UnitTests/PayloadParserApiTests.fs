@@ -3,7 +3,7 @@ module Xanthos.UnitTests.PayloadParserApiTests
 open System
 open Xunit
 open Xanthos.Core
-open Xanthos.Core.Records
+open Xanthos.UnitTests
 open Xanthos.Interop
 open Xanthos.Runtime
 
@@ -20,27 +20,19 @@ module ServicePayloadParserTests =
           UseJvGets = None }
 
     let private createTKPayload () =
-        let data = Array.create 346 32uy
-        let tkBytes = encodeShiftJis "TK"
-        let raceKeyBytes = encodeShiftJis "2024010101010101"
-        let horseIdBytes = encodeShiftJis "1234567890"
-        let horseNameBytes = encodeShiftJis "TestHorse"
-        Array.Copy(tkBytes, 0, data, 0, 2)
-        Array.Copy(raceKeyBytes, 0, data, 2, min 16 raceKeyBytes.Length)
-        Array.Copy(horseIdBytes, 0, data, 18, min 10 horseIdBytes.Length)
-        Array.Copy(horseNameBytes, 0, data, 28, min 36 horseNameBytes.Length)
+        let layout = RecordOracle.layout "TK"
+        let data = RecordOracle.blank layout
+        RecordOracle.write layout "36" 0 "001" data
+        RecordOracle.write layout "37.b" 0 "1234567890" data
+        RecordOracle.write layout "37.c" 0 ("TestHorse".PadRight(36)) data
 
         { JvPayload.Timestamp = None
           Data = data }
 
     let private createRAPayload () =
-        let data = Array.create 2890 32uy
-        let raBytes = encodeShiftJis "RA"
-        let raceKeyBytes = encodeShiftJis "2024010101010101"
-        let raceNameBytes = encodeShiftJis "TestRace"
-        Array.Copy(raBytes, 0, data, 0, 2)
-        Array.Copy(raceKeyBytes, 0, data, 2, min 16 raceKeyBytes.Length)
-        Array.Copy(raceNameBytes, 0, data, 59, min 60 raceNameBytes.Length)
+        let layout = RecordOracle.layout "RA"
+        let data = RecordOracle.blank layout
+        RecordOracle.write layout "12" 0 ("TestRace".PadRight(60)) data
 
         { JvPayload.Timestamp = None
           Data = data }
@@ -51,7 +43,7 @@ module ServicePayloadParserTests =
         let result = JvLinkService.ParsePayload(payload)
 
         match result with
-        | Ok(TKRecord tk) -> Assert.Equal("TestHorse", tk.HorseName.Trim())
+        | Ok(TKRecord tk) -> Assert.Equal("TestHorse", tk.Horses[0].Name.Trim())
         | Ok other -> Assert.Fail($"Expected TKRecord but got {other}")
         | Error err -> Assert.Fail($"Parsing failed: {err}")
 
@@ -155,6 +147,27 @@ module ServicePayloadParserTests =
 module PayloadParserModuleTests =
 
     [<Fact>]
+    let ``Runtime parser preserves canonical field errors and does not recognize H5 as official`` () =
+        let layout = RecordOracle.layout "RA"
+        let data = RecordOracle.blank layout
+        RecordOracle.write layout "34" 0 "12X4" data
+
+        let expected =
+            match Xanthos.Records.parse data with
+            | Error error -> error
+            | Ok _ -> failwith "Expected invalid distance"
+
+        match PayloadParser.parsePayload { Timestamp = None; Data = data } with
+        | Error(RecordError actual) -> Assert.Equal(expected, actual)
+        | other -> Assert.Fail($"Expected the original located error, got {other}")
+
+        let raw = encodeShiftJis "H5legacy"
+
+        match PayloadParser.parsePayload { Timestamp = None; Data = raw } with
+        | Ok(UnknownRecord("H5", data)) -> Assert.Equal<byte>(raw, data)
+        | other -> Assert.Fail($"H5 must be unknown, got {other}")
+
+    [<Fact>]
     let ``parsePayload returns error for empty data`` () =
         let payload =
             { JvPayload.Timestamp = None
@@ -205,7 +218,6 @@ module PayloadParserModuleTests =
 
 /// Tests for type-specific extractors
 module TypeExtractorTests =
-    open Xanthos.Core.Records
 
     let private createPayload (typeId: string) size =
         let data = Array.create size 32uy
@@ -217,15 +229,7 @@ module TypeExtractorTests =
 
     [<Fact>]
     let ``getTKRecords extracts only TK records`` () =
-        let tkData = Array.create 346 32uy
-        let tkBytes = encodeShiftJis "TK"
-        let raceKeyBytes = encodeShiftJis "2024010101010101"
-        let horseIdBytes = encodeShiftJis "1234567890"
-        let horseNameBytes = encodeShiftJis "TestHorse"
-        Array.Copy(tkBytes, 0, tkData, 0, 2)
-        Array.Copy(raceKeyBytes, 0, tkData, 2, 16)
-        Array.Copy(horseIdBytes, 0, tkData, 18, 10)
-        Array.Copy(horseNameBytes, 0, tkData, 28, 9)
+        let tkData = RecordOracle.blank (RecordOracle.layout "TK")
 
         let tkPayload =
             { JvPayload.Timestamp = None
@@ -241,9 +245,7 @@ module TypeExtractorTests =
         | Ok records ->
             let tkRecords = PayloadParser.getTKRecords records
             Assert.Equal(1, tkRecords.Length)
-        | Error _ ->
-            // If TK parsing fails, the test will need adjusted data
-            ()
+        | Error error -> Assert.Fail($"Parsing failed: {error}")
 
     [<Fact>]
     let ``filterByType works with custom extractor`` () =

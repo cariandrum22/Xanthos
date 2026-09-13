@@ -6,10 +6,10 @@ open FsCheck.FSharp
 open FsCheck.Xunit
 open Xanthos.Core
 open Xanthos.Core.Text
-open Xanthos.Core.Records
-open Xanthos.Core.Records.RecordParser
-open Xanthos.Core.Records.CodeTables
-open Xanthos.Core.Records.FieldDefinitions
+open Xanthos.Legacy.Records
+open Xanthos.Legacy.Records.RecordParser
+open Xanthos.Legacy.Records.CodeTables
+open Xanthos.Legacy.Records.FieldDefinitions
 
 // ============================================================================
 // Custom Generators
@@ -249,7 +249,7 @@ let ``TK record with valid race key can be created`` () =
             Array.Copy(horseIdBytes, 0, data, 18, min 10 horseIdBytes.Length) // HorseId required
             Array.Copy(encodeShiftJis "TestHorse", 0, data, 28, 9) // HorseName required
 
-            match Xanthos.Core.Records.TK.parse data with
+            match Xanthos.Legacy.Records.TK.parse data with
             | Ok record ->
                 record.RaceKey.Trim() = raceKey
                 || record.RaceKey.Contains(raceKey.Substring(0, 10))
@@ -265,7 +265,7 @@ let ``O1 record with valid odds values can be created`` () =
             Array.Copy(encodeShiftJis "03", 0, data, 18, 2)
             Array.Copy(encodeShiftJis (sprintf "%04d" oddsValue), 0, data, 20, 4)
 
-            match Xanthos.Core.Records.O1.parse data with
+            match Xanthos.Legacy.Records.O1.parse data with
             | Ok record -> record.RaceKey.Trim().Length > 0 && record.Odds.IsSome
             | Error _ -> false))
 
@@ -278,8 +278,8 @@ let ``HR record parsing is deterministic`` () =
     Array.Copy(encodeShiftJis "05", 0, data, 19, 2)
     Array.Copy(encodeShiftJis "000001000", 0, data, 25, 9)
 
-    let result1 = Xanthos.Core.Records.HR.parse data
-    let result2 = Xanthos.Core.Records.HR.parse data
+    let result1 = Xanthos.Legacy.Records.HR.parse data
+    let result2 = Xanthos.Legacy.Records.HR.parse data
 
     match (result1, result2) with
     | (Ok r1, Ok r2) ->
