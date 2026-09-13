@@ -41,6 +41,7 @@ See the [functional API contract](functional-api.md), [CLI guide](functional-cli
 
 ## Documentation
 
+- [SDK known limitations](sdk-known-limitations.md) - Native communication errors and caller responsibilities
 - [API Reference](reference/xanthos-api.html) - Auto-generated from XML documentation
 - [Architecture](https://github.com/cariandrum22/Xanthos/tree/main/design/architecture) - Design documents
 

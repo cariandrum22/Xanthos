@@ -15,6 +15,8 @@ module internal SdkOperations =
               Message = message }
 
     let private sdkError api code =
+        // Preserve -413 like other SDK errors; its underlying native error may already be lost.
+        // Do not infer HTTP status or retry here. See docs/sdk-known-limitations.md (SDK-COM-413).
         failure api JvErrorKind.Sdk (Some code) $"{api} returned SDK code {code}."
 
     let private mismatch api expected =

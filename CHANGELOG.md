@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Document intermittent native SDK `-413` failures and the caller contract for preserving errors without implicit retry or fallback.
+
 - Validate CLI backend and x64 evidence centrally in the test harness, with regression cases for fallback, conflicting markers and missing evidence.
 
 - Document the public functional ownership/error/time contract and the SDK-to-function migration map. Verify package consumption independently of project references and keep real COM, Stub and deferred service/UI evidence distinct.

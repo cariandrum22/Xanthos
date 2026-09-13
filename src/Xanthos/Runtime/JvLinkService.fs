@@ -1558,7 +1558,8 @@ type JvLinkService
     /// </summary>
     /// <remarks>
     /// This utility function does not open a JV-Link session (JVOpen/JVRTOpen),
-    /// so it does not close any session. It can be safely used while other sessions are active.
+    /// so it does not close any session. This does not guarantee isolation from other
+    /// COM instances or processes sharing the native SDK service.
     /// </remarks>
     member _.GetCourseDiagram(key: string) : Result<CourseDiagram, XanthosError> =
         let normalized = Text.normalizeJvText key

@@ -15,6 +15,8 @@ module JvLink =
               Message = message }
 
     let private sdkError api code =
+        // Keep the original API/code, including -413; do not infer retryability from the SDK label.
+        // See docs/sdk-known-limitations.md (SDK-COM-413).
         failure api JvErrorKind.Sdk (Some code) $"{api} returned SDK code {code}."
 
     let private mismatch api expected =

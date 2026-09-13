@@ -11,6 +11,9 @@ type JvErrorKind =
     | Disposed
     | Busy
 
+/// Retains the failing API and original code; explanatory text is not a transport diagnosis.
+/// SDK -413 can occur independently of Xanthos and does not imply retryability or an observed HTTP status.
+/// See docs/sdk-known-limitations.md (SDK-COM-413).
 type JvError =
     {
         Api: string
