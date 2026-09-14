@@ -7,9 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-14
+
 ### Added
 
-- Prepare three-OS Fast/Coverage gates, separate artifact verification and scheduled managed Stress; hosted verification remains pending.
+- Support JV-Link SDK 5.0 on Windows x64 through a functional F# API: all 26 methods, nine properties and seven event origins, with typed results and explicit session ownership.
+- Provide both `net10.0` (portable parsing) and `net10.0-windows` (COM and parsing) assets in the NuGet package.
+- Require three-OS Fast/Coverage gates and separate artifact verification; run managed Stress with recorded seeds.
 
 - Add controlled functional CLI scenarios, deterministic record and Session properties, and SDK-free Windows x64 boundary tests.
 - Add reviewed test inventories and Fast/Coverage/WindowsManaged/Stress profiles that reject missing cases, unexpected skips and invalid evidence; provide isolated SDK-free Windows CI verification.
@@ -23,10 +27,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add lossless, curried `Records` parsers for all 38 official record types, including complete nested arrays, training/weight/mining sentinels and seven explicit legacy identifier layouts. See `docs/record-migration.md`.
 - Add pure `DataSpecs` metadata, parsing-option selection and optional JVOpen preflight for documented stream/option/time-range combinations.
 
-- Preserve codes from all 19 official tables through `Codes`, and provide byte-oriented `RecordBytes` readers with lossless headers and field-specific errors. See `docs/record-foundations.md`; full record-layout migration remains separate.
+- Preserve codes from all 19 official tables through `Codes`, and provide byte-oriented `RecordBytes` readers with lossless headers and field-specific errors. See `docs/record-foundations.md`.
 
 ### Fixed
 
+- Isolate interactive settings verification before changing the saving flag; verify normal and exception recovery from fresh sessions and retain original cache/data integrity checks.
+- Keep consent-policy tests independent of shared thread-pool scheduling without extending their timeout or consent-wait assertions.
 - Allow CI to combine successful OS jobs across rerun attempts of the same workflow run, replace rerun artifacts, and require SDK-absence evidence in the Windows gate.
 
 - Preserve CLI notification errors through cleanup, report queue overflow and pending keys, and capture configuration/Stub output through the injected writer.
@@ -56,8 +62,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Route CLI COM commands through the public functional API. Add `session-check` for open/status/read/skip/cancel/close/reopen in one Session; preserve parsed records, image states and actual movie-list buffers.
 - Capture raw COM fixtures with acquisition metadata and SHA-256 sidecars; prefix filenames with the dataspec to separate streams.
 
-- **Breaking:** isolate previous record modules under `Xanthos.Legacy.Records`; Runtime payload parsing now delegates to `Records`, carries complete official models for all 38 types and preserves located failures in `RecordError`. Unofficial H5 is treated as unknown.
-
 - Functional event subscriptions return `Subscription`; use `JvLink.unsubscribe` and `subscriptionError`. Callbacks run on an owned worker with a bounded queue. See `docs/functional-events.md` for shutdown, cancellation and key handling.
 - The new functional `JvLink.movieOpen` returns `VideoOpenOutcome` (`Opened` / `NoData`). `VideoReadOutcome` now includes `DownloadPending`; callers should wait and read again for that case, and close either open outcome.
 - `JvLink.openRealtime` returns `RealtimeOpenOutcome`, without placeholder file counts or timestamps that JVRTOpen does not provide.
@@ -65,6 +69,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update NuGet test dependencies and F# development tools to stable releases.
 - Refresh the Nix dependency lock and align its SDK with global.json using verified official archives.
 - Point FSharpLint at the solution instead of treating directory names as inline source.
+- Manage package and assembly versions centrally in `Directory.Build.props`; require release tags or manual version inputs to match the source version.
+- Run required Fast, Coverage and SDK-free Windows checks before publishing, retain their evidence, and update GitHub Release creation to a Node 24 action.
+
+### Breaking Changes
+
+- COM use requires the Windows target, an x64 process and JV-Link 5.0 x64 with its service key registered. Portable record parsing does not require the SDK.
+- Previous record modules are now under `Xanthos.Legacy.Records`. Runtime payload parsing delegates to `Records`, carries complete official models for all 38 types and preserves located failures in `RecordError`. Unofficial H5 is treated as unknown. See [record migration](docs/record-migration.md) and the [functional API contract](docs/functional-api.md).
 
 ## [0.2.0] - 2026-02-22
 
@@ -109,5 +120,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Error catalog generated from JV-Link specifications
 - API documentation with fsdocs
 
+[Unreleased]: https://github.com/cariandrum22/Xanthos/compare/v0.3.0...develop
+[0.3.0]: https://github.com/cariandrum22/Xanthos/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/cariandrum22/Xanthos/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/cariandrum22/Xanthos/releases/tag/v0.1.0

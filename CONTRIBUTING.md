@@ -338,7 +338,10 @@ This project follows [Semantic Versioning](https://semver.org/):
 - **MINOR**: Backward-compatible new features
 - **PATCH**: Backward-compatible bug fixes
 
-Versions are centrally managed in `Directory.Build.props`.
+Versions are centrally managed by `VersionPrefix` in `Directory.Build.props`.
+During the 0.x development series, increment MINOR for API additions or incompatible
+changes and PATCH for compatible fixes. Document incompatible changes explicitly;
+1.0.0 will establish the stable public API contract.
 
 ### Pre-Release Checklist
 
@@ -349,6 +352,11 @@ Before tagging a release, complete the following:
    [verification checklist](tests/README.md#verification-checklist) on Windows
 3. **CHANGELOG**: Finalize `[Unreleased]` section with release version
 4. **Version**: Update version in `Directory.Build.props`
+
+Release tags (`vX.Y.Z`) and manual workflow version inputs must match the source
+version. The release workflow packs both target frameworks from that version;
+it does not override the version while publishing. Merge the reviewed release
+preparation into `develop`, then merge `develop` into `main` before tagging.
 
 ### Release Verification Evidence
 
