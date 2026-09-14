@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add a managed line coverage badge from verified Linux Coverage suites, with source commit/run provenance and automatic generated-file refreshes on develop.
+
 ### Fixed
 
 - Build parser and text test fixtures directly with the CP932 provider so isolated and coverage runs do not depend on other tests registering code pages first.

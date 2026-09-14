@@ -57,6 +57,7 @@ jobs:
         run: |
           ./scripts/test-evidence-validators.ps1 -RunId "controls-${{ github.run_id }}-${{ github.run_attempt }}"
           dotnet fsi ./scripts/test-settings-workflow.fsx
+          ./scripts/test-coverage-badge.ps1
 
       - name: Run required Fast suites
         shell: pwsh
@@ -148,6 +149,48 @@ jobs:
           overwrite: true
           path: QualityArtifacts/artifact-manifest.json
           if-no-files-found: error
+
+      - name: Generate managed line coverage badge
+        shell: pwsh
+        run: >-
+          ./scripts/new-coverage-badge.ps1 -ReportsDirectory QualityArtifacts/quality-linux/net10.0/Coverage
+          -Assembly Xanthos -SourcePrefix src/Xanthos -ExpectedReports 3
+          -Commit '${{ github.sha }}' -RunUrl '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+          -OutputDirectory .github/badges
+
+      - name: Preserve measured coverage badge
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: coverage-badge
+          path: .github/badges/
+          include-hidden-files: true
+          if-no-files-found: error
+
+      - name: Summarize managed line coverage
+        shell: pwsh
+        run: |
+          $coverage = Get-Content .github/badges/coverage.json -Raw | ConvertFrom-Json
+          "Managed line coverage: $($coverage.percentage)% ($($coverage.coveredLines)/$($coverage.totalLines)). Linux Coverage suites only; native COM execution excluded." >> $env:GITHUB_STEP_SUMMARY
+
+  publish-coverage-badge:
+    name: Publish coverage badge
+    needs: [test-summary, code-quality]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/download-artifact@v8.0.1
+        with:
+          name: coverage-badge
+          path: .github/badges
+      - name: Refresh generated badges on develop
+        shell: pwsh
+        run: ./scripts/publish-coverage-badge.ps1 -Branch develop -SourceCommit '${{ github.sha }}'
 
   docs:
     name: Build Documentation
