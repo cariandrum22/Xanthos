@@ -70,11 +70,15 @@ type internal CommandRunner(dependencies: Dependencies) =
             else
                 DateOnly.MaxValue
 
-        let options =
-            DataSpecs.parseOptions spec raceDate
-            |> Option.defaultValue Records.ParseOptions.Default
-
-        Records.parseWith options data |> Result.map (fun _ -> id)
+        DataSpecs.parseOptionsForRecord spec id raceDate
+        |> Result.mapError (fun message ->
+            { RecordId = id
+              Field = "ParseOptions"
+              Position = 1
+              Length = 2
+              Raw = Array.truncate 2 data
+              Message = message })
+        |> Result.bind (fun options -> Records.parseWith options data |> Result.map (fun _ -> id))
 
     let parse spec data =
         match tryParse spec data with

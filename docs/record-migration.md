@@ -60,6 +60,8 @@ Odds limits changed when trifecta sales began on 2004-08-14. Choose `Before20040
 
 `DataSpecs.parseOptions dataspec raceDate` selects both conventions and returns `None` for an unknown dataspec. `DataSpecs.tryFind` exposes expected normal/setup record sets and allowed options. Treat these sets as the documented baseline; preserve unrecognized records when the service adds new types.
 
+For concatenated dataspecs, use `DataSpecs.parseOptionsForRecord dataspec recordId raceDate`. It selects identifier width from the streams that can supply that record and selects odds limits from the record's race date. Ambiguous legacy/expanded sources for the same record return an error; `validateOpen` also rejects those combinations before acquisition. Unknown record IDs remain preservable, while unknown dataspecs or an unexplained identifier layout return errors.
+
 Call the optional pure `DataSpecs.validateOpen request` before acquisition to check dataspec/option combinations and time bounds. The interval is `(FromTime, ToTime]`, measured by delivery timestamp in Japanese service time. TOKU, DIFF/DIFN, HOSE/HOSN, HOYU and COMM do not allow an end time: the SDK returns NoData for that request. A NoData response to such a request does not demonstrate that the archive is empty. Low-level `JvLink.openData` retains native return codes without applying this optional preflight.
 
 ## Training, mining and entry statistics

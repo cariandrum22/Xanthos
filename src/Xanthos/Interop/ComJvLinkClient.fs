@@ -72,12 +72,14 @@ type ComJvLinkClient
     let mutable eventSubscription: EventSubscription option = None
     let mutable disposeState = 0
     let lifetime = NativeSessionLifetime()
+    let mutable nativeThreadId = 0
 
     let comObj =
         try
             dispatcher.Invoke(
                 "JVLink.Activate",
                 fun () ->
+                    nativeThreadId <- Environment.CurrentManagedThreadId
                     JvLinkLocale.initialize ()
                     let instance = activation.Create jvType
                     Diagnostics.emit $"COM activation succeeded for ProgID '{progId}' ({IntPtr.Size * 8}-bit)."
@@ -294,7 +296,8 @@ type ComJvLinkClient
             run (Xanthos.SdkOperations.deleteFile filename)
 
         member _.WatchEvent callback =
-            run (Xanthos.SdkOperations.watchEvent (fun event -> callback event.RawKey))
+            legacySession.Value.Run("JVWatchEvent", fun native -> native.Watch(fun event -> callback event.RawKey))
+            |> legacy
 
         member _.WatchEventClose() =
             run Xanthos.SdkOperations.watchEventClose
@@ -520,6 +523,9 @@ type ComJvLinkClient
     interface Xanthos.INativeCleanup with
         member this.Cleanup() = this.Cleanup()
 
+    interface Xanthos.INativeExecutionContext with
+        member _.IsCurrentThread = nativeThreadId = Environment.CurrentManagedThreadId
+
     interface IComAbandonable with
         member this.Abandon() = this.Abandon(TimeSpan.FromSeconds 5.)
 
@@ -531,7 +537,10 @@ type ComJvLinkClient
 
     interface INativeWatchEventSource with
         member _.WatchNativeEvent callback =
-            run (Xanthos.SdkOperations.watchEvent callback)
+            // JvLinkService already owns a bounded, observable delivery queue.
+            // Do not insert the functional subscription queue before it.
+            legacySession.Value.Run("JVWatchEvent", fun native -> native.Watch callback)
+            |> legacy
 
     interface IComDispatchProvider with
         member _.Dispatcher = dispatcher

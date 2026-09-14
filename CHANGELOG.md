@@ -25,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Route legacy native notifications directly to the service queue and retain observable overflow during registration and restart.
+- Close session admission before joining in-flight SDK calls; preserve scoped results and exceptions, release once, and defer reentrant cleanup to avoid self-deadlock.
+- Resolve concatenated dataspec parsing per record kind and reject ambiguous legacy/expanded combinations before acquisition.
 - Keep failed COM activation safe through garbage collection; finalize only fully initialized clients and contain finalizer exceptions.
 - Preserve the legacy course-image error for NoImage instead of returning a nonexistent path; normalize null SDK string properties to empty strings.
 - Add explicit identifier/odds parsing options to compatibility-service acquisition and batch parsing, including collection of partial successes.
@@ -73,10 +76,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Known Limitations
 
-- The legacy event adapter has an additional 256-slot delivery queue whose failures are not exposed by `JvLinkService.WatchEvents`. Prefer functional subscriptions and monitor `subscriptionError` for delivery failures.
-- Join concurrent SDK operations before leaving `withSession`; a `Busy` disconnect does not release the owner and is not retried automatically.
-- The CLI does not resolve historical identifier options for concatenated dataspecs such as `DIFFRACE`. Acquire legacy streams one four-character dataspec at a time.
 - The JVRead string conversion can fail after the SDK cursor advances when a record cannot be encoded as CP932. The read fails without recovering that record; prefer the byte-oriented JVGets path.
+- [Read fidelity and recovery](docs/read-fidelity.md) specifies an additive diagnostic extension; it is not implemented in this release.
 - UI-capable legacy COM calls wait without a timeout to allow user consent. A native network stall in the same call also remains unbounded and prevents queued cancel/close operations from executing until that call returns.
 - All seven notification origins have deterministic contract coverage; live delivery of every origin has not been verified.
 - Historical identifier and odds layouts are tested with specification-based fixtures; real legacy captures have not yet been obtained.

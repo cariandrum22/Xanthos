@@ -63,6 +63,153 @@ module LifecycleRegressionTests =
           Outputs = Map.ofList [ "remaining", "3" ]
           Message = "Injected cleanup failure" }
 
+    [<Theory; InlineData(false); InlineData(true); Trait("Category", "Contract")>]
+    let ``Scoped cleanup joins an ordinary native call and preserves the body outcome`` throws =
+        let native = new LifecycleNative()
+        let session = new Session(native)
+        use entered = new ManualResetEventSlim()
+        use release = new ManualResetEventSlim()
+        use returning = new ManualResetEventSlim()
+        let original = InvalidOperationException("original scoped failure")
+
+        native.OnCall <-
+            fun () ->
+                entered.Set()
+                release.Wait()
+
+        let mutable operation = Task.FromResult(Ok 0)
+
+        let scoped =
+            Task.Factory.StartNew(
+                (fun () ->
+                    try
+                        Choice1Of2(
+                            session.WithScope(fun s ->
+                                operation <-
+                                    Task.Factory.StartNew(
+                                        (fun () -> JvLink.status s),
+                                        TaskCreationOptions.LongRunning
+                                    )
+
+                                wait entered
+                                returning.Set()
+                                if throws then raise original else Ok 42)
+                        )
+                    with ex ->
+                        Choice2Of2 ex),
+                TaskCreationOptions.LongRunning
+            )
+
+        try
+            wait returning
+            Assert.True(SpinWait.SpinUntil((fun () -> session.IsDisposed), 5000))
+            Assert.False(scoped.IsCompleted)
+            Assert.Equal(0, native.Releases)
+
+            match JvLink.getVersion session with
+            | Error error -> Assert.Equal(JvErrorKind.Disposed, error.Kind)
+            | _ -> failwith "Closing session accepted another operation"
+        finally
+            release.Set()
+
+        Assert.True(scoped.Wait(5000))
+        Assert.True(operation.Wait(5000))
+        Assert.Equal(Ok 0, operation.Result)
+
+        match scoped.Result with
+        | Choice1Of2 result when not throws -> Assert.Equal(Ok 42, result)
+        | Choice2Of2 ex when throws -> Assert.Same(original, ex)
+        | other -> failwithf "Scope outcome was replaced: %A" other
+
+        Assert.Equal(1, native.Releases)
+        JvLink.disconnect session |> ok
+        Assert.Equal(1, native.Releases)
+
+    [<Fact; Trait("Category", "Contract")>]
+    let ``Reentrant disconnect defers release until the native operation returns`` () =
+        let native = new LifecycleNative()
+        let session = new Session(native)
+
+        native.OnCall <-
+            fun () ->
+                Assert.Equal(Ok(), JvLink.disconnect session)
+                Assert.Equal(0, native.Releases)
+
+        Assert.Equal(Ok 0, JvLink.status session)
+        JvLink.disconnect session |> ok
+        Assert.Equal(1, native.Releases)
+
+    [<Fact; Trait("Category", "Contract")>]
+    let ``Concurrent disconnect callers join the same ordinary operation and release once`` () =
+        let native = new LifecycleNative()
+        let session = new Session(native)
+        use entered = new ManualResetEventSlim()
+        use release = new ManualResetEventSlim()
+
+        native.OnCall <-
+            fun () ->
+                entered.Set()
+                release.Wait()
+
+        let operation =
+            Task.Factory.StartNew((fun () -> JvLink.status session), TaskCreationOptions.LongRunning)
+
+        wait entered
+
+        let first =
+            Task.Factory.StartNew((fun () -> JvLink.disconnect session), TaskCreationOptions.LongRunning)
+
+        let second =
+            Task.Factory.StartNew((fun () -> JvLink.disconnect session), TaskCreationOptions.LongRunning)
+
+        try
+            Assert.True(SpinWait.SpinUntil((fun () -> session.IsDisposed), 5000))
+            Assert.Equal(0, native.Releases)
+        finally
+            release.Set()
+
+        Assert.True(Task.WaitAll([| first :> Task; second :> Task; operation :> Task |], 5000))
+        Assert.Equal(Ok(), first.Result)
+        Assert.Equal(Ok(), second.Result)
+        Assert.Equal(1, native.Releases)
+
+    [<Fact; Trait("Category", "Contract")>]
+    let ``Notification callback can request disconnect while another native call owns the session`` () =
+        let native = new LifecycleNative()
+        let session = new Session(native)
+        use entered = new ManualResetEventSlim()
+        use release = new ManualResetEventSlim()
+        use callbackReturned = new ManualResetEventSlim()
+
+        use subscription =
+            JvLink.subscribe
+                (fun _ ->
+                    JvLink.disconnect session |> ok
+                    callbackReturned.Set())
+                session
+            |> ok
+
+        native.OnCall <-
+            fun () ->
+                entered.Set()
+                release.Wait()
+
+        let operation =
+            Task.Factory.StartNew((fun () -> JvLink.status session), TaskCreationOptions.LongRunning)
+
+        wait entered
+
+        try
+            native.Emit()
+            wait callbackReturned
+            Assert.Equal(0, native.Releases)
+        finally
+            release.Set()
+
+        Assert.True(operation.Wait(5000))
+        JvLink.disconnect session |> ok
+        Assert.Equal(1, native.Releases)
+
     [<Fact; Trait("Category", "Contract")>]
     let ``Implicit cleanup preserves body exception while explicit disconnect retains typed error`` () =
         let error = failure "JVClose"

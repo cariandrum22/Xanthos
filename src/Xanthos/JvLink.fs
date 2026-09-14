@@ -41,17 +41,7 @@ module JvLink =
 
     /// Releases the session on success, Error, or consumer exception.
     let withSession options action =
-        connect options
-        |> Result.bind (fun session ->
-            try
-                let result = action session
-
-                match disconnect session with
-                | Ok() -> result
-                | Error error -> Error error
-            with _ ->
-                disconnect session |> ignore
-                reraise ())
+        connect options |> Result.bind (fun session -> session.WithScope action)
 
     let cancel arg1 = SdkOperations.cancel arg1
     let closeData arg1 = SdkOperations.closeData arg1

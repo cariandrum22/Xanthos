@@ -537,14 +537,6 @@ type JvLinkService
 
     /// Processes events from the queue in order on a dedicated background thread.
     let startEventConsumer () =
-        // Reset overflow counter from any previous session
-        System.Threading.Interlocked.Exchange(overflowCount, 0) |> ignore
-
-        // Create a fresh queue - BlockingCollection cannot be reused after CompleteAdding()
-        if eventQueue.IsAddingCompleted then
-            eventQueue.Dispose()
-            eventQueue <- new BlockingCollection<Choice<string, Xanthos.JvEvent>>(eventQueueCapacity)
-
         let currentQueue = eventQueue // Capture for closure
 
         let consumer =
@@ -1740,6 +1732,15 @@ type JvLinkService
                 | :? InvalidOperationException ->
                     // Queue was completed (service shutting down)
                     logger.Warn("WatchEvent received after shutdown - event discarded.")
+
+            // Prepare the next queue before registration, including a restart after shutdown.
+            // Discard callbacks belonging to a previous failed registration as well.
+            eventQueue.Dispose()
+            eventQueue <- new BlockingCollection<Choice<string, Xanthos.JvEvent>>(eventQueueCapacity)
+
+            // Clear the previous run before registration: SDK events can arrive synchronously
+            // during JVWatchEvent, before the service consumer has started.
+            System.Threading.Interlocked.Exchange(overflowCount, 0) |> ignore
 
             let subscriptionResult =
                 result {

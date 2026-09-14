@@ -8,9 +8,11 @@
 
 Operations are synchronous. COM calls execute on the owned STA, whose native locale is Japanese to preserve SDK text; caller culture and Windows settings are unchanged. Concurrent use of a session returns `Busy`; calls after disconnect return `Disposed`. The legacy COM adapter queues its operations on the STA before acquiring the operation gate, preserving serialized getters during reads. Reentrant native callbacks still receive `Busy`. Create a separate session for work triggered by notifications. Session disposal owns subscription cleanup; see [event delivery](functional-events.md) for queue limits, callback threads and shutdown behavior.
 
-Join any concurrent operations before returning from a `withSession` action. If an ordinary SDK operation still owns the session, its closing `disconnect` returns `Busy` without releasing the COM owner; `withSession` does not retry that result. The cleanup guarantee assumes no such concurrent operation remains active.
+`disconnect` closes admission to new operations and waits for an in-flight SDK call before releasing the owner exactly once. `withSession` uses the same cleanup path, preserving its result or consumer exception. New operations during shutdown return `Disposed`. If disconnect is called reentrantly from the native owner or a delivery callback that cannot join itself, it requests deferred cleanup and returns; an external `disconnect` can join completion. Deferred cleanup failures are reported through `System.Diagnostics.Trace`. Native calls and application callbacks must eventually return; shutdown does not abort them.
 
 Returned byte arrays belong to the caller and remain valid after subsequent reads or disconnect. Treat them as immutable while sharing them. `JVGets` preserves native bytes; `JVRead` converts the Japanese BSTR back to CP932. Prefer `gets` for raw capture and parse bytes with `Records`, keeping `Filename`, `ByteCount`, `BufferSize` and `ReturnCode` for diagnostics.
+
+See [read fidelity and recovery](read-fidelity.md) for the current conversion-failure contract and the separately specified, unimplemented diagnostic extension.
 
 ## States, errors and configuration
 
@@ -27,6 +29,10 @@ Request dates and event timestamps use Japanese service time (JST); represent th
 A cancellation token cannot interrupt an executing native call. CLI streaming observes cancellation between calls, invokes SDK cancellation as appropriate and closes the stream. SDK dialogs wait without an automatic deadline for the user's choice. Refusal or missing agreement (`-305`) terminates with the original error. SDK settings-dialog Cancel has its own documented result and must not be confused with consent refusal.
 
 Unknown record/code values are preserved rather than coerced to a known value. See [record migration](record-migration.md) for typed records, raw values, historical identifiers and field-position errors.
+
+## Process termination
+
+An external process supervisor can force the host process to terminate even while the SDK is waiting. On Windows use process termination (for example, .NET `Process.Kill()` followed by `WaitForExit()`); POSIX `SIGKILL` is not a Windows signal. Forced termination bypasses orderly session cleanup and cannot guarantee settings restoration or completion of pending file writes. It terminates the selected process, not necessarily separate SDK services. See [Microsoft's Process.Kill documentation](https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.process.kill?view=net-10.0). Xanthos does not invoke this automatically or use it to decide consent.
 
 ## Migration from service methods
 
