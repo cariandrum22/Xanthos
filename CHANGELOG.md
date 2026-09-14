@@ -22,6 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Bound poisoned-service STA shutdown while retaining normal consent waits and deferred cleanup on the owning STA.
+- Preserve application exceptions during implicit disposal; keep explicit cleanup errors and retryable watch-stop failures observable. Join cancellation-owned shutdown before disconnecting.
+- Serialize legacy COM getters, preserve all seven native event origins, and validate historical/full-width realtime inputs before native calls.
+- Honor capture read-method option precedence and record the actual method in fixture metadata.
+- Interpret WH and SE weight changes consistently as signed kilograms while preserving source signs and raw magnitudes.
+
 - Use an Intel macOS CI runner for the explicit x64 CLI test suite.
 - Include the functional sample in the solution so Release solution builds also compile the sample in Release.
 - Allow the expanded solution's lint scan to finish within the CI time budget; retain its existing non-blocking warning policy.
