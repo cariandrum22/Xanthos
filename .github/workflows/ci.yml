@@ -51,25 +51,31 @@ jobs:
       - name: Build solution
         run: dotnet build --no-restore --configuration Release
 
+      - name: Verify evidence validators reject controlled faults
+        if: runner.os == 'Linux'
+        shell: pwsh
+        run: ./scripts/test-evidence-validators.ps1 -RunId "controls-${{ github.run_id }}-${{ github.run_attempt }}"
+
       - name: Run required Fast suites
         shell: pwsh
-        run: ./scripts/run-test-profile.ps1 -Profile Fast -RunId "ci-${{ github.run_id }}-${{ github.run_attempt }}" -NoBuild
+        run: ./scripts/run-test-profile.ps1 -Profile Fast -RunId "ci-${{ github.run_id }}" -NoBuild
 
       - name: Run required managed coverage suites
         shell: pwsh
-        run: ./scripts/run-test-profile.ps1 -Profile Coverage -RunId "ci-${{ github.run_id }}-${{ github.run_attempt }}" -NoBuild
+        run: ./scripts/run-test-profile.ps1 -Profile Coverage -RunId "ci-${{ github.run_id }}" -NoBuild
 
       - name: Run Windows x64 managed boundaries without JV-Link
         if: runner.os == 'Windows'
         shell: pwsh
-        run: ./scripts/run-test-profile.ps1 -Profile WindowsManaged -RunId "ci-${{ github.run_id }}-${{ github.run_attempt }}"
+        run: ./scripts/run-test-profile.ps1 -Profile WindowsManaged -RunId "ci-${{ github.run_id }}" -RequireSdkAbsent
 
       - name: Upload complete evidence and diagnostics
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: quality-${{ matrix.platform }}
-          path: .artifacts/test-quality/ci-${{ github.run_id }}-${{ github.run_attempt }}/${{ matrix.platform }}/
+          overwrite: true
+          path: .artifacts/test-quality/ci-${{ github.run_id }}/${{ matrix.platform }}/
           include-hidden-files: true
           retention-days: 7
           if-no-files-found: error
@@ -79,6 +85,7 @@ jobs:
         if: failure()
         with:
           name: test-logs-${{ matrix.platform }}
+          overwrite: true
           path: .artifacts/cli-e2e/test-logs/
           retention-days: 7
           if-no-files-found: ignore
@@ -129,13 +136,14 @@ jobs:
       - name: Verify every required run, case and coverage report
         shell: pwsh
         run: |
-          ./scripts/assert-ci-artifacts.ps1 -ArtifactsDirectory QualityArtifacts -RunId "ci-${{ github.run_id }}-${{ github.run_attempt }}" -Commit '${{ github.sha }}' -JobResult '${{ needs.build-and-test.result }}'
+          ./scripts/assert-ci-artifacts.ps1 -ArtifactsDirectory QualityArtifacts -RunId "ci-${{ github.run_id }}" -Commit '${{ github.sha }}' -JobResult '${{ needs.build-and-test.result }}' -RunAttempt ${{ github.run_attempt }}
           'All required Fast, Coverage and WindowsManaged evidence passed. OptionalFixtures, Com, Interactive and Live were not run by CI.' >> $env:GITHUB_STEP_SUMMARY
 
       - name: Preserve verified artifact manifest
         uses: actions/upload-artifact@v4
         with:
           name: quality-manifest
+          overwrite: true
           path: QualityArtifacts/artifact-manifest.json
           if-no-files-found: error
 
@@ -177,6 +185,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: documentation
+          overwrite: true
           path: output/
           retention-days: 7
 

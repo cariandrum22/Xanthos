@@ -14,13 +14,14 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           global-json-file: global.json
-      - name: Run fixed-seed records and session models without SDK
+      - name: Run records, replayable FsCheck properties and session models without SDK
         shell: pwsh
         run: ./scripts/run-test-profile.ps1 -Profile Stress -RunId 'stress-${{ github.run_id }}-${{ github.run_attempt }}'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: stress-windows
+          overwrite: true
           path: .artifacts/test-quality/stress-${{ github.run_id }}-${{ github.run_attempt }}/windows/
           include-hidden-files: true
           if-no-files-found: error

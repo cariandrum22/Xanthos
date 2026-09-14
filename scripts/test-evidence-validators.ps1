@@ -19,11 +19,14 @@ function Write-SyntheticRun($directory, $case, $os, $profile) {
     $trx = @"
 <TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010" name="synthetic-$os-$profile"><Times start="2026-09-13T00:00:01Z"/><TestDefinitions><UnitTest id="1"><TestMethod className="Synthetic.$($case.project.Split('/')[1].Substring(8))" name="Case"/></UnitTest></TestDefinitions><Results><UnitTestResult testId="1" testName="$($case.displayName)" outcome="Passed"/></Results><ResultSummary outcome="Completed"><Counters total="1" failed="0"/></ResultSummary></TestRun>
 "@
+    if ($profile -eq 'WindowsManaged') {
+        @{ runId = $RunId; commit = 'synthetic-commit'; os = 'windows'; architecture = 'X64'; pointerSize = 8; sdkAbsent = $true; sdkActivatedByPreflight = $false; status = 'pass'; registrations = @(); nativeFiles = @(); services = @(); githubRunAttempt = 1 } | ConvertTo-Json | Set-Content (Join-Path $directory 'windows-environment.json') -Encoding utf8
+    }
     $trxPath = Join-Path $directory 'results.trx'
     $trx | Set-Content $trxPath -Encoding utf8
     $coveragePath = Join-Path $directory 'coverage.cobertura.xml'
     '<coverage><packages><package name="Xanthos"><classes><class filename="Synthetic.fs"><lines><line number="1" hits="1" branch="false"/></lines></class></classes></package></packages></coverage>' | Set-Content $coveragePath -Encoding utf8
-    @{ runId = $RunId; project = $case.project; profile = $profile; os = $os; tfm = $case.tfm; commit = 'synthetic-commit'; startedAt = '2026-09-13T00:00:00Z'; exitCode = 0; filter = 'synthetic'; trxSha256 = (Get-FileHash $trxPath).Hash.ToLowerInvariant(); coverageSha256 = @((Get-FileHash $coveragePath).Hash.ToLowerInvariant()) } | ConvertTo-Json | Set-Content (Join-Path $directory 'invocation.json') -Encoding utf8
+    @{ runId = $RunId; project = $case.project; profile = $profile; os = $os; tfm = $case.tfm; commit = 'synthetic-commit'; githubRunAttempt = 1; startedAt = '2026-09-13T00:00:00Z'; exitCode = 0; filter = 'synthetic'; trxSha256 = (Get-FileHash $trxPath).Hash.ToLowerInvariant(); coverageSha256 = @((Get-FileHash $coveragePath).Hash.ToLowerInvariant()) } | ConvertTo-Json | Set-Content (Join-Path $directory 'invocation.json') -Encoding utf8
 }
 $source = Join-Path $root 'source'
 Write-SyntheticRun $source $cases[0] windows Fast
@@ -68,6 +71,12 @@ foreach ($fault in @('valid', 'missing-case', 'zero', 'skip', 'fail', 'duplicate
     if (($fault -eq 'valid' -and $code -ne 0) -or ($fault -ne 'valid' -and $code -eq 0)) { throw "Unexpected validator outcome: $fault ($code)" }
     $results += @{ fault = $fault; exitCode = $code; synthetic = $true }
 }
+function Update-Context($directory, $relativePath, $field, $value) {
+    $path = Join-Path $directory $relativePath
+    $context = Get-Content $path -Raw | ConvertFrom-Json
+    $context.$field = $value
+    $context | ConvertTo-Json -Depth 8 | Set-Content $path -Encoding utf8
+}
 $artifacts = Join-Path $root 'artifacts'
 foreach ($os in @('linux', 'macos', 'windows')) {
     foreach ($case in $cases | Where-Object { $os -in $_.os }) {
@@ -81,7 +90,7 @@ $before = @(Get-ChildItem $artifacts -Recurse -File -Filter results.trx | ForEac
 & "$PSScriptRoot/assert-ci-artifacts.ps1" -ArtifactsDirectory $artifacts -RunId $RunId -Commit synthetic-commit -JobResult success -PlanPath $planPath *> (Join-Path $root 'artifacts-valid.log')
 foreach ($file in $before) { if ((Get-FileHash $file.path).Hash -cne $file.hash) { throw 'Artifact hash changed during collection.' } }
 $results += @{ fault = 'three-os-same-filenames'; exitCode = 0; preservedFiles = $before.Count; synthetic = $true }
-foreach ($fault in @('missing-os', 'overwritten-trx', 'job-failure', 'job-cancelled', 'wrong-commit')) {
+foreach ($fault in @('missing-os', 'overwritten-trx', 'job-failure', 'job-cancelled', 'wrong-commit', 'wrong-run', 'future-attempt', 'mixed-attempt', 'missing-sdk-evidence', 'sdk-present')) {
     $directory = Join-Path $root "artifacts-$fault"
     Copy-Item -LiteralPath $artifacts -Destination $directory -Recurse
     $job = 'success'; $commit = 'synthetic-commit'
@@ -91,11 +100,44 @@ foreach ($fault in @('missing-os', 'overwritten-trx', 'job-failure', 'job-cancel
         'job-failure' { $job = 'failure' }
         'job-cancelled' { $job = 'cancelled' }
         'wrong-commit' { $commit = 'another-commit' }
+        'wrong-run' { Update-Context $directory 'quality-macos/net10.0/Fast/UnitTests/invocation.json' 'runId' 'different-run' }
+        'future-attempt' { Update-Context $directory 'quality-macos/net10.0/Fast/UnitTests/invocation.json' 'githubRunAttempt' 3 }
+        'mixed-attempt' { Update-Context $directory 'quality-macos/net10.0/Fast/UnitTests/invocation.json' 'githubRunAttempt' 2 }
+        'missing-sdk-evidence' { Rename-Item -LiteralPath (Join-Path $directory 'quality-windows/net10.0-windows/WindowsManaged/WindowsTests/windows-environment.json') -NewName 'absent-environment.json' }
+        'sdk-present' { Update-Context $directory 'quality-windows/net10.0-windows/WindowsManaged/WindowsTests/windows-environment.json' 'sdkAbsent' $false }
+
     }
-    & (Join-Path $PSHOME 'pwsh') -NoProfile -File "$PSScriptRoot/assert-ci-artifacts.ps1" -ArtifactsDirectory $directory -RunId $RunId -Commit $commit -JobResult $job -PlanPath $planPath *> (Join-Path $directory 'validator.log')
+    & (Join-Path $PSHOME 'pwsh') -NoProfile -File "$PSScriptRoot/assert-ci-artifacts.ps1" -ArtifactsDirectory $directory -RunId $RunId -Commit $commit -JobResult $job -RunAttempt 2 -PlanPath $planPath *> (Join-Path $directory 'validator.log')
     $code = $LASTEXITCODE
-    if ($code -eq 0) { throw "Artifact fault accepted: $fault" }
+    $reason = @{
+        'missing-os' = 'Missing artifact: quality-macos'
+        'overwritten-trx' = 'TRX differs from the completed invocation hash.'
+        'job-failure' = 'Required matrix did not succeed: failure'
+        'job-cancelled' = 'Required matrix did not succeed: cancelled'
+        'wrong-commit' = 'Wrong commit:'
+        'wrong-run' = 'Evidence context mismatch: runId'
+        'future-attempt' = 'Invalid artifact attempt:'
+        'mixed-attempt' = 'Mixed attempts within OS artifact:'
+        'missing-sdk-evidence' = 'Missing SDK absence evidence.'
+        'sdk-present' = 'JV-Link absence was not established.'
+    }[$fault]
+    if ($code -eq 0 -or -not (Select-String -LiteralPath (Join-Path $directory 'validator.log') -Pattern $reason -SimpleMatch -Quiet)) { throw "Artifact fault did not reject for expected reason: $fault" }
     $results += @{ fault = $fault; exitCode = $code; synthetic = $true }
+}
+# Failed-job rerun preserves successful attempt-1 OS jobs and replaces only macOS.
+foreach ($mode in @('partial', 'full', 'summary-only')) {
+    $directory = Join-Path $root "rerun-$mode"
+    Copy-Item -LiteralPath $artifacts -Destination $directory -Recurse
+    $platforms = if ($mode -eq 'partial') { @('macos') } elseif ($mode -eq 'full') { @('linux','macos','windows') } else { @() }
+    foreach ($os in $platforms) {
+        Get-ChildItem (Join-Path $directory "quality-$os") -Recurse -File | Where-Object Name -In @('invocation.json','windows-environment.json') | ForEach-Object {
+            $context = Get-Content $_.FullName -Raw | ConvertFrom-Json
+            $context.githubRunAttempt = 2
+            $context | ConvertTo-Json -Depth 8 | Set-Content $_.FullName -Encoding utf8
+        }
+    }
+    & "$PSScriptRoot/assert-ci-artifacts.ps1" -ArtifactsDirectory $directory -RunId $RunId -Commit synthetic-commit -JobResult success -RunAttempt 2 -PlanPath $planPath *> (Join-Path $directory 'validator.log')
+    $results += @{ fault = "rerun-$mode"; exitCode = 0; synthetic = $true }
 }
 $results | ConvertTo-Json -Depth 8 | Set-Content (Join-Path $root 'gate-negative-cases.json') -Encoding utf8
 Write-Output "PASS: $($results.Count) synthetic evidence controls."

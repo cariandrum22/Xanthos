@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Allow CI to combine successful OS jobs across rerun attempts of the same workflow run, replace rerun artifacts, and require SDK-absence evidence in the Windows gate.
+
 - Preserve CLI notification errors through cleanup, report queue overflow and pending keys, and capture configuration/Stub output through the injected writer.
 - Unify coverage and test-evidence completeness checks, verify negative-control rejection reasons, and support reproducible varying-seed Stress runs for existing FsCheck properties.
 
