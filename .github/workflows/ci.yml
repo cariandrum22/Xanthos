@@ -54,7 +54,9 @@ jobs:
       - name: Verify evidence validators reject controlled faults
         if: runner.os == 'Linux'
         shell: pwsh
-        run: ./scripts/test-evidence-validators.ps1 -RunId "controls-${{ github.run_id }}-${{ github.run_attempt }}"
+        run: |
+          ./scripts/test-evidence-validators.ps1 -RunId "controls-${{ github.run_id }}-${{ github.run_attempt }}"
+          dotnet fsi ./scripts/test-settings-workflow.fsx
 
       - name: Run required Fast suites
         shell: pwsh

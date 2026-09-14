@@ -170,12 +170,16 @@ Use `session-check` to execute open, status, parsed read, skip, cancel, close an
 
 Validate captured `.bin` files against their `.meta.json` sidecars: source stream/interval, SDK version, record ID, byte length, SHA-256 and official parser result. Preserve original bytes. Restore any changed SDK configuration and verify restoration from a fresh instance.
 
-The interactive settings test can show a native confirmation to delete previously
-imported data when disabling saving. Choose **No** to that deletion request; do not
-automate it or terminate the process before its restoration checks finish. In the
-verified SDK 5.0 run, No declined deletion while the setting still changed and the
-method returned zero. Always determine setting/restoration success by fresh-session
-reads, not by interpreting a dialog choice as the method's return value.
+The interactive settings test switches to a new empty save directory and verifies
+it from a fresh session before changing the saving flag. It restores the flag while
+still isolated, then restores the original save path. Original `cache`/`data` names
+and content hashes must remain unchanged; these values stay in memory.
+
+Do not automate native consent or approve deletion when its scope is unclear.
+Choosing **No** can return `-100`; that result does not pass the setting-success
+test. A failed flag restoration retains the isolated path for human recovery.
+Do not terminate the process while restoration is running. Validate the ordering
+and recovery controls without COM using `dotnet fsi scripts/test-settings-workflow.fsx`.
 
 ### Interactive and service-dependent evidence
 
