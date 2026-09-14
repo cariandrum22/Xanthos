@@ -25,6 +25,7 @@
     <Compile Include="FunctionalApiTests.fs" />
     <Compile Include="SdkOperationContractTests.fs" />
     <Compile Include="EventContractTests.fs" />
+    <Compile Include="LifecycleRegressionTests.fs" />
     <Compile Include="OfficialFoundationTests.fs" />
     <Compile Include="RecordOracle.fs" />
     <Compile Include="AdditionalRecordContractTests.fs" />

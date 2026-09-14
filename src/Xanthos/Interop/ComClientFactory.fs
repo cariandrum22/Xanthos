@@ -65,9 +65,24 @@ module ComClientFactory =
     /// This function properly releases the COM reference after checking availability
     /// to prevent RCW (Runtime Callable Wrapper) leaks.
     /// </remarks>
-    let isComAvailable () =
-        match tryCreate None with
+    let internal isComAvailableWith create =
+        match create () with
         | Ok c ->
-            c.Dispose()
-            true
+            try
+                match box c with
+                | :? Xanthos.INativeCleanup as cleanup ->
+                    match cleanup.Cleanup() with
+                    | Ok() -> true
+                    | Error error ->
+                        Xanthos.CleanupFailure.report error
+                        false
+                | _ ->
+                    (c: IJvLinkClient).Dispose()
+                    true
+            with ex ->
+                Diagnostics.emit $"COM availability cleanup failed: {ex.Message}"
+                false
         | Error _ -> false
+
+    let isComAvailable () =
+        isComAvailableWith (fun () -> tryCreate None)

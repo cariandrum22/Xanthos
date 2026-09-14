@@ -7,6 +7,7 @@ open System
 type Session internal (native: INativeJvLink) =
     let mutable disposed = 0
     let mutable active = 0
+    let operationGate = obj ()
     let mutable watch: (int64 * EventDelivery) option = None
     let mutable lastDelivery: EventDelivery option = None
     let mutable generation = 0L
@@ -24,9 +25,24 @@ type Session internal (native: INativeJvLink) =
                   Outputs = Map.empty
                   Message = message }
 
+        let acquired =
+            lock operationGate (fun () ->
+                if active <> 0 || Threading.Volatile.Read(&disposed) <> 0 then
+                    false
+                else
+                    // Only owned watch shutdown is joined by Disconnect. Other concurrent
+                    // public operations retain the documented Busy contract.
+                    active <- if api = "JVWatchEventClose" then 2 else 1
+                    true)
+
         if Threading.Volatile.Read(&disposed) <> 0 then
+            if acquired then
+                lock operationGate (fun () ->
+                    active <- 0
+                    Threading.Monitor.PulseAll operationGate)
+
             error JvErrorKind.Disposed "Session has been disconnected."
-        elif Threading.Interlocked.CompareExchange(&active, 1, 0) <> 0 then
+        elif not acquired then
             error JvErrorKind.Busy "Another operation owns this session."
         else
             try
@@ -43,7 +59,9 @@ type Session internal (native: INativeJvLink) =
                           Outputs = Map.empty
                           Message = ex.Message }
             finally
-                Threading.Volatile.Write(&active, 0)
+                lock operationGate (fun () ->
+                    active <- 0
+                    Threading.Monitor.PulseAll operationGate)
 
     member internal this.BeginWatch(capacity, callback) =
         let delivery = new EventDelivery(capacity, callback)
@@ -86,8 +104,10 @@ type Session internal (native: INativeJvLink) =
                     | Some expected, Some(current, _) when expected <> current -> Ok()
                     | Some _, None -> Ok()
                     | _ ->
-                        selected <- watch |> Option.map snd
-                        native.StopWatch() |> Result.map (fun () -> watch <- None)
+                        native.StopWatch()
+                        |> Result.map (fun () ->
+                            selected <- watch |> Option.map snd
+                            watch <- None)
             )
 
         selected |> Option.iter (fun delivery -> delivery.Stop())
@@ -118,7 +138,23 @@ type Session internal (native: INativeJvLink) =
             deliveries <- []
 
     member internal this.Disconnect() =
-        if Threading.Interlocked.CompareExchange(&active, 1, 0) <> 0 then
+        let onDeliveryThread = deliveries |> List.exists _.IsCurrentThread
+
+        let acquired =
+            lock operationGate (fun () ->
+                while active = 2 || (active = 3 && not onDeliveryThread) do
+                    Threading.Monitor.Wait operationGate |> ignore
+
+                if active <> 0 then
+                    false
+                else
+                    active <- 3
+                    true)
+
+        if not acquired && onDeliveryThread && this.IsDisposed then
+            // An external Disconnect may be joining this callback.
+            Ok()
+        elif not acquired then
             Error
                 { Api = "disconnect"
                   Code = None
@@ -129,12 +165,18 @@ type Session internal (native: INativeJvLink) =
             try
                 try
                     if Threading.Interlocked.Exchange(&disposed, 1) = 0 then
+                        let mutable cleanupResult = Ok()
+
                         try
                             this.ReleaseDelivery()
                         finally
-                            native.Dispose()
+                            match native with
+                            | :? INativeCleanup as cleanup -> cleanupResult <- cleanup.Cleanup()
+                            | _ -> native.Dispose()
 
-                    Ok()
+                        cleanupResult
+                    else
+                        Ok()
                 with
                 | SessionCleanupException error -> Error error
                 | ex ->
@@ -145,10 +187,12 @@ type Session internal (native: INativeJvLink) =
                           Outputs = Map.empty
                           Message = ex.Message }
             finally
-                Threading.Volatile.Write(&active, 0)
+                lock operationGate (fun () ->
+                    active <- 0
+                    Threading.Monitor.PulseAll operationGate)
 
     interface IDisposable with
         member this.Dispose() =
             match this.Disconnect() with
             | Ok() -> ()
-            | Error error -> raise (InvalidOperationException(error.Message))
+            | Error error -> CleanupFailure.report error

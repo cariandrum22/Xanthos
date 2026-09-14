@@ -16,6 +16,14 @@ type IComDispatcher =
 type IComDispatchProvider =
     abstract member Dispatcher: IComDispatcher
 
+/// Optional poisoned-owner shutdown. Running native work is never aborted.
+type IComShutdown =
+    abstract Shutdown: timeout: TimeSpan * onThreadExit: (unit -> unit) -> bool
+
+/// A timed-out owner can schedule its cleanup on its original STA without blocking forever.
+type IComAbandonable =
+    abstract Abandon: unit -> unit
+
 #if WINDOWS
 
 open System.Runtime.InteropServices
@@ -99,6 +107,7 @@ type StaThreadDispatcher(?threadName: string) =
     let readyTcs = TaskCompletionSource<uint32>() // Signals when thread is ready, returns thread ID
     let workQueue = ConcurrentQueue<WorkItem>()
     let lifecycleGate = obj ()
+    let mutable shutdownCleanup: unit -> unit = ignore
 
     let startStaThread () =
         let mutable comInitialized = false
@@ -144,7 +153,19 @@ type StaThreadDispatcher(?threadName: string) =
 
                                         while workQueue.TryDequeue(&work) do
                                             try
-                                                if not work.Completion.Task.IsCompleted then
+                                                let execute =
+                                                    lock lifecycleGate (fun () ->
+                                                        if Volatile.Read(&disposed) <> 0 then
+                                                            work.Completion.TrySetException(
+                                                                ObjectDisposedException("StaThreadDispatcher")
+                                                            )
+                                                            |> ignore
+
+                                                            false
+                                                        else
+                                                            not work.Completion.Task.IsCompleted)
+
+                                                if execute then
                                                     work.Execute()
                                             with _ ->
                                                 ()
@@ -159,12 +180,20 @@ type StaThreadDispatcher(?threadName: string) =
                                 pending.Completion.TrySetException(ObjectDisposedException("StaThreadDispatcher"))
                                 |> ignore
 
-                            if comInitialized then
-                                Diagnostics.emit $"STA CoUninitialize begin: thread={threadId}"
-                                StaNative.CoUninitialize()
-                                Diagnostics.emit $"STA CoUninitialize complete: thread={threadId}"
+                            try
+                                let cleanup = lock lifecycleGate (fun () -> shutdownCleanup)
 
-                            shutdownTcs.TrySetResult(()) |> ignore)
+                                try
+                                    cleanup ()
+                                with ex ->
+                                    Diagnostics.emit $"Deferred STA cleanup failed: {ex.Message}"
+                            finally
+                                if comInitialized then
+                                    Diagnostics.emit $"STA CoUninitialize begin: thread={threadId}"
+                                    StaNative.CoUninitialize()
+                                    Diagnostics.emit $"STA CoUninitialize complete: thread={threadId}"
+
+                                shutdownTcs.TrySetResult(()) |> ignore)
             )
 
         thread.IsBackground <- true
@@ -282,24 +311,37 @@ type StaThreadDispatcher(?threadName: string) =
                     return result :?> 'T
                 }
 
-    member private this.Dispose(disposing: bool) =
+    member private _.Shutdown(timeout: TimeSpan, cleanup: unit -> unit) =
         lock lifecycleGate (fun () ->
             if Interlocked.Exchange(&disposed, 1) = 0 && readyTcs.Task.IsCompletedSuccessfully then
+                shutdownCleanup <- cleanup
+                let mutable pending = Unchecked.defaultof<WorkItem>
+
+                while workQueue.TryDequeue(&pending) do
+                    pending.Completion.TrySetException(ObjectDisposedException("StaThreadDispatcher"))
+                    |> ignore
+
                 if not (StaNative.PostThreadMessage(staThreadId, StaNative.WM_QUIT, IntPtr.Zero, IntPtr.Zero)) then
                     let errCode = Marshal.GetLastPInvokeError()
                     Diagnostics.emit $"PostThreadMessage(WM_QUIT) failed with error code {errCode} during disposal")
 
-        // A callback may dispose its own owner. Joining that thread would deadlock.
-        // External deterministic disposal waits for actual termination, not a silent timeout.
-        if disposing && not (isOnStaThread ()) then
-            staThread.Join()
+        if isOnStaThread () then
+            shutdownTcs.Task.IsCompleted
+        else
+            staThread.Join(timeout)
+
+    interface IComShutdown with
+        member this.Shutdown(timeout, cleanup) = this.Shutdown(timeout, cleanup)
 
     interface IDisposable with
         member this.Dispose() =
-            this.Dispose(true)
+            // Normal disposal preserves unbounded consent/callback waits. Only an
+            // already-poisoned owner opts into bounded, deferred cleanup.
+            this.Shutdown(Timeout.InfiniteTimeSpan, ignore) |> ignore
             GC.SuppressFinalize(this)
 
-    override this.Finalize() = this.Dispose(false)
+    override this.Finalize() =
+        this.Shutdown(TimeSpan.Zero, ignore) |> ignore
 
 #else
 

@@ -392,89 +392,98 @@ type ComJvLinkClient(?useJvGets: bool, ?progId: string) as this =
                 |> Result.defaultValue false
             and set _ = Diagnostics.emit "m_payflag is read-only; use JVSetUIProperties."
 
-    /// <summary>
-    /// Releases COM resources and disconnects event subscriptions.
-    /// Call this method when the client is no longer needed to prevent RCW leaks.
-    /// </summary>
-    member private this.Dispose(disposing: bool) =
-        if System.Threading.Interlocked.CompareExchange(&disposeState, 1, 0) = 0 then
-            Diagnostics.emit "DISPOSE requested; queueing STA cleanup"
+    /// Runs only on the owning STA, including deferred cleanup after a timed-out call.
+    member private _.ReleaseResources() =
+        let close api : Result<int, Xanthos.JvError> =
+            match jvType.InvokeMember(api, BindingFlags.InvokeMethod, null, comObj, [||]) with
+            | :? int as code -> Ok code
+            | _ ->
+                Error
+                    { Api = api
+                      Code = None
+                      Kind = Xanthos.JvErrorKind.Invocation
+                      Outputs = Map.empty
+                      Message = "Expected a 32-bit SDK return code during cleanup." }
 
-            let deliveryError =
-                try
-                    if legacySession.IsValueCreated then
-                        legacySession.Value.ReleaseDelivery()
+        let detach () =
+            eventSink.ClearCallback()
+            eventSubscription |> Option.iter ComEventConnection.disconnect
+            eventSubscription <- None
 
-                    None
-                with ex ->
-                    Some(nativeError "eventDelivery.shutdown" ex)
+        let release () =
+            if not (isNull comObj) then
+                Marshal.FinalReleaseComObject(comObj) |> ignore
 
-            let releaseResources () =
-                try
-                    dispatcher.Invoke(
-                        "JVLink.Dispose",
-                        fun () ->
-                            Diagnostics.emit "DISPOSE entered STA cleanup"
+        lifetime.Cleanup(close, detach, release)
 
-                            let close api : Result<int, Xanthos.JvError> =
-                                Diagnostics.emit $"DISPOSE {api} begin"
+    member private this.Cleanup() =
+        if System.Threading.Interlocked.CompareExchange(&disposeState, 1, 0) <> 0 then
+            Ok()
+        else
+            let mutable result = Ok()
 
-                                match jvType.InvokeMember(api, BindingFlags.InvokeMethod, null, comObj, [||]) with
-                                | :? int as code ->
-                                    Diagnostics.emit $"DISPOSE {api} code={code}"
-                                    Ok code
-                                | _ ->
-                                    Error
-                                        { Api = api
-                                          Code = None
-                                          Kind = Xanthos.JvErrorKind.Invocation
-                                          Outputs = Map.empty
-                                          Message = "Expected a 32-bit SDK return code during cleanup." }
-
-                            let detach () =
-                                eventSink.ClearCallback()
-                                eventSubscription |> Option.iter ComEventConnection.disconnect
-                                eventSubscription <- None
-
-                            let release () =
-                                if not (isNull comObj) then
-                                    Diagnostics.emit "DISPOSE FinalReleaseComObject begin"
-                                    Marshal.FinalReleaseComObject(comObj) |> ignore
-                                    Diagnostics.emit $"COM object released for ProgID '{progId}'."
-
-                            lifetime.Cleanup(close, detach, release)
-                    )
-                with ex ->
-                    Error(nativeError "dispose" ex)
-
-            let mutable result = releaseResources ()
-
-            if Result.isOk result then
-                deliveryError |> Option.iter (fun error -> result <- Error error)
+            let remember error =
+                if Result.isOk result then
+                    result <- Error error
 
             try
                 try
-                    Diagnostics.emit "DISPOSE STA shutdown begin"
-                    (dispatcher :> IDisposable).Dispose()
-                    Diagnostics.emit "DISPOSE STA shutdown complete"
+                    if legacySession.IsValueCreated then
+                        legacySession.Value.ReleaseDelivery()
                 with ex ->
-                    if Result.isOk result then
-                        result <- Error(nativeError "STA.shutdown" ex)
+                    remember (nativeError "eventDelivery.shutdown" ex)
+
+                try
+                    match dispatcher.Invoke("JVLink.Dispose", this.ReleaseResources) with
+                    | Error error -> remember error
+                    | Ok() -> ()
+                with ex ->
+                    remember (nativeError "dispose" ex)
+
+                try
+                    (dispatcher :> IDisposable).Dispose()
+                with ex ->
+                    remember (nativeError "STA.shutdown" ex)
             finally
                 System.Threading.Volatile.Write(&disposeState, 2)
+                GC.SuppressFinalize(this)
 
-            match result with
-            | Ok() -> ()
-            | Error error ->
-                Diagnostics.emit $"DISPOSE failed: api={error.Api} code={error.Code} {error.Message}"
+            result
 
-                if disposing then
-                    raise (Xanthos.SessionCleanupException error)
+    member private this.Abandon(timeout: TimeSpan) =
+        if System.Threading.Interlocked.CompareExchange(&disposeState, 1, 0) = 0 then
+            let cleanup () =
+                try
+                    // The native call has returned before the STA reaches this callback.
+                    if legacySession.IsValueCreated then
+                        legacySession.Value.ReleaseDelivery()
+                finally
+                    try
+                        match this.ReleaseResources() with
+                        | Error error -> Xanthos.CleanupFailure.report error
+                        | Ok() -> ()
+                    finally
+                        System.Threading.Volatile.Write(&disposeState, 2)
+
+            let completed = (dispatcher :?> IComShutdown).Shutdown(timeout, cleanup)
+
+            if not completed then
+                Diagnostics.emit
+                    "STA shutdown deferred: native work is still running; cleanup remains on its original STA."
+
+            GC.SuppressFinalize(this)
+
+    interface Xanthos.INativeCleanup with
+        member this.Cleanup() = this.Cleanup()
+
+    interface IComAbandonable with
+        member this.Abandon() = this.Abandon(TimeSpan.FromSeconds 5.)
 
     interface IDisposable with
         member this.Dispose() =
-            this.Dispose(true)
-            GC.SuppressFinalize(this)
+            match this.Cleanup() with
+            | Ok() -> ()
+            | Error error -> Xanthos.CleanupFailure.report error
 
     interface IComDispatchProvider with
         member _.Dispatcher = dispatcher
@@ -533,7 +542,13 @@ type ComJvLinkClient(?useJvGets: bool, ?progId: string) as this =
         member _.StopWatch() =
             try
                 invokeOnSta "JVWatchEventClose" (fun () ->
-                    match nativeInvoke "JVWatchEventClose" BindingFlags.InvokeMethod [||] [] with
+                    let closeResult =
+                        if lifetime.Watching then
+                            nativeInvoke "JVWatchEventClose" BindingFlags.InvokeMethod [||] []
+                        else
+                            Ok(box 0)
+
+                    match closeResult with
                     | Ok(:? int as code) when code = 0 ->
                         eventSink.ClearCallback()
                         eventSubscription |> Option.iter ComEventConnection.disconnect
@@ -553,7 +568,7 @@ type ComJvLinkClient(?useJvGets: bool, ?progId: string) as this =
             with ex ->
                 Error(nativeError "JVWatchEventClose" ex)
 
-    override this.Finalize() = this.Dispose(false)
+    override this.Finalize() = this.Abandon(TimeSpan.Zero)
 #else
 module ComJvLinkClient =
     let notAvailable () =

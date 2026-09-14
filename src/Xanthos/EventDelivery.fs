@@ -21,6 +21,9 @@ type internal EventDelivery(capacity: int, callback: JvEvent -> unit) =
     member _.Error = lock gate (fun () -> error)
     member _.IsAlive = lock gate (fun () -> worker |> Option.exists _.IsAlive)
 
+    member _.IsCurrentThread =
+        lock gate (fun () -> worker |> Option.exists ((=) Thread.CurrentThread))
+
     member _.Fail failure =
         lock gate (fun () ->
             if error.IsNone then

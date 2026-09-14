@@ -58,8 +58,8 @@ type JvLinkEventSink() =
 type EventSubscription =
     { ComObject: obj
       SourceIID: Guid
-      Dispids: int list
-      Delegates: Delegate list }
+      mutable Dispids: int list
+      mutable Delegates: Delegate list }
 
 /// Manages COM event connection points. IID and DISPIDs were checked against the
 /// installed JV-Link 5.0 x64 type library on 2026-09-12. Successful registration
@@ -115,7 +115,13 @@ module ComEventConnection =
             ComEventsHelper.Remove(subscription.ComObject, subscription.SourceIID, id, handler)
             |> ignore
 
-        match Xanthos.EventRegistration.detach unregister (List.zip subscription.Dispids subscription.Delegates) with
+        let remaining, result =
+            Xanthos.EventRegistration.detachRemaining unregister (List.zip subscription.Dispids subscription.Delegates)
+
+        subscription.Dispids <- List.map fst remaining
+        subscription.Delegates <- List.map snd remaining
+
+        match result with
         | Ok() -> Diagnostics.emit "COM event sink disconnected"
         | Error error -> raise (Xanthos.SessionCleanupException error)
 

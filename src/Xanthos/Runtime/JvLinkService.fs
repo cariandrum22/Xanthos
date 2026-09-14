@@ -512,6 +512,12 @@ type JvLinkService
     [<Literal>]
     let WatchState_Running = 2
 
+    [<Literal>]
+    let WatchState_Stopping = 3
+
+    [<Literal>]
+    let WatchState_StopFailed = 4
+
     let mutable disposed = false
 
     // Event dispatcher: uses a dedicated background thread with a FIFO queue to avoid
@@ -1696,9 +1702,12 @@ type JvLinkService
         let previousState =
             System.Threading.Interlocked.CompareExchange(watchingFlag, WatchState_Starting, WatchState_Stopped)
 
-        if previousState <> WatchState_Stopped then
-            // Already in Starting or Running state - nothing to do
+        if previousState = WatchState_Starting || previousState = WatchState_Running then
             Ok()
+        elif previousState <> WatchState_Stopped then
+            Error(
+                InteropError(InvalidState "Watch shutdown is pending or failed; retry StopWatchEvents before starting.")
+            )
         else
             // WatchEvent does NOT acquire operationLock - it can run concurrently with
             // data fetching operations. Only the subscription/unsubscription is protected
@@ -1752,9 +1761,19 @@ type JvLinkService
                     // StopWatchEvents was called during Starting phase - clean up
                     // The COM subscription was established, so we must close it
                     logger.Info("JV-Link watch events cancelled during startup - cleaning up.")
-                    runCom "JVWatchEventClose" (fun () -> client.WatchEventClose()) |> ignore
-                    stopEventConsumer ()
-                    Ok()
+                    let closed = runCom "JVWatchEventClose" (fun () -> client.WatchEventClose())
+
+                    match closed with
+                    | Ok() ->
+                        stopEventConsumer ()
+
+                        System.Threading.Interlocked.Exchange(watchingFlag, WatchState_Stopped)
+                        |> ignore
+                    | Error _ ->
+                        System.Threading.Interlocked.Exchange(watchingFlag, WatchState_StopFailed)
+                        |> ignore
+
+                    closed
             | Error err ->
                 // Reset flag to Stopped (0) on failure so caller can retry
                 System.Threading.Interlocked.Exchange(watchingFlag, WatchState_Stopped)
@@ -1766,40 +1785,38 @@ type JvLinkService
     /// Stops JV-Link watch event notifications.
     /// </summary>
     member _.StopWatchEvents() : Result<unit, XanthosError> =
-        // Atomically set flag to Stopped (0) and check what state we were in.
-        // Only call WatchEventClose if we were in Running (2) state, because that's
-        // when the COM subscription is actually active. If we were in Starting (1),
-        // the COM subscription hasn't been established yet.
-        let previousState =
-            System.Threading.Interlocked.Exchange(watchingFlag, WatchState_Stopped)
+        let rec claim () =
+            let state = System.Threading.Volatile.Read(&watchingFlag.contents)
 
-        match previousState with
-        | s when s = WatchState_Stopped ->
-            // Already stopped - nothing to do (idempotent)
-            Ok()
-        | s when s = WatchState_Starting ->
-            // Was starting but COM subscription not yet active - just reset flag
-            // Don't call WatchEventClose since WatchEvent hasn't completed yet
-            logger.Info("JV-Link watch events cancelled before subscription completed.")
-            Ok()
+            if state = WatchState_Stopped || state = WatchState_Stopping then
+                state
+            elif System.Threading.Interlocked.CompareExchange(watchingFlag, WatchState_Stopping, state) = state then
+                state
+            else
+                claim ()
+
+        match claim () with
+        | state when state = WatchState_Stopped -> Ok()
+        | state when state = WatchState_Starting -> Ok() // Startup owns the eventual close.
+        | state when state = WatchState_Stopping -> Error(InteropError(InvalidState "Watch shutdown is in progress."))
         | _ ->
-            // Was Running (2) - COM subscription is active, close it
-            // Close COM subscription FIRST to stop callbacks, THEN stop consumer thread.
-            // This order ensures no callbacks arrive after the queue is completed.
-            // Note: watchingFlag already reset to 0 by Exchange above, allowing
-            // StartWatchEvents to reconnect even if COM close fails.
-            let comResult = runCom "JVWatchEventClose" (fun () -> client.WatchEventClose())
+            let result = runCom "JVWatchEventClose" (fun () -> client.WatchEventClose())
 
-            // Now stop the consumer thread (drains remaining events that were queued)
-            stopEventConsumer ()
-
-            match comResult with
+            match result with
             | Ok() ->
+                stopEventConsumer ()
+
+                System.Threading.Interlocked.Exchange(watchingFlag, WatchState_Stopped)
+                |> ignore
+
                 logger.Info("JV-Link watch events stopped.")
-                Ok()
             | Error err ->
+                System.Threading.Interlocked.Exchange(watchingFlag, WatchState_StopFailed)
+                |> ignore
+
                 logger.Error($"JV-Link watch event stop failed: {describeError err}")
-                Error err
+
+            result
 
     // -------------------------------------------------------------------------
     // Typed Record Parsing API
@@ -1917,6 +1934,8 @@ type JvLinkService
                 then
                     this.StopWatchEvents() |> ignore
 
+                stopEventConsumer ()
+
                 // Dispose the event queue
                 eventQueue.Dispose()
 
@@ -1931,25 +1950,26 @@ type JvLinkService
                     let reason = defaultArg poisonReason "unknown"
 
                     logger.Warn(
-                        "Skipping client disposal - service is poisoned due to STA timeout. "
-                        + $"Reason: {reason}. "
-                        + "COM resources may not be properly released. "
-                        + "Process termination will clean up any leaked resources."
+                        $"Deferring client cleanup after STA timeout. Reason: {reason}. "
+                        + "Resources remain owned by the original STA until native work returns or the process exits."
                     )
-                    // Best effort: Try to forcefully dispose the dispatcher without going through STA
-                    // This will terminate the STA thread and unblock any pending calls
-                    match comDispatcher with
-                    | Some dispatcher ->
-                        try
-                            (dispatcher :> IDisposable).Dispose()
-                            logger.Info("STA dispatcher forcefully disposed after poisoned state.")
-                        with ex ->
-                            logger.Warn($"Failed to forcefully dispose STA dispatcher: {ex.Message}")
-                    | None -> ()
+                    // Reject pending work and bound the wait. A running native call is
+                    // never aborted; COM release stays on its original STA if it returns.
+                    try
+                        match box client with
+                        | :? IComAbandonable as owner -> owner.Abandon()
+                        | _ ->
+                            match comDispatcher with
+                            | Some(:? IComShutdown as shutdown) ->
+                                shutdown.Shutdown(TimeSpan.FromSeconds 5., ignore) |> ignore
+                            | _ -> logger.Warn("Client has no bounded STA shutdown capability.")
+                    with ex ->
+                        logger.Warn($"Deferred STA shutdown failed: {ex.Message}")
                 else
-                    match box client with
-                    | :? IDisposable as d -> d.Dispose()
-                    | _ -> ()
+                    try
+                        client.Dispose()
+                    with ex ->
+                        logger.Error($"JV-Link disposal failed: {ex.Message}")
 
     /// <summary>
     /// Releases all resources used by the JvLinkService.

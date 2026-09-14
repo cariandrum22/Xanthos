@@ -146,14 +146,27 @@ type internal INativeJvLink =
 
 exception internal SessionCleanupException of JvError
 
+/// Explicit cleanup reports failures without throwing from IDisposable during stack unwinding.
+type internal INativeCleanup =
+    abstract Cleanup: unit -> Result<unit, JvError>
+
+module internal CleanupFailure =
+    let report (error: JvError) =
+        try
+            System.Diagnostics.Trace.TraceError($"{error.Api}: {error.Code}: {error.Message}")
+        with _ ->
+            () // A diagnostic listener must not replace the exception being unwound.
+
 /// Owned event registration. Public functions expose shutdown and asynchronous delivery errors.
 type Subscription internal (stop: unit -> Result<unit, JvError>, error: unit -> JvError option) =
     let mutable state = 0
+    let mutable stopError: JvError option = None
 
     let mutable cancellation =
         Unchecked.defaultof<Threading.CancellationTokenRegistration>
 
-    member internal _.Error = error ()
+    member internal _.Error =
+        error () |> Option.orElseWith (fun () -> Threading.Volatile.Read(&stopError))
 
     member internal _.SetCancellation registration =
         cancellation <- registration
@@ -187,16 +200,19 @@ type Subscription internal (stop: unit -> Result<unit, JvError>, error: unit -> 
 
             match result with
             | Ok() ->
+                Threading.Volatile.Write(&stopError, None)
                 cancellation.Dispose()
                 Threading.Volatile.Write(&state, 2)
-            | Error _ -> Threading.Volatile.Write(&state, 0)
+            | Error error ->
+                Threading.Volatile.Write(&stopError, Some error)
+                Threading.Volatile.Write(&state, 0)
 
             result
 
     member this.Dispose() =
         match this.Stop() with
         | Ok() -> ()
-        | Error error -> raise (SessionCleanupException error)
+        | Error error -> CleanupFailure.report error
 
     interface IDisposable with
         member this.Dispose() = this.Dispose()

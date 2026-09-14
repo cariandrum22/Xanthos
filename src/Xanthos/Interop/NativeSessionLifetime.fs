@@ -7,6 +7,8 @@ type internal NativeSessionLifetime() =
     let mutable dataOpen = false
     let mutable watching = false
 
+    member _.Watching = watching
+
     member _.Observe(api, code) =
         match api, code with
         | ("JVOpen" | "JVRTOpen"), (0 | -1 | -2)

@@ -11,25 +11,31 @@ module internal EventRegistration =
           Outputs = Map.empty
           Message = ex.Message }
 
-    let detach unregister registrations =
+    let detachRemaining unregister registrations =
         let mutable firstError = None
-        let failed = ResizeArray<int>()
+        let failed = ResizeArray<_>()
 
         for (id, handler) in registrations do
             try
                 unregister id handler
             with ex ->
-                failed.Add id
+                failed.Add(id, handler)
 
                 if firstError.IsNone then
                     firstError <- Some(failure "ComEventsHelper.Remove" ex)
 
-        match firstError with
-        | None -> Ok()
-        | Some error ->
-            Error
-                { error with
-                    Outputs = Map.ofList [ "failedDispids", String.Join(",", failed) ] }
+        let result =
+            match firstError with
+            | None -> Ok()
+            | Some error ->
+                Error
+                    { error with
+                        Outputs = Map.ofList [ "failedDispids", String.Join(",", failed |> Seq.map (fst >> string)) ] }
+
+        List.ofSeq failed, result
+
+    let detach unregister registrations =
+        detachRemaining unregister registrations |> snd
 
     let attach register unregister registrations =
         let mutable registered = []

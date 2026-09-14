@@ -389,21 +389,20 @@ module internal SdkOperations =
             session.BeginWatch(options.Capacity, callback)
             |> Result.map (fun (generation, delivery) ->
                 let stop () =
-                    try
-                        match session.EndWatch(Some generation) with
-                        | Error error when error.Kind = JvErrorKind.Disposed -> Ok()
-                        | result -> result
-                    finally
+                    match session.EndWatch(Some generation) with
+                    | Error error when error.Kind = JvErrorKind.Disposed ->
                         delivery.Stop()
+                        Ok()
+                    | result -> result
 
                 let subscription = new Subscription(stop, fun () -> delivery.Error)
 
                 let registration =
                     options.CancellationToken.Register(fun () ->
                         Threading.ThreadPool.QueueUserWorkItem(fun _ ->
-                            match subscription.Stop() with
-                            | Ok() -> ()
-                            | Error error -> delivery.Fail error)
+                            // Stop stores a failed attempt in subscriptionError; a Busy
+                            // attempt must not terminate a still-registered delivery worker.
+                            subscription.Stop() |> ignore)
                         |> ignore)
 
                 subscription.SetCancellation registration
