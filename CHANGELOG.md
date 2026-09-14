@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add controlled functional CLI scenarios, deterministic record and Session properties, and SDK-free Windows x64 boundary tests.
+- Add reviewed test inventories and Fast/Coverage/WindowsManaged/Stress profiles that reject missing cases, unexpected skips and invalid evidence; provide isolated SDK-free Windows CI verification.
+
 - Document intermittent native SDK `-413` failures and the caller contract for preserving errors without implicit retry or fallback.
 
 - Validate CLI backend and x64 evidence centrally in the test harness, with regression cases for fallback, conflicting markers and missing evidence.
@@ -21,6 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Preserve codes from all 19 official tables through `Codes`, and provide byte-oriented `RecordBytes` readers with lossless headers and field-specific errors. See `docs/record-foundations.md`; full record-layout migration remains separate.
 
 ### Fixed
+
+- Preserve CLI notification errors through cleanup, report queue overflow and pending keys, and capture configuration/Stub output through the injected writer.
+- Unify coverage and test-evidence completeness checks, verify negative-control rejection reasons, and support reproducible varying-seed Stress runs for existing FsCheck properties.
 
 - Bound poisoned-service STA shutdown while retaining normal consent waits and deferred cleanup on the owning STA.
 - Preserve application exceptions during implicit disposal; keep explicit cleanup errors and retryable watch-stop failures observable. Join cancellation-owned shutdown before disconnecting.

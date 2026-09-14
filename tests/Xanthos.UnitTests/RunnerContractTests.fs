@@ -16,7 +16,7 @@ module RunnerContractTests =
     let private put id index raw data =
         RecordOracle.write layout id index raw data
 
-    let private mappings =
+    let internal mappings =
         [ "1", "Header.RecordId"
           "2", "Header.DataCategory"
           "3", "Header.CreatedDateRaw"
@@ -83,7 +83,7 @@ module RunnerContractTests =
           "67", "PredictedPosition"
           "68", "RunningStyle" ]
 
-    let private fixture () =
+    let internal fixture () =
         let data = RecordOracle.blank layout
 
         for id, raw in

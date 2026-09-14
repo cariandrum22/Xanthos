@@ -22,7 +22,7 @@ module PeopleContractTests =
         else
             Records.parseCH data |> Result.map box
 
-    let private mapping id =
+    let internal mapping id =
         [ "1", "Header.RecordId"
           "2", "Header.DataCategory"
           "3", "Header.CreatedDateRaw"
@@ -112,7 +112,7 @@ module PeopleContractTests =
                 "ag", "DirtOver2200[{j}]" ] do
               performance + letter, "Performances[{i}]." + path ]
 
-    let private fixture id =
+    let internal fixture id =
         let layout = RecordOracle.layout id
         let data = RecordOracle.blank layout
 

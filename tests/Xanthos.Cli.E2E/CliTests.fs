@@ -172,7 +172,7 @@ type CliTests(output: ITestOutputHelper) =
     [<Fact>]
     [<Trait("Category", "E2E")>]
     [<Trait("Category", "Config")>]
-    member _.``set-save-flag and get-save-flag round-trip``() =
+    member _.``set-save-flag and get-save-flag separate process smoke``() =
         // Set to true
         let setResult = Harness.runCli mode [ "set-save-flag"; "--value"; "true" ]
         logResult "set-save-flag-true" setResult
@@ -187,7 +187,7 @@ type CliTests(output: ITestOutputHelper) =
     [<Fact>]
     [<Trait("Category", "E2E")>]
     [<Trait("Category", "Config")>]
-    member _.``set-save-path and get-save-path round-trip``() =
+    member _.``set-save-path and get-save-path separate process smoke``() =
         let testPath = Path.Combine(Harness.savePath, "test-save-path")
         Directory.CreateDirectory testPath |> ignore
 

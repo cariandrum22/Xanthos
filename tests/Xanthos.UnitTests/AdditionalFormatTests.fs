@@ -9,7 +9,7 @@ module AdditionalFormatTests =
     open AdditionalRecordContractTests
 
     // Previous absolute positions independently transcribed from the 2023-08-08 layout change.
-    let private oldLayout id =
+    let internal oldLayout id =
         let current = RecordOracle.layout id
         let size = Map.ofList [ "HN", 245; "SK", 178; "HS", 196; "BT", 6887; "CK", 6864 ]
 

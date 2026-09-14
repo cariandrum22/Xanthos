@@ -36,7 +36,7 @@ module OwnershipContractTests =
           "10.c", "Performances[{i}].AddedPrizeHundredYen"
           "10.d", "Performances[{i}].FinishCounts[{j}]" ]
 
-    let private fixture id =
+    let internal fixture id =
         let layout = RecordOracle.layout id
         let data = RecordOracle.blank layout
 

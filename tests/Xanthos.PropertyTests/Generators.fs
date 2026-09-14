@@ -45,7 +45,11 @@ let private byteArrayGen: Gen<byte[]> =
         |> Gen.map List.toArray)
 
 let private distanceOptionGen: Gen<int option> =
-    Gen.frequency [ 1, Gen.constant None; 3, Gen.choose (100, 4800) |> Gen.map Some ]
+    Gen.frequency
+        [ 1, Gen.constant None
+          1, Gen.constant (Some 0)
+          1, Gen.constant (Some 10000)
+          5, Gen.choose (1, 9999) |> Gen.map Some ]
 
 let private surfaceGen =
     Gen.elements
@@ -114,8 +118,30 @@ let raceInfoGen =
               ScheduledStart = scheduled }
     }
 
-let raceInfoArb = Arb.fromGen raceInfoGen
-let raceInfoListArb = raceInfoGen |> Gen.listOf |> Arb.fromGen
+let private shrinkRaceInfo info =
+    seq {
+        if info.DistanceMeters <> None then
+            yield { info with DistanceMeters = None }
+
+        if info.Course <> None then
+            yield { info with Course = None }
+
+        if info.ScheduledStart <> None then
+            yield { info with ScheduledStart = None }
+
+        if info.Name <> "A" then
+            yield { info with Name = "A" }
+    }
+
+let private shrinkList values =
+    seq {
+        if not (List.isEmpty values) then
+            yield []
+            yield List.take (List.length values / 2) values
+    }
+
+let raceInfoArb = Arb.fromGenShrink (raceInfoGen, shrinkRaceInfo)
+let raceInfoListArb = Arb.fromGenShrink (Gen.listOf raceInfoGen, shrinkList)
 
 let runnerOddsGen =
     gen {
@@ -182,9 +208,9 @@ let raceOddsGen =
 
 let raceOddsArb = Arb.fromGen raceOddsGen
 
-let raceOddsListArb = raceOddsGen |> Gen.listOf |> Arb.fromGen
+let raceOddsListArb = Arb.fromGenShrink (Gen.listOf raceOddsGen, shrinkList)
 
-let payloadBatchArb = byteArrayGen |> Gen.listOf |> Arb.fromGen
+let payloadBatchArb = Arb.fromGenShrink (Gen.listOf byteArrayGen, shrinkList)
 
 type CustomArbitraries =
     static member RaceId() = raceIdArb

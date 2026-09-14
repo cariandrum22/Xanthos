@@ -35,7 +35,7 @@ module PayoffContractTests =
           "49", "Trio"
           "50", "Trifecta" ]
 
-    let private mappings =
+    let internal mappings =
         [ "1", "Header.RecordId"
           "2", "Header.DataCategory"
           "3", "Header.CreatedDateRaw"
@@ -58,7 +58,7 @@ module PayoffContractTests =
               id + ".b", "Payouts." + bet + "[{i}].AmountYen"
               id + ".c", "Payouts." + bet + "[{i}].Popularity" ]
 
-    let private fixture () =
+    let internal fixture () =
         let data = RecordOracle.blank layout
 
         for id, raw in

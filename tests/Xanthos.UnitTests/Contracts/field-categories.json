@@ -1,0 +1,607 @@
+[
+  {
+    "fieldType": "string",
+    "records": [
+      "TK",
+      "RA",
+      "SE",
+      "HR",
+      "H1",
+      "H6",
+      "O1",
+      "O2",
+      "O3",
+      "O4",
+      "O5",
+      "O6",
+      "UM",
+      "KS",
+      "CH",
+      "BR",
+      "BN",
+      "HN",
+      "SK",
+      "CK",
+      "RC",
+      "HC",
+      "HS",
+      "HY",
+      "YS",
+      "BT",
+      "CS",
+      "DM",
+      "TM",
+      "WF",
+      "JG",
+      "WC",
+      "WH",
+      "WE",
+      "AV",
+      "JC",
+      "TC",
+      "CC"
+    ],
+    "requiredCategories": [
+      "one-byte",
+      "two-byte-end",
+      "blank",
+      "invalid-cp932",
+      "identifier",
+      "invalid-identifier"
+    ]
+  },
+  {
+    "fieldType": "Microsoft.FSharp.Core.FSharpOption\u00601[System.DateOnly]",
+    "records": [
+      "TK",
+      "RA",
+      "SE",
+      "HR",
+      "H1",
+      "H6",
+      "O1",
+      "O2",
+      "O3",
+      "O4",
+      "O5",
+      "O6",
+      "UM",
+      "KS",
+      "CH",
+      "BR",
+      "BN",
+      "HN",
+      "SK",
+      "CK",
+      "RC",
+      "HC",
+      "HS",
+      "HY",
+      "YS",
+      "BT",
+      "CS",
+      "DM",
+      "TM",
+      "WF",
+      "JG",
+      "WC",
+      "WH",
+      "WE",
+      "AV",
+      "JC",
+      "TC",
+      "CC"
+    ],
+    "requiredCategories": [
+      "leap",
+      "missing",
+      "maximum",
+      "invalid"
+    ]
+  },
+  {
+    "fieldType": "Microsoft.FSharp.Core.FSharpOption\u00601[System.Int32]",
+    "records": [
+      "TK",
+      "RA",
+      "SE",
+      "HR",
+      "H1",
+      "H6",
+      "O1",
+      "O2",
+      "O3",
+      "O4",
+      "O5",
+      "O6",
+      "UM",
+      "KS",
+      "CH",
+      "BR",
+      "BN",
+      "HN",
+      "SK",
+      "CK",
+      "RC",
+      "HS",
+      "YS",
+      "CS",
+      "DM",
+      "TM",
+      "WF",
+      "JG",
+      "WH",
+      "WE",
+      "AV",
+      "JC",
+      "TC",
+      "CC"
+    ],
+    "requiredCategories": [
+      "zero",
+      "maximum",
+      "nonzero",
+      "blank",
+      "overflow"
+    ]
+  },
+  {
+    "fieldType": "OfficialCode",
+    "records": [
+      "TK",
+      "RA",
+      "SE",
+      "HR",
+      "H1",
+      "H6",
+      "O1",
+      "O2",
+      "O3",
+      "O4",
+      "O5",
+      "O6",
+      "UM",
+      "KS",
+      "CH",
+      "HN",
+      "SK",
+      "CK",
+      "RC",
+      "YS",
+      "CS",
+      "DM",
+      "TM",
+      "WF",
+      "JG",
+      "WH",
+      "WE",
+      "AV",
+      "JC",
+      "TC",
+      "CC"
+    ],
+    "requiredCategories": [
+      "known",
+      "unknown",
+      "non-ascii"
+    ]
+  },
+  {
+    "fieldType": "Microsoft.FSharp.Core.FSharpOption\u00601[System.Decimal]",
+    "records": [
+      "TK",
+      "RA",
+      "SE",
+      "HR",
+      "H1",
+      "H6",
+      "O1",
+      "O2",
+      "O3",
+      "O4",
+      "O5",
+      "O6",
+      "UM",
+      "KS",
+      "CH",
+      "BR",
+      "BN",
+      "CK",
+      "RC",
+      "HS",
+      "DM",
+      "TM",
+      "WF",
+      "JC"
+    ],
+    "requiredCategories": [
+      "zero",
+      "maximum",
+      "nonzero",
+      "blank",
+      "invalid"
+    ]
+  },
+  {
+    "fieldType": "Microsoft.FSharp.Core.FSharpOption\u00601[System.TimeOnly]",
+    "records": [
+      "RA",
+      "HC",
+      "DM",
+      "TM",
+      "WC",
+      "TC"
+    ],
+    "requiredCategories": [
+      "maximum",
+      "zero",
+      "blank",
+      "invalid"
+    ]
+  },
+  {
+    "fieldType": "Xanthos.Data.BodyWeight",
+    "records": [
+      "SE",
+      "WH"
+    ],
+    "requiredCategories": [
+      "Missing",
+      "Withdrawn",
+      "Unmeasurable",
+      "Kilograms",
+      "first",
+      "last"
+    ]
+  },
+  {
+    "fieldType": "Xanthos.Data.WeightChange",
+    "records": [
+      "SE",
+      "WH"
+    ],
+    "requiredCategories": [
+      "Missing",
+      "Unmeasurable",
+      "Kilograms",
+      "first",
+      "last"
+    ]
+  },
+  {
+    "fieldType": "Xanthos.Data.SectionalTime",
+    "records": [
+      "SE"
+    ],
+    "requiredCategories": [
+      "NotRecorded",
+      "NoResult",
+      "Seconds"
+    ]
+  },
+  {
+    "fieldType": "Xanthos.Data.TimeGap",
+    "records": [
+      "SE"
+    ],
+    "requiredCategories": [
+      "Unset",
+      "NoResult",
+      "Seconds"
+    ]
+  },
+  {
+    "fieldType": "Microsoft.FSharp.Core.FSharpOption\u00601[System.Boolean]",
+    "records": [
+      "HR",
+      "H1",
+      "H6",
+      "UM",
+      "KS",
+      "CH",
+      "WF"
+    ],
+    "requiredCategories": [
+      "false",
+      "true",
+      "unknown",
+      "blank"
+    ]
+  },
+  {
+    "fieldType": "Xanthos.Data.SaleState",
+    "records": [
+      "H1",
+      "H6",
+      "O1",
+      "O2",
+      "O3",
+      "O4",
+      "O5",
+      "O6"
+    ],
+    "requiredCategories": [
+      "NotSold",
+      "CancelledBeforeSale",
+      "CancelledAfterSale",
+      "Available",
+      "Unknown"
+    ]
+  },
+  {
+    "fieldType": "Xanthos.Data.PlacePayoutRule",
+    "records": [
+      "H1",
+      "O1"
+    ],
+    "requiredCategories": [
+      "NotSold",
+      "TwoPlaces",
+      "ThreePlaces",
+      "Unknown"
+    ]
+  },
+  {
+    "fieldType": "Xanthos.Data.Popularity",
+    "records": [
+      "H1",
+      "H6",
+      "O1",
+      "O2",
+      "O3",
+      "O4",
+      "O5",
+      "O6"
+    ],
+    "requiredCategories": [
+      "NotRegistered",
+      "CancelledBeforeSale",
+      "CancelledAfterSale",
+      "Rank"
+    ]
+  },
+  {
+    "fieldType": "Microsoft.FSharp.Core.FSharpOption\u00601[Xanthos.Data.AnnouncementTime]",
+    "records": [
+      "O1",
+      "O2",
+      "O3",
+      "O4",
+      "O5",
+      "O6",
+      "WH",
+      "WE",
+      "AV",
+      "JC",
+      "TC",
+      "CC"
+    ],
+    "requiredCategories": [
+      "leap",
+      "zero",
+      "blank",
+      "invalid"
+    ]
+  },
+  {
+    "fieldType": "Xanthos.Data.OddsValue",
+    "records": [
+      "O1",
+      "O2",
+      "O3",
+      "O4",
+      "O5",
+      "O6"
+    ],
+    "requiredCategories": [
+      "NotRegistered",
+      "NoVotes",
+      "CancelledBeforeSale",
+      "CancelledAfterSale",
+      "Quoted",
+      "AtLeast",
+      "first",
+      "last"
+    ]
+  },
+  {
+    "fieldType": "Xanthos.Data.OddsLimitFormat",
+    "records": [
+      "O1",
+      "O2",
+      "O3",
+      "O4",
+      "O5",
+      "O6"
+    ],
+    "metadataOnly": "Layout/dispatcher metadata, not a byte field; verified by FormatAndDataSpecProperties and OfficialRecordProperties."
+  },
+  {
+    "fieldType": "Xanthos.RecordKind",
+    "records": [
+      "O2",
+      "O4",
+      "O5",
+      "O6"
+    ],
+    "metadataOnly": "Layout/dispatcher metadata, not a byte field; verified by FormatAndDataSpecProperties and OfficialRecordProperties."
+  },
+  {
+    "fieldType": "Xanthos.Data.IdentifierFormat",
+    "records": [
+      "UM",
+      "BR",
+      "HN",
+      "SK",
+      "CK",
+      "HS",
+      "BT"
+    ],
+    "metadataOnly": "Layout/dispatcher metadata, not a byte field; verified by FormatAndDataSpecProperties and OfficialRecordProperties."
+  },
+  {
+    "fieldType": "Xanthos.Data.PersonSex",
+    "records": [
+      "KS",
+      "CH"
+    ],
+    "requiredCategories": [
+      "Male",
+      "Female",
+      "Unknown"
+    ]
+  },
+  {
+    "fieldType": "Xanthos.Data.ImportKind",
+    "records": [
+      "HN",
+      "SK"
+    ],
+    "requiredCategories": [
+      "Domestic",
+      "ImportedInUtero",
+      "ImportedAsDomestic",
+      "Imported",
+      "Other",
+      "Unknown"
+    ]
+  },
+  {
+    "fieldType": "Xanthos.Data.RaceRecordKind",
+    "records": [
+      "RC"
+    ],
+    "requiredCategories": [
+      "Course",
+      "GradeOne",
+      "Unknown"
+    ]
+  },
+  {
+    "fieldType": "Xanthos.Data.RecordTimeKind",
+    "records": [
+      "RC"
+    ],
+    "requiredCategories": [
+      "Standard",
+      "Record",
+      "Reference",
+      "Remark",
+      "Unknown"
+    ]
+  },
+  {
+    "fieldType": "Xanthos.Data.TrainingCentre",
+    "records": [
+      "HC",
+      "WC"
+    ],
+    "requiredCategories": [
+      "Miho",
+      "Ritto",
+      "Unknown"
+    ]
+  },
+  {
+    "fieldType": "Xanthos.Data.TrainingTime",
+    "records": [
+      "HC",
+      "WC"
+    ],
+    "requiredCategories": [
+      "Missing",
+      "Unmeasurable",
+      "Seconds",
+      "AtLeastSeconds"
+    ]
+  },
+  {
+    "fieldType": "Xanthos.Data.EntryStatus",
+    "records": [
+      "JG"
+    ],
+    "requiredCategories": [
+      "Entered",
+      "ExcludedAtDeadline",
+      "Reentered",
+      "ReentryExcluded",
+      "WithdrawnWithoutNumber",
+      "Withdrawn",
+      "Unknown"
+    ]
+  },
+  {
+    "fieldType": "Xanthos.Data.ExclusionStatus",
+    "records": [
+      "JG"
+    ],
+    "requiredCategories": [
+      "NotBalloted",
+      "NotSelected",
+      "Unknown"
+    ]
+  },
+  {
+    "fieldType": "Xanthos.Data.TrainingCourse",
+    "records": [
+      "WC"
+    ],
+    "requiredCategories": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "Unknown"
+    ]
+  },
+  {
+    "fieldType": "Xanthos.Data.TrainingDirection",
+    "records": [
+      "WC"
+    ],
+    "requiredCategories": [
+      "Right",
+      "Left",
+      "Unknown"
+    ]
+  },
+  {
+    "fieldType": "Xanthos.Data.WeatherChangeKind",
+    "records": [
+      "WE"
+    ],
+    "requiredCategories": [
+      "Initial",
+      "Weather",
+      "TrackCondition",
+      "Unknown"
+    ]
+  },
+  {
+    "fieldType": "Xanthos.Data.WithdrawalReason",
+    "records": [
+      "AV"
+    ],
+    "requiredCategories": [
+      "Unspecified",
+      "Illness",
+      "Accident",
+      "Other",
+      "Unknown"
+    ]
+  },
+  {
+    "fieldType": "Xanthos.Data.CourseChangeReason",
+    "records": [
+      "CC"
+    ],
+    "requiredCategories": [
+      "StrongWind",
+      "Typhoon",
+      "Snow",
+      "Other",
+      "Unknown"
+    ]
+  }
+]

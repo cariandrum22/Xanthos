@@ -11,7 +11,7 @@ module OddsContractTests =
         | Ok value -> value
         | Error error -> failwithf "%A" error
 
-    let private mappings id =
+    let internal mappings id =
         [ "1", "Header.RecordId"
           "2", "Header.DataCategory"
           "3", "Header.CreatedDateRaw"
@@ -86,7 +86,7 @@ module OddsContractTests =
                            if a <> b && a <> c && b <> c then
                                sprintf "%02d%02d%02d" a b c |]
 
-    let private fixture id =
+    let internal fixture id =
         let layout = RecordOracle.layout id
         let data = RecordOracle.blank layout
 

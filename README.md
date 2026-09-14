@@ -261,8 +261,8 @@ Run manually with `pre-commit run --all-files`.
 ### Running Tests Locally
 
 ```bash
-# Run all tests
-dotnet test
+# Run the required managed profile (PowerShell 7)
+pwsh ./scripts/run-test-profile.ps1 -Profile Fast -RunId local-fast-01
 
 # Run unit tests only
 dotnet test tests/Xanthos.UnitTests
@@ -281,9 +281,12 @@ XANTHOS_E2E_MODE=STUB \
 
 | Project | Description | Platform |
 | ------- | ----------- | -------- |
-| `Xanthos.UnitTests` | Unit tests with JvLinkStub | All |
+| `Xanthos.UnitTests` | Unit, independent record contracts and generators | All |
 | `Xanthos.PropertyTests` | FsCheck property-based tests | All |
-| `Xanthos.Cli.E2E` | CLI end-to-end tests | All (Stub) / Windows (COM) |
+| `Xanthos.Cli.E2E` | Legacy Stub CLI smoke and harness checks | All |
+| `Xanthos.FunctionalScenarioTests` | Production CLI and F# functions with controlled native boundary | All |
+| `Xanthos.WindowsTests` | WINDOWS assembly, STA, locale and ABI without SDK | Windows x64 |
+| `Xanthos.ComTests` | Actual JV-Link CLI verification | Windows x64 with SDK |
 
 See `tests/README.md` for the naming conventions used across the unit-test suite
 (e.g., how `*ErrorTests` vs `*AbnormalTests` are scoped, and the preferred
@@ -293,21 +296,19 @@ For CLI E2E test design and coverage details, see
 
 ### CI/CD
 
-The project uses GitHub Actions for continuous integration:
+The existing workflow builds and tests on Linux, macOS, and Windows. The separate
+Q08 workflow verifies Windows x64 managed boundaries without JV-Link activation.
+The dependent `ci/sdk5-quality-gates` PR prepares explicit Fast/Coverage gates,
+separate OS/TFM artifacts and scheduled Stress; those gates are not enabled here.
 
-- **Build & Test**: Runs on Linux, macOS, and Windows
-- **E2E Tests**: Stub mode on all platforms; COM not required for CI
-- **Code Quality**: Format checking with `dotnet fantomas --check .`
-- **Coverage**: Coverlet (cobertura & opencover) with ReportGenerator HTML summary
-
-See [`.github/workflows/ci.yml`](.github/workflows/ci.yml) for details.
+See [`.github/workflows/ci.yml`](.github/workflows/ci.yml) and
+[the Q08 workflow](.github/workflows/q08-windows-managed.yml).
 
 ### Windows COM Verification
 
-> **Note:** CI only validates stub mode. The actual COM layer cannot be tested in
-> GitHub Actions because JV-Link is a commercial product that requires local
-> installation. Before each release, manual verification on a Windows machine with
-> JV-Link installed is required.
+Managed boundary tests do not activate JV-Link. Actual SDK operations require
+the separate local COM profile with an installed SDK and registered subscription
+key before release.
 
 Before tagging the initial release (and for any later COM regression), run the bundled
 PowerShell workflow on a Windows machine with JV-Link installed:

@@ -12,8 +12,8 @@ The shared harness rejects a backend different from the requested mode, includin
 | 4 | set-save-flag executes successfully | ComX64Required / T04,T05,T09 |
 | 5 | COM diagnostics appear only in COM mode | ComX64Required / T04,T05,T09 |
 | 6 | realtime streams payloads until end of stream | ComX64Required / T04,T05,T09 |
-| 7 | set-save-flag and get-save-flag round-trip | ComX64Required / T04,T05,T09 |
-| 8 | set-save-path and get-save-path round-trip | ComX64Required / T04,T05,T09 |
+| 7 | set-save-flag and get-save-flag separate process smoke | ComX64Required / T04,T05,T09 |
+| 8 | set-save-path and get-save-path separate process smoke | ComX64Required / T04,T05,T09 |
 | 9 | initialization reuses configuration without registering a key | ComX64Required / T04,T05,T09 |
 | 10 | get-service-key reads current key | ComX64Required / T04,T05,T09 |
 | 11 | get-payoff-dialog reads current flag | ComX64Required / T02 |
@@ -49,3 +49,5 @@ The shared harness rejects a backend different from the requested mode, includin
 | 41 | session-check rejects explicit STUB without COM activation | Stateful normal acquisition is verified by ComX64Required |
 
 Configuration setter/getter pairs in the STUB suite verify individual commands, not persistence across independent stub processes. Real configuration restoration and session state are separate COM requirements. Registered service key values are never test inputs or logged output.
+
+Production functional scenarios are documented separately in [FunctionalScenarioTests](../Xanthos.FunctionalScenarioTests/scenarios.md). Their native fake is internal and uses the real command branches and parsers.

@@ -16,7 +16,7 @@ module ChangesContractTests =
         | Error e -> e
         | Ok _ -> failwith "Expected a parsing error"
 
-    let private mappings id =
+    let internal mappings id =
         [ "1", "Header.RecordId"
           "2", "Header.DataCategory"
           "3", "Header.CreatedDateRaw"
@@ -92,7 +92,7 @@ module ChangesContractTests =
         | "WF" -> Records.parseWF data |> Result.map box
         | _ -> failwith id
 
-    let private fixture id =
+    let internal fixture id =
         let layout = RecordOracle.layout id
         let data = RecordOracle.blank layout
 

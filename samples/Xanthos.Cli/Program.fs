@@ -125,7 +125,9 @@ let private printHelp () =
     printfn "%s" (usage.Trim())
     0
 
-let private runCommand ctx command =
+let private runCommand (ctx: ExecutionContext) command =
+    let printfn format = Printf.kprintf ctx.WriteLine format
+
     match command with
     | Download args -> runDownload ctx args
     | SessionCheck _ ->
@@ -175,9 +177,13 @@ let private mayShowSdkDialog =
     | CaptureFixtures _ -> true
     | _ -> false
 
-[<STAThread>]
-[<EntryPoint>]
-let main argv =
+let internal runWith (dependencies: FunctionalExecution.Dependencies) argv =
+    let printfn format =
+        Printf.kprintf dependencies.WriteLine format
+
+    let printHelp () =
+        printfn "%s" (usage.Trim())
+        0
     // Ensure all CLI output (stdout/stderr) is UTF-8 to avoid mojibake in logs and test harnesses.
     Xanthos.Runtime.ConsoleEncoding.configureUtf8 ()
     printfn "EVIDENCE:ARCH=%O" System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture
@@ -191,8 +197,8 @@ let main argv =
         match parsed.Command with
         | Help -> printHelp ()
         | _ ->
-            match createExecutionContext parsed.Globals with
-            | Error err -> reportError "Configuration error" err
+            match createExecutionContextWithWriter dependencies.WriteLine parsed.Globals with
+            | Error err -> reportErrorWithWriter dependencies.WriteLine "Configuration error" err
             | Ok ctx ->
                 configureDiagnostics ctx.Globals.EnableDiagnostics ctx.Logger
 
@@ -200,10 +206,7 @@ let main argv =
                     printfn "[diag] Client mode = %s" (describeMode ctx.Activation)
                 // Each command creates its own service with a fresh client.
                 // The service owns the client and disposes it when done.
-                let noDesktop =
-                    parsed.Globals.NonInteractive
-                    || (OperatingSystem.IsWindows()
-                        && Diagnostics.Process.GetCurrentProcess().SessionId = 0)
+                let noDesktop = parsed.Globals.NonInteractive || not dependencies.HasDesktop
 
                 if ctx.Activation.Mode = Com && mayShowSdkDialog parsed.Command && noDesktop then
                     printfn
@@ -216,6 +219,11 @@ let main argv =
                             "If a JRA-VAN dialog appears, choose on your desktop. Waiting has no time limit; refusal ends this request."
 
                     if ctx.Activation.Mode = Com then
-                        FunctionalExecution.run ctx parsed.Command
+                        FunctionalExecution.runWith dependencies ctx parsed.Command
                     else
                         runCommand ctx parsed.Command
+
+[<STAThread>]
+[<EntryPoint>]
+let main argv =
+    runWith (FunctionalExecution.productionDependencies ()) argv
