@@ -445,6 +445,11 @@ module CodeTablesTests =
 
 module RecordParserTests =
 
+    // Fixture construction must not depend on another test having registered
+    // CP932 globally. Obtain the encoding directly from its provider.
+    let private fixtureBytes (value: string) =
+        Text.CodePagesEncodingProvider.Instance.GetEncoding(932).GetBytes(value)
+
     open RecordParser
 
     [<Fact>]
@@ -520,7 +525,7 @@ module RecordParserTests =
 
     [<Fact>]
     let ``getRecordType should return first 2 bytes`` () =
-        let data = Text.Encoding.GetEncoding(932).GetBytes("RAtest")
+        let data = fixtureBytes ("RAtest")
         let result = getRecordType data
         Assert.Equal("RA", result)
 
@@ -532,67 +537,67 @@ module RecordParserTests =
 
     [<Fact>]
     let ``parseInt should parse valid integer`` () =
-        let bytes = Text.Encoding.GetEncoding(932).GetBytes("  123  ")
+        let bytes = fixtureBytes ("  123  ")
         let result = parseInt bytes
         Assert.Equal(Some 123, result)
 
     [<Fact>]
     let ``parseInt should return None for empty`` () =
-        let bytes = Text.Encoding.GetEncoding(932).GetBytes("     ")
+        let bytes = fixtureBytes ("     ")
         let result = parseInt bytes
         Assert.Equal(None, result)
 
     [<Fact>]
     let ``parseInt should return None for non-numeric`` () =
-        let bytes = Text.Encoding.GetEncoding(932).GetBytes("abc")
+        let bytes = fixtureBytes ("abc")
         let result = parseInt bytes
         Assert.Equal(None, result)
 
     [<Fact>]
     let ``parseDecimal should parse with precision`` () =
-        let bytes = Text.Encoding.GetEncoding(932).GetBytes("12345")
+        let bytes = fixtureBytes ("12345")
         let result = parseDecimal bytes 2
         Assert.Equal(Some 123.45M, result)
 
     [<Fact>]
     let ``parseDecimal should return None for empty`` () =
-        let bytes = Text.Encoding.GetEncoding(932).GetBytes("     ")
+        let bytes = fixtureBytes ("     ")
         let result = parseDecimal bytes 2
         Assert.Equal(None, result)
 
     [<Fact>]
     let ``parseFlag should return true for 1`` () =
-        let bytes = Text.Encoding.GetEncoding(932).GetBytes("1")
+        let bytes = fixtureBytes ("1")
         let result = parseFlag bytes
         Assert.True(result)
 
     [<Fact>]
     let ``parseFlag should return false for 0`` () =
-        let bytes = Text.Encoding.GetEncoding(932).GetBytes("0")
+        let bytes = fixtureBytes ("0")
         let result = parseFlag bytes
         Assert.False(result)
 
     [<Fact>]
     let ``parseFlag should return false for other values`` () =
-        let bytes = Text.Encoding.GetEncoding(932).GetBytes("X")
+        let bytes = fixtureBytes ("X")
         let result = parseFlag bytes
         Assert.False(result)
 
     [<Fact>]
     let ``parseDate should parse valid date`` () =
-        let bytes = Text.Encoding.GetEncoding(932).GetBytes("20240115")
+        let bytes = fixtureBytes ("20240115")
         let result = parseDate bytes "yyyyMMdd"
         Assert.Equal(Some(DateTime(2024, 1, 15)), result)
 
     [<Fact>]
     let ``parseDate should return None for all zeros`` () =
-        let bytes = Text.Encoding.GetEncoding(932).GetBytes("00000000")
+        let bytes = fixtureBytes ("00000000")
         let result = parseDate bytes "yyyyMMdd"
         Assert.Equal(None, result)
 
     [<Fact>]
     let ``parseDate should return None for empty`` () =
-        let bytes = Text.Encoding.GetEncoding(932).GetBytes("        ")
+        let bytes = fixtureBytes ("        ")
         let result = parseDate bytes "yyyyMMdd"
         Assert.Equal(None, result)
 
@@ -1286,7 +1291,7 @@ module TextBranchCoverageTests =
     let ``decodeShiftJis with truncated Shift-JIS 2-byte char uses lenient fallback`` () =
         // Encode a Shift-JIS string then chop off the last byte of a 2-byte character.
         // Lenient Shift-JIS should decode the leading valid characters without U+FFFD.
-        let enc = System.Text.Encoding.GetEncoding(932)
+        let enc = System.Text.CodePagesEncodingProvider.Instance.GetEncoding(932)
         let fullBytes = enc.GetBytes("タイキシャトル")
         // Drop the last byte to simulate a mid-character truncation
         let truncated = fullBytes.[0 .. fullBytes.Length - 2]
