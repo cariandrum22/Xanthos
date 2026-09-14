@@ -12,6 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="WindowsManagedTests.fs" />
+    <Compile Include="LifecycleWindowsTests.fs" />
     <ProjectReference Include="../../src/Xanthos/Xanthos.fsproj" />
   </ItemGroup>
 </Project>

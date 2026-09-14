@@ -110,11 +110,7 @@ module ComEventConnection =
               Delegates = List.map snd registrations })
 
     /// Attempt every removal and report failures instead of silently losing them.
-    let disconnect (subscription: EventSubscription) =
-        let unregister id handler =
-            ComEventsHelper.Remove(subscription.ComObject, subscription.SourceIID, id, handler)
-            |> ignore
-
+    let internal disconnectWith unregister (subscription: EventSubscription) =
         let remaining, result =
             Xanthos.EventRegistration.detachRemaining unregister (List.zip subscription.Dispids subscription.Delegates)
 
@@ -124,5 +120,21 @@ module ComEventConnection =
         match result with
         | Ok() -> Diagnostics.emit "COM event sink disconnected"
         | Error error -> raise (Xanthos.SessionCleanupException error)
+
+    let disconnect (subscription: EventSubscription) =
+        disconnectWith
+            (fun id handler ->
+                ComEventsHelper.Remove(subscription.ComObject, subscription.SourceIID, id, handler)
+                |> ignore)
+            subscription
+
+/// Testable boundary around event connection points; default uses the real COM helpers.
+type internal ComEventConnector =
+    { Connect: obj -> JvLinkEventSink -> Result<EventSubscription, Xanthos.JvError>
+      Disconnect: EventSubscription -> unit }
+
+    static member Default =
+        { Connect = ComEventConnection.tryConnect
+          Disconnect = ComEventConnection.disconnect }
 
 #endif

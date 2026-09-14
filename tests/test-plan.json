@@ -57612,6 +57612,1160 @@
         "macos",
         "windows"
       ]
+    },
+    {
+      "id": "T-739ef9b8d2c51b7f9cc6",
+      "project": "tests/Xanthos.Cli.E2E/Xanthos.Cli.E2E.fsproj",
+      "fqn": "Xanthos.Cli.E2E.CaptureParsingTests.Capture read method uses command option then global option then JVRead default",
+      "displayName": "Xanthos.Cli.E2E.CaptureParsingTests.Capture read method uses command option then global option then JVRead default(globalFlag: \"\", commandFlag: \"\", expected: False)",
+      "groups": [
+        "Cli.E2E",
+        "Legacy-Stub-smoke"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-5e343e07fe96a350524e",
+      "project": "tests/Xanthos.Cli.E2E/Xanthos.Cli.E2E.fsproj",
+      "fqn": "Xanthos.Cli.E2E.CaptureParsingTests.Capture read method uses command option then global option then JVRead default",
+      "displayName": "Xanthos.Cli.E2E.CaptureParsingTests.Capture read method uses command option then global option then JVRead default(globalFlag: \"\", commandFlag: \"--use-jvgets\", expected: True)",
+      "groups": [
+        "Cli.E2E",
+        "Legacy-Stub-smoke"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-6ff7c30a1dc3d57c2734",
+      "project": "tests/Xanthos.Cli.E2E/Xanthos.Cli.E2E.fsproj",
+      "fqn": "Xanthos.Cli.E2E.CaptureParsingTests.Capture read method uses command option then global option then JVRead default",
+      "displayName": "Xanthos.Cli.E2E.CaptureParsingTests.Capture read method uses command option then global option then JVRead default(globalFlag: \"--no-jvgets\", commandFlag: \"\", expected: False)",
+      "groups": [
+        "Cli.E2E",
+        "Legacy-Stub-smoke"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-590a524d2c77c6e76b04",
+      "project": "tests/Xanthos.Cli.E2E/Xanthos.Cli.E2E.fsproj",
+      "fqn": "Xanthos.Cli.E2E.CaptureParsingTests.Capture read method uses command option then global option then JVRead default",
+      "displayName": "Xanthos.Cli.E2E.CaptureParsingTests.Capture read method uses command option then global option then JVRead default(globalFlag: \"--no-jvgets\", commandFlag: \"--use-jvgets\", expected: True)",
+      "groups": [
+        "Cli.E2E",
+        "Legacy-Stub-smoke"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-2663c1249eeb502f9152",
+      "project": "tests/Xanthos.Cli.E2E/Xanthos.Cli.E2E.fsproj",
+      "fqn": "Xanthos.Cli.E2E.CaptureParsingTests.Capture read method uses command option then global option then JVRead default",
+      "displayName": "Xanthos.Cli.E2E.CaptureParsingTests.Capture read method uses command option then global option then JVRead default(globalFlag: \"--use-jvgets\", commandFlag: \"\", expected: True)",
+      "groups": [
+        "Cli.E2E",
+        "Legacy-Stub-smoke"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-587787e3cb1e6cf9dc0e",
+      "project": "tests/Xanthos.Cli.E2E/Xanthos.Cli.E2E.fsproj",
+      "fqn": "Xanthos.Cli.E2E.CaptureParsingTests.Capture read method uses command option then global option then JVRead default",
+      "displayName": "Xanthos.Cli.E2E.CaptureParsingTests.Capture read method uses command option then global option then JVRead default(globalFlag: \"--use-jvgets\", commandFlag: \"--no-jvgets\", expected: False)",
+      "groups": [
+        "Cli.E2E",
+        "Legacy-Stub-smoke"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-f9a49863dcc1c44f4e3f",
+      "project": "tests/Xanthos.FunctionalScenarioTests/Xanthos.FunctionalScenarioTests.fsproj",
+      "fqn": "Xanthos.FunctionalScenarioTests.CaptureReadMethodScenarios.Capture command read method matches native API bytes and persisted metadata",
+      "displayName": "Xanthos.FunctionalScenarioTests.CaptureReadMethodScenarios.Capture command read method matches native API bytes and persisted metadata(globalFlag: \"\", commandFlag: \"\", expected: \"JVRead\")",
+      "groups": [
+        "FunctionalScenarioTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "tfm": "net10.0",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ]
+    },
+    {
+      "id": "T-27fbb74523adc9485788",
+      "project": "tests/Xanthos.FunctionalScenarioTests/Xanthos.FunctionalScenarioTests.fsproj",
+      "fqn": "Xanthos.FunctionalScenarioTests.CaptureReadMethodScenarios.Capture command read method matches native API bytes and persisted metadata",
+      "displayName": "Xanthos.FunctionalScenarioTests.CaptureReadMethodScenarios.Capture command read method matches native API bytes and persisted metadata(globalFlag: \"\", commandFlag: \"--use-jvgets\", expected: \"JVGets\")",
+      "groups": [
+        "FunctionalScenarioTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "tfm": "net10.0",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ]
+    },
+    {
+      "id": "T-6d61c9e13e9d880241b8",
+      "project": "tests/Xanthos.FunctionalScenarioTests/Xanthos.FunctionalScenarioTests.fsproj",
+      "fqn": "Xanthos.FunctionalScenarioTests.CaptureReadMethodScenarios.Capture command read method matches native API bytes and persisted metadata",
+      "displayName": "Xanthos.FunctionalScenarioTests.CaptureReadMethodScenarios.Capture command read method matches native API bytes and persisted metadata(globalFlag: \"--no-jvgets\", commandFlag: \"\", expected: \"JVRead\")",
+      "groups": [
+        "FunctionalScenarioTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "tfm": "net10.0",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ]
+    },
+    {
+      "id": "T-da61828493003741f9a7",
+      "project": "tests/Xanthos.FunctionalScenarioTests/Xanthos.FunctionalScenarioTests.fsproj",
+      "fqn": "Xanthos.FunctionalScenarioTests.CaptureReadMethodScenarios.Capture command read method matches native API bytes and persisted metadata",
+      "displayName": "Xanthos.FunctionalScenarioTests.CaptureReadMethodScenarios.Capture command read method matches native API bytes and persisted metadata(globalFlag: \"--no-jvgets\", commandFlag: \"--use-jvgets\", expected: \"JVGets\")",
+      "groups": [
+        "FunctionalScenarioTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "tfm": "net10.0",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ]
+    },
+    {
+      "id": "T-1297d3556385b120af89",
+      "project": "tests/Xanthos.FunctionalScenarioTests/Xanthos.FunctionalScenarioTests.fsproj",
+      "fqn": "Xanthos.FunctionalScenarioTests.CaptureReadMethodScenarios.Capture command read method matches native API bytes and persisted metadata",
+      "displayName": "Xanthos.FunctionalScenarioTests.CaptureReadMethodScenarios.Capture command read method matches native API bytes and persisted metadata(globalFlag: \"--use-jvgets\", commandFlag: \"\", expected: \"JVGets\")",
+      "groups": [
+        "FunctionalScenarioTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "tfm": "net10.0",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ]
+    },
+    {
+      "id": "T-5b931369dbcf8ba8f343",
+      "project": "tests/Xanthos.FunctionalScenarioTests/Xanthos.FunctionalScenarioTests.fsproj",
+      "fqn": "Xanthos.FunctionalScenarioTests.CaptureReadMethodScenarios.Capture command read method matches native API bytes and persisted metadata",
+      "displayName": "Xanthos.FunctionalScenarioTests.CaptureReadMethodScenarios.Capture command read method matches native API bytes and persisted metadata(globalFlag: \"--use-jvgets\", commandFlag: \"--no-jvgets\", expected: \"JVRead\")",
+      "groups": [
+        "FunctionalScenarioTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "tfm": "net10.0",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ]
+    },
+    {
+      "id": "T-d25103583b02fa8c8843",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LegacyRegressionTests.Availability cleanup failure returns false and service disposal retains body exception",
+      "displayName": "Xanthos.UnitTests.LegacyRegressionTests.Availability cleanup failure returns false and service disposal retains body exception",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-687122ee3671aa42e57f",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LegacyRegressionTests.Legacy realtime input adapter sends exact native dataspec and key",
+      "displayName": "Xanthos.UnitTests.LegacyRegressionTests.Legacy realtime input adapter sends exact native dataspec and key(spec: \"0B11\", input: \"0B11WH202609120511\", expected: \"202609120511\")",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-54282290f0f546842751",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LegacyRegressionTests.Legacy realtime input adapter sends exact native dataspec and key",
+      "displayName": "Xanthos.UnitTests.LegacyRegressionTests.Legacy realtime input adapter sends exact native dataspec and key(spec: \"0B12\", input: \"0B12RA202609120511\", expected: \"202609120511\")",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-27a981294fa79e11d64f",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LegacyRegressionTests.Legacy realtime input adapter sends exact native dataspec and key",
+      "displayName": "Xanthos.UnitTests.LegacyRegressionTests.Legacy realtime input adapter sends exact native dataspec and key(spec: \"0B12\", input: \"202609120511\", expected: \"202609120511\")",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-91046041d32e2b825bbb",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LegacyRegressionTests.Legacy realtime input adapter sends exact native dataspec and key",
+      "displayName": "Xanthos.UnitTests.LegacyRegressionTests.Legacy realtime input adapter sends exact native dataspec and key(spec: \"0B16\", input: \"0B16JC20260912051120260912121030\", expected: \"JC20260912051120260912121030\")",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-519ea99393384c8fd724",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LegacyRegressionTests.Legacy realtime input adapter sends exact native dataspec and key",
+      "displayName": "Xanthos.UnitTests.LegacyRegressionTests.Legacy realtime input adapter sends exact native dataspec and key(spec: \"0B16\", input: \"JC20260912051120260912121030\", expected: \"JC20260912051120260912121030\")",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-a3ce33e2e499f6709b62",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LegacyRegressionTests.Legacy realtime input adapter sends exact native dataspec and key",
+      "displayName": "Xanthos.UnitTests.LegacyRegressionTests.Legacy realtime input adapter sends exact native dataspec and key(spec: \"0B16\", input: \"　ＪＣ２０２６０９１２０５１１２０２６０９１２１２１０３０　\", expected: \"JC20260912051120260912121030\")",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-f5cd2edb6b93f777d15e",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LegacyRegressionTests.Legacy service keeps native event origin through realtime open and record parsing",
+      "displayName": "Xanthos.UnitTests.LegacyRegressionTests.Legacy service keeps native event origin through realtime open and record parsing(origin: \"Avoid\", prefix: \"AV\", spec: \"0B16\", recordId: \"AV\")",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-838e426abc9cb4d2f940",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LegacyRegressionTests.Legacy service keeps native event origin through realtime open and record parsing",
+      "displayName": "Xanthos.UnitTests.LegacyRegressionTests.Legacy service keeps native event origin through realtime open and record parsing(origin: \"CourseChange\", prefix: \"CC\", spec: \"0B16\", recordId: \"CC\")",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-12ae81f5b0289bc7fdbf",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LegacyRegressionTests.Legacy service keeps native event origin through realtime open and record parsing",
+      "displayName": "Xanthos.UnitTests.LegacyRegressionTests.Legacy service keeps native event origin through realtime open and record parsing(origin: \"JockeyChange\", prefix: \"JC\", spec: \"0B16\", recordId: \"JC\")",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-cad2e647d1c32f651bde",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LegacyRegressionTests.Legacy service keeps native event origin through realtime open and record parsing",
+      "displayName": "Xanthos.UnitTests.LegacyRegressionTests.Legacy service keeps native event origin through realtime open and record parsing(origin: \"Pay\", prefix: \"\", spec: \"0B12\", recordId: \"HR\")",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-ca7f9c5c31622d224b66",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LegacyRegressionTests.Legacy service keeps native event origin through realtime open and record parsing",
+      "displayName": "Xanthos.UnitTests.LegacyRegressionTests.Legacy service keeps native event origin through realtime open and record parsing(origin: \"TimeChange\", prefix: \"TC\", spec: \"0B16\", recordId: \"TC\")",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-baf925976b1d9a055d9c",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LegacyRegressionTests.Legacy service keeps native event origin through realtime open and record parsing",
+      "displayName": "Xanthos.UnitTests.LegacyRegressionTests.Legacy service keeps native event origin through realtime open and record parsing(origin: \"Weather\", prefix: \"WE\", spec: \"0B16\", recordId: \"WE\")",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-e23cd3e898a4967d0cfa",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LegacyRegressionTests.Legacy service keeps native event origin through realtime open and record parsing",
+      "displayName": "Xanthos.UnitTests.LegacyRegressionTests.Legacy service keeps native event origin through realtime open and record parsing(origin: \"Weight\", prefix: \"\", spec: \"0B11\", recordId: \"WH\")",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-901e66584626d367461b",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LegacyRegressionTests.Malformed or mismatched legacy realtime inputs never reach native open",
+      "displayName": "Xanthos.UnitTests.LegacyRegressionTests.Malformed or mismatched legacy realtime inputs never reach native open(spec: \"0B12\", input: \"0B11WH202609120511\")",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-2f08e3c6816329a8c9b3",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LegacyRegressionTests.Malformed or mismatched legacy realtime inputs never reach native open",
+      "displayName": "Xanthos.UnitTests.LegacyRegressionTests.Malformed or mismatched legacy realtime inputs never reach native open(spec: \"0B12\", input: \"0B99RA202609120511\")",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-16636ade29a661e7c1b8",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LegacyRegressionTests.Malformed or mismatched legacy realtime inputs never reach native open",
+      "displayName": "Xanthos.UnitTests.LegacyRegressionTests.Malformed or mismatched legacy realtime inputs never reach native open(spec: \"0B12\", input: \"　 \")",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-1e69fb44cbd2654b5dbe",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LegacyRegressionTests.Malformed or mismatched legacy realtime inputs never reach native open",
+      "displayName": "Xanthos.UnitTests.LegacyRegressionTests.Malformed or mismatched legacy realtime inputs never reach native open(spec: \"0B16\", input: \"0B16XX20260912051120260912121030\")",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-d88a093c41c8016bee0a",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LegacyRegressionTests.Malformed or mismatched legacy realtime inputs never reach native open",
+      "displayName": "Xanthos.UnitTests.LegacyRegressionTests.Malformed or mismatched legacy realtime inputs never reach native open(spec: \"0B16\", input: \"JC20260230051120260912121030\")",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-ffb9a15e22f9608ff1c8",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LegacyRegressionTests.Malformed or mismatched legacy realtime inputs never reach native open",
+      "displayName": "Xanthos.UnitTests.LegacyRegressionTests.Malformed or mismatched legacy realtime inputs never reach native open(spec: \"0B16\", input: \"JC20260912051120260912999999\")",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-312dfab9e41acf0c564c",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LegacyRegressionTests.String only clients retain historical notifications and failed stop remains retryable",
+      "displayName": "Xanthos.UnitTests.LegacyRegressionTests.String only clients retain historical notifications and failed stop remains retryable",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-52299a892828d84e22ef",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LifecycleRegressionTests.Detach retry removes only failed registrations",
+      "displayName": "Xanthos.UnitTests.LifecycleRegressionTests.Detach retry removes only failed registrations",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-ab7328547172530d889a",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LifecycleRegressionTests.Disconnect joins cancellation owned close and releases native exactly once",
+      "displayName": "Xanthos.UnitTests.LifecycleRegressionTests.Disconnect joins cancellation owned close and releases native exactly once(implicitDispose: False)",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-e125d26914ace51aa3cf",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LifecycleRegressionTests.Disconnect joins cancellation owned close and releases native exactly once",
+      "displayName": "Xanthos.UnitTests.LifecycleRegressionTests.Disconnect joins cancellation owned close and releases native exactly once(implicitDispose: True)",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-fd7ab4e166bb0c7e4239",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LifecycleRegressionTests.Implicit cleanup preserves body exception while explicit disconnect retains typed error",
+      "displayName": "Xanthos.UnitTests.LifecycleRegressionTests.Implicit cleanup preserves body exception while explicit disconnect retains typed error",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-08fef184b3cc5a19dd5e",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LifecycleRegressionTests.Rejected stop retains event delivery and exposes retryable failure",
+      "displayName": "Xanthos.UnitTests.LifecycleRegressionTests.Rejected stop retains event delivery and exposes retryable failure(nativeCloseFailure: False)",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-e9fbc696cc372c55ad91",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LifecycleRegressionTests.Rejected stop retains event delivery and exposes retryable failure",
+      "displayName": "Xanthos.UnitTests.LifecycleRegressionTests.Rejected stop retains event delivery and exposes retryable failure(nativeCloseFailure: True)",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-56eedc0aad05a139a4e5",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.WeightChangeRegressionTests.WH and SE use the same signed kilogram value and preserve raw magnitude and sign",
+      "displayName": "Xanthos.UnitTests.WeightChangeRegressionTests.WH and SE use the same signed kilogram value and preserve raw magnitude and sign(sign: \" \", raw: \"   \", state: \"missing\", kilograms: 0)",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-672679ec2e1892702999",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.WeightChangeRegressionTests.WH and SE use the same signed kilogram value and preserve raw magnitude and sign",
+      "displayName": "Xanthos.UnitTests.WeightChangeRegressionTests.WH and SE use the same signed kilogram value and preserve raw magnitude and sign(sign: \"+\", raw: \"000\", state: \"value\", kilograms: 0)",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-28ea9f80f03171316911",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.WeightChangeRegressionTests.WH and SE use the same signed kilogram value and preserve raw magnitude and sign",
+      "displayName": "Xanthos.UnitTests.WeightChangeRegressionTests.WH and SE use the same signed kilogram value and preserve raw magnitude and sign(sign: \"+\", raw: \"004\", state: \"value\", kilograms: 4)",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-1246b83cf1e6984afa5c",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.WeightChangeRegressionTests.WH and SE use the same signed kilogram value and preserve raw magnitude and sign",
+      "displayName": "Xanthos.UnitTests.WeightChangeRegressionTests.WH and SE use the same signed kilogram value and preserve raw magnitude and sign(sign: \"-\", raw: \"000\", state: \"value\", kilograms: 0)",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-ea6e047efbe660e5c190",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.WeightChangeRegressionTests.WH and SE use the same signed kilogram value and preserve raw magnitude and sign",
+      "displayName": "Xanthos.UnitTests.WeightChangeRegressionTests.WH and SE use the same signed kilogram value and preserve raw magnitude and sign(sign: \"-\", raw: \"004\", state: \"value\", kilograms: -4)",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-6cfa12e45bee4a9c01ea",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.WeightChangeRegressionTests.WH and SE use the same signed kilogram value and preserve raw magnitude and sign",
+      "displayName": "Xanthos.UnitTests.WeightChangeRegressionTests.WH and SE use the same signed kilogram value and preserve raw magnitude and sign(sign: \"-\", raw: \"999\", state: \"unmeasurable\", kilograms: 0)",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-2a51c90735a100021a53",
+      "project": "tests/Xanthos.WindowsTests/Xanthos.WindowsTests.fsproj",
+      "fqn": "Xanthos.WindowsTests.LifecycleWindowsTests.COM cancellation followed by disconnect closes detaches releases and exits once",
+      "displayName": "Xanthos.WindowsTests.LifecycleWindowsTests.COM cancellation followed by disconnect closes detaches releases and exits once",
+      "groups": [
+        "WindowsTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "windows"
+      ],
+      "tfm": "net10.0-windows",
+      "profiles": [
+        "WindowsManaged"
+      ]
+    },
+    {
+      "id": "T-9bca1525908f4b2e1b6f",
+      "project": "tests/Xanthos.WindowsTests/Xanthos.WindowsTests.fsproj",
+      "fqn": "Xanthos.WindowsTests.LifecycleWindowsTests.COM cleanup failure is typed explicitly and preserves body exception implicitly",
+      "displayName": "Xanthos.WindowsTests.LifecycleWindowsTests.COM cleanup failure is typed explicitly and preserves body exception implicitly(explicitCleanup: False)",
+      "groups": [
+        "WindowsTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "windows"
+      ],
+      "tfm": "net10.0-windows",
+      "profiles": [
+        "WindowsManaged"
+      ]
+    },
+    {
+      "id": "T-fbe19d21a30bd6c11350",
+      "project": "tests/Xanthos.WindowsTests/Xanthos.WindowsTests.fsproj",
+      "fqn": "Xanthos.WindowsTests.LifecycleWindowsTests.COM cleanup failure is typed explicitly and preserves body exception implicitly",
+      "displayName": "Xanthos.WindowsTests.LifecycleWindowsTests.COM cleanup failure is typed explicitly and preserves body exception implicitly(explicitCleanup: True)",
+      "groups": [
+        "WindowsTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "windows"
+      ],
+      "tfm": "net10.0-windows",
+      "profiles": [
+        "WindowsManaged"
+      ]
+    },
+    {
+      "id": "T-60a90f27d83898c10ce3",
+      "project": "tests/Xanthos.WindowsTests/Xanthos.WindowsTests.fsproj",
+      "fqn": "Xanthos.WindowsTests.LifecycleWindowsTests.COM watch close retry skips successful native close and successfully removed DISPIDs",
+      "displayName": "Xanthos.WindowsTests.LifecycleWindowsTests.COM watch close retry skips successful native close and successfully removed DISPIDs",
+      "groups": [
+        "WindowsTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "windows"
+      ],
+      "tfm": "net10.0-windows",
+      "profiles": [
+        "WindowsManaged"
+      ]
+    },
+    {
+      "id": "T-b250313efb838b7e61c4",
+      "project": "tests/Xanthos.WindowsTests/Xanthos.WindowsTests.fsproj",
+      "fqn": "Xanthos.WindowsTests.LifecycleWindowsTests.Legacy getters queue behind native read without returning Busy or defaults",
+      "displayName": "Xanthos.WindowsTests.LifecycleWindowsTests.Legacy getters queue behind native read without returning Busy or defaults(property: \"current\")",
+      "groups": [
+        "WindowsTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "windows"
+      ],
+      "tfm": "net10.0-windows",
+      "profiles": [
+        "WindowsManaged"
+      ]
+    },
+    {
+      "id": "T-90c2b52b712e270d9b6a",
+      "project": "tests/Xanthos.WindowsTests/Xanthos.WindowsTests.fsproj",
+      "fqn": "Xanthos.WindowsTests.LifecycleWindowsTests.Legacy getters queue behind native read without returning Busy or defaults",
+      "displayName": "Xanthos.WindowsTests.LifecycleWindowsTests.Legacy getters queue behind native read without returning Busy or defaults(property: \"key\")",
+      "groups": [
+        "WindowsTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "windows"
+      ],
+      "tfm": "net10.0-windows",
+      "profiles": [
+        "WindowsManaged"
+      ]
+    },
+    {
+      "id": "T-d15797fb8ac3303af781",
+      "project": "tests/Xanthos.WindowsTests/Xanthos.WindowsTests.fsproj",
+      "fqn": "Xanthos.WindowsTests.LifecycleWindowsTests.Legacy getters queue behind native read without returning Busy or defaults",
+      "displayName": "Xanthos.WindowsTests.LifecycleWindowsTests.Legacy getters queue behind native read without returning Busy or defaults(property: \"path\")",
+      "groups": [
+        "WindowsTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "windows"
+      ],
+      "tfm": "net10.0-windows",
+      "profiles": [
+        "WindowsManaged"
+      ]
+    },
+    {
+      "id": "T-7e24ed1566b8bbdaeedb",
+      "project": "tests/Xanthos.WindowsTests/Xanthos.WindowsTests.fsproj",
+      "fqn": "Xanthos.WindowsTests.LifecycleWindowsTests.Legacy getters queue behind native read without returning Busy or defaults",
+      "displayName": "Xanthos.WindowsTests.LifecycleWindowsTests.Legacy getters queue behind native read without returning Busy or defaults(property: \"timestamp\")",
+      "groups": [
+        "WindowsTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "windows"
+      ],
+      "tfm": "net10.0-windows",
+      "profiles": [
+        "WindowsManaged"
+      ]
+    },
+    {
+      "id": "T-12a6f83f3248f52e2432",
+      "project": "tests/Xanthos.WindowsTests/Xanthos.WindowsTests.fsproj",
+      "fqn": "Xanthos.WindowsTests.LifecycleWindowsTests.Legacy getters queue behind native read without returning Busy or defaults",
+      "displayName": "Xanthos.WindowsTests.LifecycleWindowsTests.Legacy getters queue behind native read without returning Busy or defaults(property: \"total\")",
+      "groups": [
+        "WindowsTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "windows"
+      ],
+      "tfm": "net10.0-windows",
+      "profiles": [
+        "WindowsManaged"
+      ]
+    },
+    {
+      "id": "T-e90a4fb69ba9e1d9b25b",
+      "project": "tests/Xanthos.WindowsTests/Xanthos.WindowsTests.fsproj",
+      "fqn": "Xanthos.WindowsTests.LifecycleWindowsTests.Legacy getters queue behind native read without returning Busy or defaults",
+      "displayName": "Xanthos.WindowsTests.LifecycleWindowsTests.Legacy getters queue behind native read without returning Busy or defaults(property: \"version\")",
+      "groups": [
+        "WindowsTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "windows"
+      ],
+      "tfm": "net10.0-windows",
+      "profiles": [
+        "WindowsManaged"
+      ]
+    },
+    {
+      "id": "T-923b401ebc8692281915",
+      "project": "tests/Xanthos.WindowsTests/Xanthos.WindowsTests.fsproj",
+      "fqn": "Xanthos.WindowsTests.LifecycleWindowsTests.Legacy native reentry returns Busy without deadlocking the STA",
+      "displayName": "Xanthos.WindowsTests.LifecycleWindowsTests.Legacy native reentry returns Busy without deadlocking the STA",
+      "groups": [
+        "WindowsTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "windows"
+      ],
+      "tfm": "net10.0-windows",
+      "profiles": [
+        "WindowsManaged"
+      ]
+    },
+    {
+      "id": "T-9ae973d03c7251fd2f56",
+      "project": "tests/Xanthos.WindowsTests/Xanthos.WindowsTests.fsproj",
+      "fqn": "Xanthos.WindowsTests.LifecycleWindowsTests.Normal STA shutdown waits for consent work to finish",
+      "displayName": "Xanthos.WindowsTests.LifecycleWindowsTests.Normal STA shutdown waits for consent work to finish",
+      "groups": [
+        "WindowsTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "windows"
+      ],
+      "tfm": "net10.0-windows",
+      "profiles": [
+        "WindowsManaged"
+      ]
+    },
+    {
+      "id": "T-adc03cae2b2dc7f152a7",
+      "project": "tests/Xanthos.WindowsTests/Xanthos.WindowsTests.fsproj",
+      "fqn": "Xanthos.WindowsTests.LifecycleWindowsTests.Poisoned legacy service bounds shutdown and defers release to original STA",
+      "displayName": "Xanthos.WindowsTests.LifecycleWindowsTests.Poisoned legacy service bounds shutdown and defers release to original STA",
+      "groups": [
+        "WindowsTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "windows"
+      ],
+      "tfm": "net10.0-windows",
+      "profiles": [
+        "WindowsManaged"
+      ]
     }
   ],
   "optionalSkipAllowlist": [

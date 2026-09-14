@@ -14,6 +14,7 @@
     <Compile Include="ScenarioTests.fs" />
     <Compile Include="EventAssetScenarios.fs" />
     <Compile Include="CommandScenarios.fs" />
+    <Compile Include="CaptureReadMethodScenarios.fs" />
     <Compile Include="SettingsScenarios.fs" />
     <Compile Include="SessionModelTests.fs" />
     <None Include="../Xanthos.UnitTests/Contracts/record-layouts.json" Link="Contracts/record-layouts.json" CopyToOutputDirectory="PreserveNewest" />

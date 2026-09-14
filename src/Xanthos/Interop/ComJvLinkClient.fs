@@ -38,8 +38,11 @@ type internal ComClientActivation =
           Create = fun nativeType -> Activator.CreateInstance nativeType
           Release = fun instance -> Marshal.FinalReleaseComObject(instance) |> ignore }
 
-type ComJvLinkClient internal (activation: ComClientActivation, ?useJvGets: bool, ?progId: string) as this =
+type ComJvLinkClient
+    internal (activation: ComClientActivation, ?useJvGets: bool, ?progId: string, ?eventConnector: ComEventConnector) as this
+    =
     let useJvGetsOverride = useJvGets
+    let eventConnector = defaultArg eventConnector ComEventConnector.Default
     // Note: The ProgID is "JVDTLab.JVLink" (not "JVDTLabLib.JVLink")
     // JVDTLabLib is the type library name used in VB6 references
     let progId = defaultArg progId "JVDTLab.JVLink"
@@ -429,7 +432,7 @@ type ComJvLinkClient internal (activation: ComClientActivation, ?useJvGets: bool
 
         let detach () =
             eventSink.ClearCallback()
-            eventSubscription |> Option.iter ComEventConnection.disconnect
+            eventSubscription |> Option.iter eventConnector.Disconnect
             eventSubscription <- None
 
         let release () =
@@ -541,7 +544,7 @@ type ComJvLinkClient internal (activation: ComClientActivation, ?useJvGets: bool
                     else
                         eventSink.SetNativeCallback callback
 
-                        match ComEventConnection.tryConnect comObj eventSink with
+                        match eventConnector.Connect comObj eventSink with
                         | Error error ->
                             eventSink.ClearCallback()
                             Error error
@@ -551,7 +554,7 @@ type ComJvLinkClient internal (activation: ComClientActivation, ?useJvGets: bool
                                 eventSubscription <- Some subscription
                                 Ok()
                             | result ->
-                                ComEventConnection.disconnect subscription
+                                eventConnector.Disconnect subscription
                                 eventSink.ClearCallback()
 
                                 match result with
@@ -581,7 +584,7 @@ type ComJvLinkClient internal (activation: ComClientActivation, ?useJvGets: bool
                     match closeResult with
                     | Ok(:? int as code) when code = 0 ->
                         eventSink.ClearCallback()
-                        eventSubscription |> Option.iter ComEventConnection.disconnect
+                        eventSubscription |> Option.iter eventConnector.Disconnect
                         eventSubscription <- None
                         Ok()
                     | Error error -> Error error
