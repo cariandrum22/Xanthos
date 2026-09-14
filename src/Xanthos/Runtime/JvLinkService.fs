@@ -204,8 +204,8 @@ type JvLinkService
     /// within each iteration still block.
     ///
     /// Note: This function does not accept a CancellationToken because COM calls cannot be interrupted
-    /// mid-execution. The internal timeout provides the only mechanism to abort a hung COM call, which
-    /// results in the service becoming poisoned. Callers should check cancellation between COM calls
+    /// mid-execution. UI-capable calls wait for the user's decision without a timeout. Other calls
+    /// may time out and poison the service; this does not abort the native call. Check cancellation between COM calls
     /// rather than expecting cancellation to interrupt an in-progress COM operation.
     let executeCom policy name (call: unit -> Result<'a, ComError>) : Result<'a, ComError> =
         // Fail fast if poisoned
@@ -228,8 +228,17 @@ type JvLinkService
                     | Some dispatcher -> dispatcher.InvokeAsync(name, work)
                     | None -> Task.Run<Result<'a, ComError>>(fun () -> work ())
 
-                let timeoutTask = Task.Delay(policy.Timeout)
-                let completedTask = Task.WhenAny(task, timeoutTask).Result
+                let mayWaitForUser =
+                    comDispatcher.IsSome
+                    && List.contains name [ "JVOpen"; "JVRTOpen"; "JVSetUIProperties"; "JVMVPlay"; "JVMVPlayWithType" ]
+
+                let completedTask =
+                    if mayWaitForUser then
+                        // SDK dialogs are completed by the user, including refusal.
+                        // A timer cannot safely cancel an in-progress native COM call.
+                        task :> Task
+                    else
+                        Task.WhenAny(task, Task.Delay(policy.Timeout)).Result
 
                 if obj.ReferenceEquals(completedTask, task) then
                     let result =
@@ -503,6 +512,12 @@ type JvLinkService
     [<Literal>]
     let WatchState_Running = 2
 
+    [<Literal>]
+    let WatchState_Stopping = 3
+
+    [<Literal>]
+    let WatchState_StopFailed = 4
+
     let mutable disposed = false
 
     // Event dispatcher: uses a dedicated background thread with a FIFO queue to avoid
@@ -511,7 +526,10 @@ type JvLinkService
     // a new instance each time StartWatchEvents is called.
     // BoundedCapacity limits memory growth if consumer is slow; events are dropped with notification when full.
     let eventQueueCapacity = defaultArg eventQueueCapacity 10_000
-    let mutable eventQueue = new BlockingCollection<string>(eventQueueCapacity)
+
+    let mutable eventQueue =
+        new BlockingCollection<Choice<string, Xanthos.JvEvent>>(eventQueueCapacity)
+
     let mutable eventConsumerThread: Thread option = None
     /// Counter for overflow events that need to be reported by the consumer thread.
     /// This avoids triggering the event stream directly from the STA thread callback.
@@ -525,7 +543,7 @@ type JvLinkService
         // Create a fresh queue - BlockingCollection cannot be reused after CompleteAdding()
         if eventQueue.IsAddingCompleted then
             eventQueue.Dispose()
-            eventQueue <- new BlockingCollection<string>(eventQueueCapacity)
+            eventQueue <- new BlockingCollection<Choice<string, Xanthos.JvEvent>>(eventQueueCapacity)
 
         let currentQueue = eventQueue // Capture for closure
 
@@ -549,7 +567,11 @@ type JvLinkService
                         // Parse the event in a protected block - parsing errors become Error results
                         let parseResult =
                             try
-                                Ok(Serialization.parseWatchEvent key)
+                                match key with
+                                | Choice1Of2 historical -> Ok(Serialization.parseWatchEvent historical)
+                                | Choice2Of2 native ->
+                                    Serialization.parseNativeWatchEvent native
+                                    |> Result.mapError (fun error -> ValidationError error.Message)
                             with parseEx ->
                                 logger.Error($"WatchEvent key parsing failed: {parseEx.Message}")
                                 Error(InteropError(Unexpected parseEx.Message))
@@ -621,6 +643,9 @@ type JvLinkService
     /// </summary>
     let guardedWithInitialisation operationName work =
         guardOperation operationName (fun () -> withInitialisation work)
+
+    /// Initializes the owned client without opening a data session.
+    member _.Initialize() = guardOperation "Initialize" initialize
 
     /// <summary>
     /// Fetches all available payloads for the specified request, returning them as a materialised list.
@@ -1028,10 +1053,9 @@ type JvLinkService
     member _.StreamRealtimePayloads(spec: string, key: string) : seq<Result<JvPayload, XanthosError>> =
         guardOperationSeq "StreamRealtimePayloads" (fun () ->
             seq {
-                match Validation.normalizeDataspec spec, Validation.normalizeRealtimeKey key with
-                | Error err, _ -> yield Error err
-                | _, Error err -> yield Error err
-                | Ok normalizedSpec, Ok normalizedKey ->
+                match Validation.normalizeRealtimeRequest spec key with
+                | Error err -> yield Error err
+                | Ok(normalizedSpec, normalizedKey) ->
                     match initialize () with
                     | Error err -> yield Error err
                     | Ok() ->
@@ -1141,10 +1165,9 @@ type JvLinkService
                                 yielded <- true
                                 ValueTask<bool>(true) } }
 
-        match Validation.normalizeDataspec spec, Validation.normalizeRealtimeKey key with
-        | Error err, _ -> singleError err
-        | _, Error err -> singleError err
-        | Ok normalizedSpec, Ok normalizedKey ->
+        match Validation.normalizeRealtimeRequest spec key with
+        | Error err -> singleError err
+        | Ok(normalizedSpec, normalizedKey) ->
 
             { new IAsyncEnumerable<Result<JvPayload, XanthosError>> with
                 member _.GetAsyncEnumerator(ct) =
@@ -1546,7 +1569,8 @@ type JvLinkService
     /// </summary>
     /// <remarks>
     /// This utility function does not open a JV-Link session (JVOpen/JVRTOpen),
-    /// so it does not close any session. It can be safely used while other sessions are active.
+    /// so it does not close any session. This does not guarantee isolation from other
+    /// COM instances or processes sharing the native SDK service.
     /// </remarks>
     member _.GetCourseDiagram(key: string) : Result<CourseDiagram, XanthosError> =
         let normalized = Text.normalizeJvText key
@@ -1683,9 +1707,12 @@ type JvLinkService
         let previousState =
             System.Threading.Interlocked.CompareExchange(watchingFlag, WatchState_Starting, WatchState_Stopped)
 
-        if previousState <> WatchState_Stopped then
-            // Already in Starting or Running state - nothing to do
+        if previousState = WatchState_Starting || previousState = WatchState_Running then
             Ok()
+        elif previousState <> WatchState_Stopped then
+            Error(
+                InteropError(InvalidState "Watch shutdown is pending or failed; retry StopWatchEvents before starting.")
+            )
         else
             // WatchEvent does NOT acquire operationLock - it can run concurrently with
             // data fetching operations. Only the subscription/unsubscription is protected
@@ -1717,7 +1744,12 @@ type JvLinkService
             let subscriptionResult =
                 result {
                     do! initialize ()
-                    do! runCom "JVWatchEvent" (fun () -> client.WatchEvent callback)
+
+                    do!
+                        runCom "JVWatchEvent" (fun () ->
+                            match box client with
+                            | :? INativeWatchEventSource as source -> source.WatchNativeEvent(Choice2Of2 >> callback)
+                            | _ -> client.WatchEvent(Choice1Of2 >> callback))
                 }
 
             match subscriptionResult with
@@ -1739,9 +1771,19 @@ type JvLinkService
                     // StopWatchEvents was called during Starting phase - clean up
                     // The COM subscription was established, so we must close it
                     logger.Info("JV-Link watch events cancelled during startup - cleaning up.")
-                    runCom "JVWatchEventClose" (fun () -> client.WatchEventClose()) |> ignore
-                    stopEventConsumer ()
-                    Ok()
+                    let closed = runCom "JVWatchEventClose" (fun () -> client.WatchEventClose())
+
+                    match closed with
+                    | Ok() ->
+                        stopEventConsumer ()
+
+                        System.Threading.Interlocked.Exchange(watchingFlag, WatchState_Stopped)
+                        |> ignore
+                    | Error _ ->
+                        System.Threading.Interlocked.Exchange(watchingFlag, WatchState_StopFailed)
+                        |> ignore
+
+                    closed
             | Error err ->
                 // Reset flag to Stopped (0) on failure so caller can retry
                 System.Threading.Interlocked.Exchange(watchingFlag, WatchState_Stopped)
@@ -1753,40 +1795,38 @@ type JvLinkService
     /// Stops JV-Link watch event notifications.
     /// </summary>
     member _.StopWatchEvents() : Result<unit, XanthosError> =
-        // Atomically set flag to Stopped (0) and check what state we were in.
-        // Only call WatchEventClose if we were in Running (2) state, because that's
-        // when the COM subscription is actually active. If we were in Starting (1),
-        // the COM subscription hasn't been established yet.
-        let previousState =
-            System.Threading.Interlocked.Exchange(watchingFlag, WatchState_Stopped)
+        let rec claim () =
+            let state = System.Threading.Volatile.Read(&watchingFlag.contents)
 
-        match previousState with
-        | s when s = WatchState_Stopped ->
-            // Already stopped - nothing to do (idempotent)
-            Ok()
-        | s when s = WatchState_Starting ->
-            // Was starting but COM subscription not yet active - just reset flag
-            // Don't call WatchEventClose since WatchEvent hasn't completed yet
-            logger.Info("JV-Link watch events cancelled before subscription completed.")
-            Ok()
+            if state = WatchState_Stopped || state = WatchState_Stopping then
+                state
+            elif System.Threading.Interlocked.CompareExchange(watchingFlag, WatchState_Stopping, state) = state then
+                state
+            else
+                claim ()
+
+        match claim () with
+        | state when state = WatchState_Stopped -> Ok()
+        | state when state = WatchState_Starting -> Ok() // Startup owns the eventual close.
+        | state when state = WatchState_Stopping -> Error(InteropError(InvalidState "Watch shutdown is in progress."))
         | _ ->
-            // Was Running (2) - COM subscription is active, close it
-            // Close COM subscription FIRST to stop callbacks, THEN stop consumer thread.
-            // This order ensures no callbacks arrive after the queue is completed.
-            // Note: watchingFlag already reset to 0 by Exchange above, allowing
-            // StartWatchEvents to reconnect even if COM close fails.
-            let comResult = runCom "JVWatchEventClose" (fun () -> client.WatchEventClose())
+            let result = runCom "JVWatchEventClose" (fun () -> client.WatchEventClose())
 
-            // Now stop the consumer thread (drains remaining events that were queued)
-            stopEventConsumer ()
-
-            match comResult with
+            match result with
             | Ok() ->
+                stopEventConsumer ()
+
+                System.Threading.Interlocked.Exchange(watchingFlag, WatchState_Stopped)
+                |> ignore
+
                 logger.Info("JV-Link watch events stopped.")
-                Ok()
             | Error err ->
+                System.Threading.Interlocked.Exchange(watchingFlag, WatchState_StopFailed)
+                |> ignore
+
                 logger.Error($"JV-Link watch event stop failed: {describeError err}")
-                Error err
+
+            result
 
     // -------------------------------------------------------------------------
     // Typed Record Parsing API
@@ -1904,6 +1944,8 @@ type JvLinkService
                 then
                     this.StopWatchEvents() |> ignore
 
+                stopEventConsumer ()
+
                 // Dispose the event queue
                 eventQueue.Dispose()
 
@@ -1918,25 +1960,26 @@ type JvLinkService
                     let reason = defaultArg poisonReason "unknown"
 
                     logger.Warn(
-                        "Skipping client disposal - service is poisoned due to STA timeout. "
-                        + $"Reason: {reason}. "
-                        + "COM resources may not be properly released. "
-                        + "Process termination will clean up any leaked resources."
+                        $"Deferring client cleanup after STA timeout. Reason: {reason}. "
+                        + "Resources remain owned by the original STA until native work returns or the process exits."
                     )
-                    // Best effort: Try to forcefully dispose the dispatcher without going through STA
-                    // This will terminate the STA thread and unblock any pending calls
-                    match comDispatcher with
-                    | Some dispatcher ->
-                        try
-                            (dispatcher :> IDisposable).Dispose()
-                            logger.Info("STA dispatcher forcefully disposed after poisoned state.")
-                        with ex ->
-                            logger.Warn($"Failed to forcefully dispose STA dispatcher: {ex.Message}")
-                    | None -> ()
+                    // Reject pending work and bound the wait. A running native call is
+                    // never aborted; COM release stays on its original STA if it returns.
+                    try
+                        match box client with
+                        | :? IComAbandonable as owner -> owner.Abandon()
+                        | _ ->
+                            match comDispatcher with
+                            | Some(:? IComShutdown as shutdown) ->
+                                shutdown.Shutdown(TimeSpan.FromSeconds 5., ignore) |> ignore
+                            | _ -> logger.Warn("Client has no bounded STA shutdown capability.")
+                    with ex ->
+                        logger.Warn($"Deferred STA shutdown failed: {ex.Message}")
                 else
-                    match box client with
-                    | :? IDisposable as d -> d.Dispose()
-                    | _ -> ()
+                    try
+                        client.Dispose()
+                    with ex ->
+                        logger.Error($"JV-Link disposal failed: {ex.Message}")
 
     /// <summary>
     /// Releases all resources used by the JvLinkService.

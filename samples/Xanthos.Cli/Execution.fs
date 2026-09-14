@@ -91,30 +91,7 @@ let createExecutionContext globals =
             | StubPreference.ForcedByPlatform ->
                 { Mode = Stub "platform limitation"
                   FallbackCom = false }
-            | StubPreference.PreferCom ->
-                if OperatingSystem.IsWindows() then
-                    // Probe COM availability to determine mode
-                    match ComClientFactory.tryCreate None with
-                    | Ok probeClient ->
-                        // Dispose the probe client immediately - actual clients are created per-service
-                        match box probeClient with
-                        | :? IDisposable as d -> d.Dispose()
-                        | _ -> ()
-
-                        { Mode = Com; FallbackCom = false }
-                    | Error fault ->
-                        // COM activation failed, fall back to stub - include error details for diagnostics
-                        let details =
-                            match fault.Details with
-                            | null
-                            | "" -> "unknown reason"
-                            | d -> d
-
-                        { Mode = Stub $"COM activation failed: {details}"
-                          FallbackCom = true }
-                else
-                    { Mode = Stub "non-Windows fallback"
-                      FallbackCom = false }
+            | StubPreference.PreferCom -> { Mode = Com; FallbackCom = false }
 
         let logger = TraceLogger.ofConsole ()
 
@@ -146,7 +123,12 @@ let private withService ctx (f: JvLinkService -> int) : int =
     match tryCreateService ctx with
     | Ok service ->
         use service = service
-        f service
+
+        match service.Initialize() with
+        | Ok() ->
+            printEvidence ctx service |> ignore
+            f service
+        | Error err -> reportError "Initialization failed" err
     | Error msg ->
         printfn "Client creation failed: %s" msg
         2
@@ -365,7 +347,13 @@ let runGetServiceKey ctx =
     withService ctx (fun service ->
         match service.GetServiceKey() with
         | Ok key ->
-            printfn "Service key: %s" key
+            printfn
+                "Service key: %s"
+                (if String.IsNullOrWhiteSpace key then
+                     "not configured"
+                 else
+                     "registered")
+
             0
         | Error err -> reportError "Failed to get service key" err)
 

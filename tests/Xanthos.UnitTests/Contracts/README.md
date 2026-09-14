@@ -1,0 +1,15 @@
+# SDK contract fixtures
+
+`sdk-return-codes.json` records the method, numeric result and source page from the JV-Link interface specification 4.9.0.1 included in the SDK 5.0 x64 distribution. Pages 53–65 contain 259 distinct method/result pairs, including the `JVWatchEventClose=-1` rule from page 52. Two void methods have no numeric return cases.
+
+These cases were extracted from the specification independently of `SdkOperations`, the legacy error catalog and `JvLinkStub`. Shared table headings apply to both methods named in the heading. The fixtures do not contain SDK document text, credentials or downloaded racing records.
+
+`SdkOperationContractTests` tests every result pair through the public functional interface, and separately tests native argument order, by-reference outputs, raw data, property access, unknown failures and invocation exceptions. COM installation, service entitlement and actual delivery require separate Windows runtime verification.
+
+`official-codes.json` was extracted directly from the original XLSX XML (SHA-256 recorded in the file), independently of `OfficialCodeData.fs`. It contains 487 code values across all 19 tables, and the common header positions from all 38 format definitions. Underscores denoting ASCII spaces are expanded; the race-condition table's explicitly abbreviated 001–100 range is expanded. Source cells accompany each value. Labels and document prose are not needed by this oracle. `OfficialFoundationTests` verifies recognition and exact round trips, including unknown values, letter grades and significant spaces. Header tests certify the common prefix only; body layouts and historical version selection require separate record tests.
+
+`record-layouts.json` preserves 1,270 field entries for 38 layouts: source cells, one-based positions, parent-relative offsets, byte lengths, repetitions, initial values, reserved status and scale. It includes WF 7.a–d: the spreadsheet omits their position cells, so their offsets follow their listed order and two-byte widths within the eight-byte group. It is independent of runtime field declarations and the SDK's C# sample structures. A parent-relative position is added to the parent's absolute position minus one; nested repetitions apply at each level. This inventory supplies expectations for the record migration; its presence alone does not establish implementation coverage.
+
+The record contract tests use this independent inventory to exercise every non-reserved leaf and repeated occurrence through the public models. `AdditionalFormatTests` and `IdentifierFormatTests` supply independent historical offsets for all seven identifier-width changes. These deterministic tests carry `Category=Contract`; absent optional captured fixtures are excluded from that category.
+
+`dataspecs.json` independently extracts all 38 dataspecs, their normal/realtime/setup record sets and allowed JVOpen options from the data-type sheet. TOKU's setup behavior comes from the JVOpen description. `DataSpecContractTests` also checks prohibited end times and explicit stream/race-date format selection.

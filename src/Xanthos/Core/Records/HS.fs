@@ -1,9 +1,9 @@
-namespace Xanthos.Core.Records
+namespace Xanthos.Legacy.Records
 
 open System
 open Xanthos.Core
-open Xanthos.Core.Records.FieldDefinitions
-open Xanthos.Core.Records.RecordParser
+open Xanthos.Legacy.Records.FieldDefinitions
+open Xanthos.Legacy.Records.RecordParser
 
 /// HS Record: 競走馬市場取引価格 (Horse Market Transaction Price)
 /// Record Length: 200 bytes

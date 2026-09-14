@@ -353,11 +353,22 @@ module WatchEvent =
         if String.IsNullOrWhiteSpace rawKey || rawKey.Length < 8 then
             None
         else
-            let datePart = rawKey.Substring(0, 8)
+            let offset =
+                if Xanthos.EventKeys.inferChangeKind rawKey |> Option.isSome then
+                    2
+                else
+                    0
 
-            match DateTime.TryParseExact(datePart, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None) with
-            | true, dt -> Some dt
-            | _ -> None
+            if rawKey.Length < offset + 8 then
+                None
+            else
+                let datePart = rawKey.Substring(offset, 8)
+
+                match
+                    DateTime.TryParseExact(datePart, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None)
+                with
+                | true, dt -> Some dt
+                | _ -> None
 
     /// <summary>
     /// Converts a WatchEvent to a WatchEventRealtimeRequest for JVRTOpen.

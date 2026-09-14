@@ -1,140 +1,68 @@
-# JV-Link API Coverage Matrix
+# JV-Link 5.0 API coverage
 
-Status legend: ✅ Implemented / ⚠️ Partial (workaround or property-based) / ❌ Not yet implemented
+The public `Xanthos.JvLink` module projects all 26 SDK methods and nine properties as curried functions. All seven event origins and 38 official record layouts are represented. This mapping describes implementation and deterministic contract coverage; it does not certify every live service or interactive scenario. The SDK 5.0 distribution includes interface/data specifications labeled 4.9.0.1.
 
-## Public Methods
+## Methods
 
-| Method | Status | Use Case | Notes |
-|--------|--------|----------|-------|
-| JVInit | ✅ | Session start | Wrapped via `IJvLinkClient.Init` |
-| JVSetUIProperties | ✅ | UI configuration | `JvLinkService.ShowConfigurationDialog` |
-| JVSetServiceKey | ✅ | Auth setup | `JvLinkService.SetServiceKey` (calls `JVSetServiceKey`) |
-| JVSetSaveFlag | ✅ | Cache control | `JvLinkService.SetSaveDownloadsEnabled` |
-| JVSetSavePath | ✅ | Cache path | `JvLinkService.SetSavePath` (calls `JVSetSavePath`) |
-| JVOpen | ✅ | Batch download | Implemented; returns file count |
-| JVRTOpen | ✅ | Real-time odds | `StreamRealtimePayloads`, `StreamRealtimeAsync` (alias `StreamRealtimePayloadsAsync`) |
-| JVStatus | ✅ | Progress check | Implemented via `IJvLinkClient.Status`; returns completed file count |
-| JVRead | ✅ | Data retrieval | Implemented with Shift-JIS handling |
-| JVGets | ✅ | Line read | SAFEARRAY byte extraction + Shift-JIS decode; avoids JV-Link internal Unicode conversion |
-| JVSkip | ✅ | Skip file | Implemented via `IJvLinkClient.Skip` |
-| JVCancel | ✅ | Abort download | Implemented via `IJvLinkClient.Cancel` |
-| JVClose | ✅ | Session end | Implemented |
-| JVFiledelete | ✅ | Cache cleanup | Implemented via `IJvLinkClient.DeleteFile` |
-| JVFukuFile | ✅ | Image path | `JvLinkService.GenerateSilksFile` wraps `JVFukuFile` |
-| JVFuku | ✅ | Image data | `JvLinkService.GetSilksBinary` wraps `JVFuku` |
-| JVMVCheck | ✅ | Video available | `JvLinkService.CheckMovieAvailability` |
-| JVMVCheckWithType | ✅ | Video type check | `JvLinkService.CheckMovieAvailability` overload |
-| JVMVPlay | ✅ | Play video | `JvLinkService.PlayMovie` |
-| JVMVPlayWithType | ✅ | Play specific | `JvLinkService.PlayMovie` overload |
-| JVMVOpen | ✅ | Video stream | `JvLinkService.FetchWorkoutVideos` |
-| JVMVRead | ✅ | Video read | `IJvLinkClient.MovieRead` + `WorkoutVideoListing` |
-| JVCourseFile | ✅ | Course layout | Implemented via `IJvLinkClient.CourseFile` |
-| JVCourseFile2 | ✅ | Course detail | Implemented via `IJvLinkClient.CourseFile2` |
-| JVWatchEvent | ✅ | Live events | `JvLinkService.StartWatchEvents`; COM callbacks fan into `WatchEvents` observable. IID/DISPIDs verified from JVDTLabLib. |
-| JVWatchEventClose | ✅ | Stop events | `JvLinkService.StopWatchEvents`; disposes callbacks. |
+| SDK method | Public function (`Session` last) |
+|---|---|
+| `JVInit` | `JvLink.init` |
+| `JVSetUIProperties` | `JvLink.configureUi` |
+| `JVSetServiceKey` | `JvLink.setServiceKey` |
+| `JVSetSaveFlag` | `JvLink.setSaveFlag` |
+| `JVSetSavePath` | `JvLink.setSavePath` |
+| `JVOpen` | `JvLink.openData` |
+| `JVRTOpen` | `JvLink.openRealtime` |
+| `JVStatus` | `JvLink.status` |
+| `JVRead` | `JvLink.read` |
+| `JVGets` | `JvLink.gets` |
+| `JVSkip` | `JvLink.skip` |
+| `JVCancel` | `JvLink.cancel` |
+| `JVClose` | `JvLink.closeData` |
+| `JVFiledelete` | `JvLink.deleteFile` |
+| `JVFukuFile` | `JvLink.silksFile` |
+| `JVFuku` | `JvLink.silksBinary` |
+| `JVMVCheck` | `JvLink.movieCheck` |
+| `JVMVCheckWithType` | `JvLink.movieCheckWithType` |
+| `JVMVPlay` | `JvLink.moviePlay` |
+| `JVMVPlayWithType` | `JvLink.moviePlayWithType` |
+| `JVMVOpen` | `JvLink.movieOpen` |
+| `JVMVRead` | `JvLink.movieRead` |
+| `JVCourseFile` | `JvLink.courseFile` |
+| `JVCourseFile2` | `JvLink.courseFile2` |
+| `JVWatchEvent` | `JvLink.watchEvent` |
+| `JVWatchEventClose` | `JvLink.watchEventClose` |
 
-## API Details
+## Properties
 
-This section provides expected return values, error codes, and specification references to guide implementation.
+| SDK property | Public function | Access |
+|---|---|---|
+| `m_saveflag` | `JvLink.getSaveFlag` | read-only |
+| `m_savepath` | `JvLink.getSavePath` | read-only |
+| `m_servicekey` | `JvLink.getServiceKey` | read-only |
+| `m_JVLinkVersion` | `JvLink.getVersion` | read-only |
+| `m_TotalReadFilesize` | `JvLink.getTotalReadFileSize` | read-only |
+| `m_CurrentReadFilesize` | `JvLink.getCurrentReadFileSize` | read-only |
+| `m_CurrentFileTimestamp` | `JvLink.getCurrentFileTimestamp` | read-only |
+| `ParentHWnd` | `JvLink.setParentWindowHandle` | write-only; signed 32-bit COM Long |
+| `m_payflag` | `JvLink.getPayFlag` | read-only |
 
-### Event APIs
+Configuration changes use the corresponding SDK setter methods. `m_payflag` has no setter; use `configureUi`. Size units are retained: `getTotalReadFileSize` returns `FileSizeKilobytes` with an explicit `.Bytes` conversion.
 
-| Method | Returns | Key Error Codes | Spec Reference |
-|--------|---------|-----------------|----------------|
-| JVWatchEvent | 0: success, -1: failure | -201 (invalid key), -403 (auth expired) | [events.md](../specs/events.md) |
-| JVWatchEventClose | 0: success | N/A | [events.md](../specs/events.md) |
+## Events and records
 
-**Implementation notes**: Event callbacks receive raw keys (e.g., `0B1220240101010101`). `JvLinkService.StartWatchEvents` registers the COM callback via `ComEventsHelper.Combine`, normalizes payloads through `Serialization.parseWatchEvent`, and publishes results via the `WatchEvents` observable. Errors surface as `Result<WatchEvent, XanthosError>` entries. `StopWatchEvents` closes the COM watch thread.
+`subscribe` / `subscribeWithOptions` own delivery queues and worker lifetimes. `JvEvent.Kind` distinguishes Pay, Weight, JockeyChange, Weather, CourseChange, Avoid and TimeChange while preserving `RawKey`. `parseEvent` and `toRealtimeRequest` retain the notification origin. See [event keys and delivery](../../docs/functional-events.md).
 
-**Verified**: IID `17E1E656-828B-4849-B043-FA62B92D9E41` and DISPIDs extracted from JVDTLabLib type library via OleView on Windows.
+`Records.parse` dispatches all 38 official types; `parseWith` selects historical identifier/odds layouts. Unknown IDs and codes remain explicit. The 1,270-field independent inventory includes repeated fields and reserved spans; reserved spans are not represented as invented domain fields. See [record migration](../../docs/record-migration.md) and [contract fixtures](../../tests/Xanthos.UnitTests/Contracts/README.md).
 
-### Media APIs
+## Evidence and remaining verification
 
-| Method | Returns | Key Error Codes | Spec Reference |
-|--------|---------|-----------------|----------------|
-| JVFukuFile | File path string | -1 (not found), -201 (invalid params) | [methods.md](../specs/methods.md#jvfukufile) |
-| JVFuku | Byte array | -1 (not found), -502 (download error) | [methods.md](../specs/methods.md#jvfuku) |
-| JVMVCheck | 0: available, -1: unavailable | -403 (auth), -504 (maintenance) | [methods.md](../specs/methods.md#jvmvcheck) |
-| JVMVCheckWithType | 0: available, -1: unavailable | -403 (auth), -504 (maintenance) | [methods.md](../specs/methods.md#jvmvcheckwithtype) |
-| JVMVPlay | 0: success | -1 (not found), -502 (error) | [methods.md](../specs/methods.md#jvmvplay) |
-| JVMVPlayWithType | 0: success | -1 (not found), -502 (error) | [methods.md](../specs/methods.md#jvmvplaywithtype) |
-| JVMVOpen | Handle or 0 | -1 (not found), -403 (auth) | [methods.md](../specs/methods.md#jvmvopen) |
-| JVMVRead | Bytes read | 0 (EOF), -1 (error) | [methods.md](../specs/methods.md#jvmvread) |
+As of 2026-09-13, the Contract category has 690 passing cases with no skips. These cover native arguments, by-reference outputs, documented/unknown return codes, ownership, event origins and official data layouts. The x64 CLI uses public functions in COM mode; its explicit Stub suite is separate from real COM evidence.
 
-**Implementation notes**: Media APIs are exposed via `JvLinkService` (`GenerateSilksFile`, `GetSilksBinary`, `FetchWorkoutVideos`, `PlayMovie`, `CheckMovieAvailability`). `WorkoutVideoListing` normalises `JVMVRead` responses; further enhancements may add richer metadata parsing if specifications expand.
+Real x64 acquisition, both readers, same-session cancellation/reopen, subscription cleanup and recovery after consumer exceptions have succeeded. The full COM gate now passes all 15 tests, including images and No Image. An earlier SDK -413 did not recur in this run; its root cause remains unknown. The user confirmed video playback after pressing Play and closed the settings UI with Cancel; a fresh connection verified unchanged settings.
 
-### Auxiliary Data APIs
+A real Weight notification completed unchanged-key retrieval, official parsing and cleanup through the x64 CLI. Collection of all seven actual notification origins remains pending in a separate 24-hour background probe; deterministic event tests do not establish live delivery. See [COM verification](../../tests/Xanthos.ComTests/README.md). Earlier 13-test image-excluding runs remain subset results.
 
-| Method | Returns | Key Error Codes | Spec Reference |
-|--------|---------|-----------------|----------------|
-| JVCourseFile | File path + explanation | -1 (not found) | [methods.md](../specs/methods.md#jvcoursefile) |
-| JVCourseFile2 | File path string | -1 (not found) | [methods.md](../specs/methods.md#jvcoursefile2) |
+## Updating the contract
 
-**Implementation notes**: Implemented in `JvLinkService.GetCourseDiagram` / `GetCourseDiagramBasic`. In practice, some JV-Link COM environments return a non-text `explanation` payload for `JVCourseFile`; Xanthos treats this value as best-effort and may suppress obviously garbled strings. For an authoritative course description, prefer parsing `COMM`/`CS` records (course information) via `JVOpen`.
-
-## Exposed Properties
-
-| Property | Status | Notes |
-|----------|--------|-------|
-| m_saveflag | ✅ | `JvLinkService.SetSaveDownloadsEnabled` / `GetSaveDownloadsEnabled` |
-| m_savepath | ✅ | `JvLinkService.SetSavePath` / `GetSavePath` |
-| m_servicekey | ✅ | `JvLinkService.SetServiceKey` / `GetServiceKey` |
-| m_JVLinkVersion | ✅ | `JvLinkService.GetJVLinkVersion` |
-| m_TotalReadFilesize | ✅ | `JvLinkService.GetTotalReadFileSize` |
-| m_CurrentReadFilesize | ✅ | `JvLinkService.GetCurrentReadFileSize` |
-| m_CurrentFileTimestamp | ✅ | `JvLinkService.GetCurrentFileTimestamp` |
-| ParentHWnd | ✅ | `JvLinkService.SetParentWindowHandle` / `GetParentWindowHandle` (write-only in COM; read not supported) |
-| m_payflag | ✅ | `JvLinkService.SetPayoffDialogSuppressed` / `GetPayoffDialogSuppressed` (read-only in COM; write not supported) |
-
-## Update Guidelines
-
-### When to Update This Matrix
-
-Update this matrix whenever:
-- A new method or property wrapper is implemented
-- An existing implementation changes status (e.g., from ⚠️ to ✅)
-- New tests are added for an API
-- Documentation is completed for an API
-
-### Checklist for Marking as ✅ Implemented
-
-Before changing status to ✅, ensure:
-
-- [ ] Core implementation complete in appropriate layer
-- [ ] Unit tests written and passing
-- [ ] Property-based tests (where applicable)
-- [ ] Error handling follows `ComError` → `XanthosError` pattern
-- [ ] XML documentation comments added
-- [ ] Integration with `JvLinkStub` for testing
-
-### Status Transition Rules
-
-| From | To | Requirements |
-|------|-----|-------------|
-| ❌ | ⚠️ | Basic wrapper exists, may lack tests or full error handling |
-| ⚠️ | ✅ | Full implementation with tests and documentation |
-| ✅ | ⚠️ | Regression or incomplete refactoring (add note explaining) |
-
-### Adding New APIs
-
-When JV-Link specification updates add new methods/properties:
-
-1. Add row to appropriate table with status ❌
-2. Add note indicating specification version
-3. Create tracking issue if using issue tracker
-4. Update `design/specs` markdown with new API details
-
-### Progress Tracking
-
-| Category | Total | ✅ | ⚠️ | ❌ | Coverage |
-|----------|-------|-----|-----|-----|----------|
-| Methods | 26 | 26 | 0 | 0 | 100% |
-| Properties | 9 | 9 | 0 | 0 | 100% |
-| **Overall** | **35** | **35** | **0** | **0** | **100%** |
-
----
-
-## Next Steps
-
-1. Expand soak/integration testing for event-heavy scenarios (multiple concurrent `WatchEvents` subscribers, reconnection loops).
-2. Update this matrix as each group ships (including tests and documentation links).
+When an SDK revision changes the interface, update the specification inventories, public signatures, compiled examples and independent fixtures together. Confirm category discovery counts and fail on skipped required cases. Keep licensed SDK documents, captures and machine-specific evidence outside Git. Update this mapping and the changelog for breaking behavior changes.

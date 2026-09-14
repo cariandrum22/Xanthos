@@ -1,9 +1,9 @@
-namespace Xanthos.Core.Records
+namespace Xanthos.Legacy.Records
 
 open System
 open Xanthos.Core
-open Xanthos.Core.Records.FieldDefinitions
-open Xanthos.Core.Records.RecordParser
+open Xanthos.Legacy.Records.FieldDefinitions
+open Xanthos.Legacy.Records.RecordParser
 
 /// O5 Record: ワイドオッズ (Wide Odds)
 module O5 =

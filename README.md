@@ -29,14 +29,10 @@ converting COM exceptions and error codes into idiomatic `Result<'T, Error>` wor
 > **Requirements**: .NET 10 SDK. COM interop functionality is only available on
 > Windows.
 >
-> **Important (Windows COM mode):**
-> JV-Link COM server is a 32-bit (x86) component and only works in 32-bit
-> processes.
-> When using `ComJvLinkClient`, your application must target **x86** or use
-> **AnyCPU with "Prefer 32-bit" enabled**.
-> Running in a 64-bit process will result in `REGDB_E_CLASSNOTREG` errors.
-> The `ComClientFactory.tryCreate` function performs an early check
-> and returns a clear error message if called from a 64-bit process.
+> Target `net10.0-windows` and run an **x64 process** with JV-Link 5.0 x64 installed
+> and its service key registered. COM registration and key setup are specific to
+> the installed architecture; an x86 registration does not satisfy x64 activation.
+> The portable `net10.0` target supports parsing and deterministic tests.
 
 ```bash
 dotnet add package Xanthos
@@ -54,40 +50,23 @@ dotnet build src/Xanthos/Xanthos.fsproj
 ## Quick Start
 
 ```fsharp
-open System
-open Xanthos.Runtime
-open Xanthos.Interop
+open Xanthos
 
-// Create configuration
-// UseJvGets = None defaults to true (JVGets mode).
-// Set to Some false to use JVRead instead, or set XANTHOS_USE_JVREAD=1.
-let config =
-    { Sid = "YOUR_SID"
-      SavePath = Some @"C:\JVData"
-      ServiceKey = None
-      UseJvGets = None }
+let version =
+    JvLink.withSession ConnectionOptions.Default (fun session ->
+        JvLink.init "UNKNOWN" session
+        |> Result.bind (fun () -> session |> JvLink.getVersion))
 
-let request =
-    { Spec = "RACE"
-      FromTime = DateTime.Today.AddDays(-7.0)
-      Option = 1 }
-
-// IMPORTANT: JvLinkService takes ownership of the client and MUST be disposed.
-// Use the 'use' keyword to ensure proper cleanup of COM resources.
-use service = new JvLinkService(new ComJvLinkClient(), config)
-
-// Fetch data
-match service.FetchPayloads(request) with
-| Ok payloads -> printfn "Fetched %d payloads" payloads.Length
-| Error err -> printfn "Error: %A" err
-
-// Service and client are automatically disposed when leaving scope
+match version with
+| Ok text -> printfn "JV-Link %s" text
+| Error error -> eprintfn "%s: %s (code=%A)" error.Api error.Message error.Code
 ```
 
-> **Resource Management:** `JvLinkService` implements `IDisposable` and takes
-> ownership of the `IJvLinkClient` passed to its constructor.
-> Always use the `use` keyword or explicitly call `Dispose()` to release COM
-> resources and avoid STA thread leaks.
+Public SDK operations are curried functions with `Session` last. `withSession`
+releases its COM instance and STA after success, an error result, or a consumer
+exception. See the [functional API contract](docs/functional-api.md),
+[compiled examples](samples/Xanthos.Functional/Examples.fs), and
+[record migration guide](docs/record-migration.md).
 
 ## Architecture
 
@@ -109,6 +88,7 @@ All commands support global options:
 | ------- | ----------- |
 | `version` | Show JV-Link version and evidence markers |
 | `download` | Bulk dataspec download & preview (optional persistence) |
+| `session-check` | Real COM open/status/read/skip/cancel/close/reopen in one Session |
 | `realtime` | Stream realtime payloads until end/cancel |
 | `status` | Report completed file count |
 | `skip` | Skip current file |
@@ -119,7 +99,7 @@ All commands support global options:
 | `set-save-path` | Set save path |
 | `get-save-path` | Show save path |
 | `set-service-key` | Set service key |
-| `get-service-key` | Show service key |
+| `get-service-key` | Report whether a service key is registered |
 | `set-payoff-dialog` | Set payoff dialog suppression (COM: use `set-ui-properties`) |
 | `get-payoff-dialog` | Show payoff dialog suppression |
 | `set-parent-hwnd` | Set parent window handle (UI) |
@@ -199,6 +179,11 @@ nix develop
 
 This provides .NET SDK, Mono, and development tools with telemetry disabled.
 
+The SDK is pinned to `global.json` for local development and CI. The Nix shell
+uses official SDK archives pinned by SHA-512 in `.config/dotnet-sdk-sources.json`
+while nixpkgs catches up. When upgrading the SDK, update both files using
+Microsoft's .NET release metadata, then verify `nix develop --command dotnet --version`.
+
 ### Manual Setup
 
 This project requires the .NET 10 SDK. Follow these steps to install:
@@ -237,7 +222,7 @@ Fantomas and FSharpLint are provided via dotnet tools:
 ```bash
 dotnet tool restore
 dotnet fantomas .                    # format all F# sources
-dotnet fsharplint lint src tests     # run FSharpLint
+dotnet fsharplint lint Xanthos.sln     # run FSharpLint
 ```
 
 ## Documentation
@@ -329,28 +314,16 @@ PowerShell workflow on a Windows machine with JV-Link installed:
 
 ```powershell
 pwsh scripts/run-com-verification.ps1 `
-    -ServiceKey "YOUR_SERVICE_KEY" `
-    -SavePath "C:\JVData" `
-    -Sid "YOUR_SID" `
-    -Dataspec "RACE" `
-    -FromTime "20240101000000" `
-    -RealtimeKey "2024010101010101"
+    -FromTime "20260905000000"
 ```
 
 Parameters:
 
-- `Sid` defaults to `UNKNOWN`; override with your actual SID.
-- `ServiceKey` is required (no default).
-  You can also set `XANTHOS_E2E_SERVICE_KEY`.
-- `SavePath`, `Dataspec`, `FromTime`, and `RealtimeKey` are optional overrides.
-- `WatchDurationSeconds` is an optional override.
-- `-SkipBuild`, `-SkipTests`, or `-SkipCli` can be supplied for partial runs.
+- `FromTime` is required: choose an available RACE publication interval (`yyyyMMddHHmmss`, JST). Update the example date for the data available to your installation.
+- `OutputDirectory` selects the ignored output directory.
+- `-SkipPublish -CliPath C:/absolute/path/Xanthos.Cli.exe` tests an existing x64 executable.
 
-The script performs `dotnet build`, `dotnet test` (with `XANTHOS_E2E_MODE=COM`),
-and a series of CLI commands (`version`, `status`, `download`, `watch-events`,
-optional `realtime`).
-Review the console output and CLI logs to confirm COM execution succeeded before
-shipping.
+The script reuses the registered x64 key, publishes the Windows CLI and verifies all 15 required/negative COM tests without skips or stub fallback. Run it on the signed-in Windows desktop. See [COM verification](tests/Xanthos.ComTests/README.md) and [functional CLI](docs/functional-cli.md) for stateful acquisition, consent and separate playback/live-notification checks.
 
 ## Updating Error Catalog
 

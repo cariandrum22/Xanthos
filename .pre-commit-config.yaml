@@ -22,7 +22,7 @@ repos:
 
       - id: fsharplint
         name: fsharplint (F# linter)
-        entry: bash -c 'dotnet fsharplint lint src tests'
+        entry: bash -c 'dotnet fsharplint lint Xanthos.sln'
         language: system
         files: \.fs$
         exclude: \.direnv/

@@ -4,16 +4,16 @@ open System
 open Xunit
 open Xanthos.Core
 open Xanthos.Core.Text
-open Xanthos.Core.Records
-open Xanthos.Core.Records.RecordParser
-open Xanthos.Core.Records.TK
-open Xanthos.Core.Records.RA
-open Xanthos.Core.Records.SE
-open Xanthos.Core.Records.HR
-open Xanthos.Core.Records.O1
-open Xanthos.Core.Records.H1
-open Xanthos.Core.Records.WF
-open Xanthos.Core.Records.UM
+open Xanthos.Legacy.Records
+open Xanthos.Legacy.Records.RecordParser
+open Xanthos.Legacy.Records.TK
+open Xanthos.Legacy.Records.RA
+open Xanthos.Legacy.Records.SE
+open Xanthos.Legacy.Records.HR
+open Xanthos.Legacy.Records.O1
+open Xanthos.Legacy.Records.H1
+open Xanthos.Legacy.Records.WF
+open Xanthos.Legacy.Records.UM
 
 // ============================================================================
 // Required Field Validation Tests - Must return Error for missing fields

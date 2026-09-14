@@ -5,22 +5,47 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="coverlet.collector" Version="8.0.0">
+    <PackageReference Include="coverlet.collector" Version="10.0.1">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="xunit" Version="2.9.3" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
-    <PackageReference Include="FsCheck" Version="3.3.2" />
-    <PackageReference Include="FsCheck.Xunit" Version="3.3.2" />
-    <PackageReference Include="Xunit.SkippableFact" Version="1.5.61" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.0" />
+    <PackageReference Include="FsCheck" Version="3.4.0" />
+    <PackageReference Include="FsCheck.Xunit" Version="3.4.0" />
+    <PackageReference Include="Xunit.SkippableFact" Version="1.5.85" />
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="ComArchitectureTests.fs" />
+    <Compile Include="FunctionalApiTests.fs" />
+    <Compile Include="SdkOperationContractTests.fs" />
+    <Compile Include="EventContractTests.fs" />
+    <Compile Include="LifecycleRegressionTests.fs" />
+    <Compile Include="OfficialFoundationTests.fs" />
+    <Compile Include="RecordOracle.fs" />
+    <Compile Include="LegacyRegressionTests.fs" />
+    <Compile Include="AdditionalRecordContractTests.fs" />
+    <Compile Include="AdditionalFormatTests.fs" />
+    <Compile Include="DataSpecContractTests.fs" />
+    <Compile Include="SpecialRegistrationTests.fs" />
+    <Compile Include="RaceContractTests.fs" />
+    <Compile Include="RunnerContractTests.fs" />
+    <Compile Include="WeightChangeRegressionTests.fs" />
+    <Compile Include="PayoffContractTests.fs" />
+    <Compile Include="VotesContractTests.fs" />
+    <Compile Include="OddsContractTests.fs" />
+    <Compile Include="ChangesContractTests.fs" />
+    <Compile Include="OwnershipContractTests.fs" />
+    <Compile Include="HorseContractTests.fs" />
+    <Compile Include="RaceRecordContractTests.fs" />
+    <Compile Include="PeopleContractTests.fs" />
+    <Compile Include="IdentifierFormatTests.fs" />
+    <Compile Include="NativeSessionLifetimeTests.fs" />
     <Compile Include="ComAbnormalTests.fs" />
     <Compile Include="ComContractTests.fs" />
     <Compile Include="ComEventsTests.fs" />
@@ -52,6 +77,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="Contracts/sdk-return-codes.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Contracts/official-codes.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Contracts/record-layouts.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Contracts/dataspecs.json" CopyToOutputDirectory="PreserveNewest" />
     <ProjectReference Include="..\..\src\Xanthos\Xanthos.fsproj" />
+    <ProjectReference Include="..\..\samples\Xanthos.Functional\Xanthos.Functional.fsproj" />
   </ItemGroup>
 </Project>

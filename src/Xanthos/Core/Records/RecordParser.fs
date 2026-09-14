@@ -27,15 +27,15 @@
 /// See JV-Data specification in docs/official/ for complete record layouts.
 /// </para>
 /// </remarks>
-namespace Xanthos.Core.Records
+namespace Xanthos.Legacy.Records
 
 open System
 open System.Text
 open Xanthos.Core
 open Xanthos.Core.Text
 open Xanthos.Core.Errors
-open Xanthos.Core.Records.FieldDefinitions
-open Xanthos.Core.Records.CodeTables
+open Xanthos.Legacy.Records.FieldDefinitions
+open Xanthos.Legacy.Records.CodeTables
 
 /// <summary>
 /// Core parsing functions for JV-Link fixed-length records.

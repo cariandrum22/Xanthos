@@ -7,7 +7,7 @@ open System.Text.Json
 open Xunit
 open Xanthos.Interop
 open Xanthos.Runtime
-open Xanthos.Core.Records
+open Xanthos.Legacy.Records
 
 /// <summary>
 /// Test utilities for working with captured fixture files.
@@ -283,31 +283,31 @@ type FixtureFieldVerificationTests() =
                 // Generic checks for all record types
                 match parsed with
                 | ParsedRecord.RARecord r ->
-                    if String.IsNullOrWhiteSpace(r.RaceKey) then
+                    if String.IsNullOrWhiteSpace(r.Identity.Raw) then
                         checkIssues.Add("RA: Empty RaceKey")
 
-                    if String.IsNullOrWhiteSpace(r.RaceName) then
+                    if String.IsNullOrWhiteSpace(r.Name.Title) then
                         checkIssues.Add("RA: Empty RaceName")
                 | ParsedRecord.SERecord r ->
-                    if String.IsNullOrWhiteSpace(r.RaceKey) then
+                    if String.IsNullOrWhiteSpace(r.Identity.Raw) then
                         checkIssues.Add("SE: Empty RaceKey")
 
-                    if String.IsNullOrWhiteSpace(r.HorseId) then
+                    if String.IsNullOrWhiteSpace(r.PedigreeId) then
                         checkIssues.Add("SE: Empty HorseId")
                 | ParsedRecord.TKRecord r ->
-                    if String.IsNullOrWhiteSpace(r.RaceKey) then
+                    if String.IsNullOrWhiteSpace(r.Identity.Raw) then
                         checkIssues.Add("TK: Empty RaceKey")
 
-                    if String.IsNullOrWhiteSpace(r.HorseId) then
-                        checkIssues.Add("TK: Empty HorseId")
+                    if r.RegisteredCount.Value |> Option.exists (fun count -> count > r.Horses.Length) then
+                        checkIssues.Add("TK: Registered count exceeds horse slots")
                 | ParsedRecord.UMRecord r ->
-                    if String.IsNullOrWhiteSpace(r.HorseId) then
+                    if String.IsNullOrWhiteSpace(r.PedigreeId) then
                         checkIssues.Add("UM: Empty HorseId")
                 | ParsedRecord.KSRecord r ->
-                    if String.IsNullOrWhiteSpace(r.JockeyCode) then
+                    if String.IsNullOrWhiteSpace(r.JockeyId) then
                         checkIssues.Add("KS: Empty JockeyCode")
                 | ParsedRecord.CHRecord r ->
-                    if String.IsNullOrWhiteSpace(r.TrainerCode) then
+                    if String.IsNullOrWhiteSpace(r.TrainerId) then
                         checkIssues.Add("CH: Empty TrainerCode")
                 | _ -> ()
 
@@ -346,9 +346,9 @@ type FixtureFieldVerificationTests() =
                 // Check BirthDate where applicable
                 let birthDate =
                     match parsed with
-                    | ParsedRecord.UMRecord r -> r.BirthDate
-                    | ParsedRecord.KSRecord r -> r.BirthDate
-                    | ParsedRecord.CHRecord r -> r.BirthDate
+                    | ParsedRecord.UMRecord r -> r.BirthDate.Value
+                    | ParsedRecord.KSRecord r -> r.BirthDate.Value
+                    | ParsedRecord.CHRecord r -> r.BirthDate.Value
                     | _ -> None
 
                 match birthDate with

@@ -1,4 +1,4 @@
-namespace Xanthos.Core.Records
+namespace Xanthos.Legacy.Records
 
 /// JV-Data record type identifiers
 module RecordTypes =

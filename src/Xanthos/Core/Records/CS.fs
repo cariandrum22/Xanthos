@@ -1,10 +1,10 @@
-namespace Xanthos.Core.Records
+namespace Xanthos.Legacy.Records
 
 open System
 open Xanthos.Core
-open Xanthos.Core.Records.FieldDefinitions
-open Xanthos.Core.Records.RecordParser
-open Xanthos.Core.Records.CodeTables
+open Xanthos.Legacy.Records.FieldDefinitions
+open Xanthos.Legacy.Records.RecordParser
+open Xanthos.Legacy.Records.CodeTables
 
 /// CS Record: コース情報 (Course Information)
 /// Record Length: 6829 bytes
