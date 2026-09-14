@@ -400,8 +400,12 @@ type ComJvLinkClient(?useJvGets: bool, ?progId: string) as this =
     /// Runs only on the owning STA, including deferred cleanup after a timed-out call.
     member private _.ReleaseResources() =
         let close api : Result<int, Xanthos.JvError> =
+            Diagnostics.emit $"DISPOSE {api} begin"
+
             match jvType.InvokeMember(api, BindingFlags.InvokeMethod, null, comObj, [||]) with
-            | :? int as code -> Ok code
+            | :? int as code ->
+                Diagnostics.emit $"DISPOSE {api} code={code}"
+                Ok code
             | _ ->
                 Error
                     { Api = api
@@ -417,7 +421,9 @@ type ComJvLinkClient(?useJvGets: bool, ?progId: string) as this =
 
         let release () =
             if not (isNull comObj) then
+                Diagnostics.emit "DISPOSE FinalReleaseComObject begin"
                 Marshal.FinalReleaseComObject(comObj) |> ignore
+                Diagnostics.emit $"COM object released for ProgID '{progId}'."
 
         lifetime.Cleanup(close, detach, release)
 
@@ -446,7 +452,9 @@ type ComJvLinkClient(?useJvGets: bool, ?progId: string) as this =
                     remember (nativeError "dispose" ex)
 
                 try
+                    Diagnostics.emit "DISPOSE STA shutdown begin"
                     (dispatcher :> IDisposable).Dispose()
+                    Diagnostics.emit "DISPOSE STA shutdown complete"
                 with ex ->
                     remember (nativeError "STA.shutdown" ex)
             finally
