@@ -110,19 +110,56 @@ module Validation =
             Error(validation "Realtime key must be a non-empty string.")
         else
             // Normalize: convert full-width digits to half-width, trim whitespace
-            let normalized = Xanthos.Core.Text.normalizeJvText key
+            let normalized =
+                (Xanthos.Core.Text.normalizeJvText (if isNull key then "" else key)).Trim()
 
             if String.IsNullOrWhiteSpace normalized then
                 Error(validation "Realtime key must be a non-empty string after normalization.")
-            elif Xanthos.EventKeys.inferChangeKind key |> Option.isSome then
-                let kind = Xanthos.EventKeys.inferChangeKind key |> Option.get
+            elif normalized.StartsWith("0B", StringComparison.OrdinalIgnoreCase) then
+                let prefix =
+                    if normalized.Length >= 4 then
+                        normalized.Substring(0, 4).ToUpperInvariant()
+                    else
+                        normalized
 
-                Xanthos.EventKeys.parse { Kind = kind; RawKey = key }
+                let payload =
+                    if normalized.Length >= 4 then
+                        normalized.Substring(4)
+                    else
+                        ""
+
+                let kind, nativeKey =
+                    match prefix with
+                    | "0B12" ->
+                        Some Xanthos.EventKind.Pay,
+                        (if payload.StartsWith("RA") then
+                             payload.Substring(2)
+                         else
+                             payload)
+                    | "0B11" ->
+                        Some Xanthos.EventKind.Weight,
+                        (if payload.StartsWith("WH") then
+                             payload.Substring(2)
+                         else
+                             payload)
+                    | "0B16" -> Xanthos.EventKeys.inferChangeKind payload, payload
+                    | _ -> None, payload
+
+                match kind with
+                | None -> Error(validation "Unknown historical watch-event prefix or event origin.")
+                | Some origin ->
+                    Xanthos.EventKeys.parse { Kind = origin; RawKey = nativeKey }
+                    |> Result.map (fun parsed -> parsed.Request.Key)
+                    |> Result.mapError (fun error -> validation error.Message)
+            elif Xanthos.EventKeys.inferChangeKind normalized |> Option.isSome then
+                let kind = Xanthos.EventKeys.inferChangeKind normalized |> Option.get
+
+                Xanthos.EventKeys.parse { Kind = kind; RawKey = normalized }
                 |> Result.map (fun parsed -> parsed.Request.Key)
                 |> Result.mapError (fun error -> validation error.Message)
             else
                 // For non-WatchEvent keys, validate digit-only format
-                let isAllDigits = normalized |> Seq.forall Char.IsDigit
+                let isAllDigits = normalized |> Seq.forall (fun c -> c >= '0' && c <= '9')
 
                 if not isAllDigits then
                     Error(
@@ -187,3 +224,20 @@ module Validation =
                             validation
                                 $"Realtime key '{key}' has invalid length ({len}). Expected 8, 12, or 16 digits, or a WatchEvent key."
                         )
+
+    /// User-input adapter; native callback keys themselves are retained unchanged.
+    let normalizeRealtimeRequest spec key =
+        normalizeDataspec spec
+        |> Result.bind (fun normalizedSpec ->
+            let normalized =
+                (Xanthos.Core.Text.normalizeJvText (if isNull key then "" else key)).Trim()
+
+            if
+                normalized.StartsWith("0B", StringComparison.OrdinalIgnoreCase)
+                && normalized.Length >= 4
+                && not (normalized.StartsWith(normalizedSpec, StringComparison.OrdinalIgnoreCase))
+            then
+                Error(validation "Historical watch-event dataspec does not match the requested dataspec.")
+            else
+                normalizeRealtimeKey key
+                |> Result.map (fun nativeKey -> normalizedSpec, nativeKey))

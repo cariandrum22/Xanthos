@@ -4,7 +4,7 @@ open System
 
 /// Explicit ownership of one COM instance. Dispose releases it; closeData only closes its data session.
 [<Sealed>]
-type Session internal (native: INativeJvLink) =
+type Session internal (native: INativeJvLink, ?dispatch: (unit -> obj) -> obj) =
     let mutable disposed = 0
     let mutable active = 0
     let operationGate = obj ()
@@ -25,43 +25,55 @@ type Session internal (native: INativeJvLink) =
                   Outputs = Map.empty
                   Message = message }
 
-        let acquired =
-            lock operationGate (fun () ->
-                if active <> 0 || Threading.Volatile.Read(&disposed) <> 0 then
-                    false
-                else
-                    // Only owned watch shutdown is joined by Disconnect. Other concurrent
-                    // public operations retain the documented Busy contract.
-                    active <- if api = "JVWatchEventClose" then 2 else 1
-                    true)
-
-        if Threading.Volatile.Read(&disposed) <> 0 then
-            if acquired then
+        let execute () =
+            let acquired =
                 lock operationGate (fun () ->
-                    active <- 0
-                    Threading.Monitor.PulseAll operationGate)
-
-            error JvErrorKind.Disposed "Session has been disconnected."
-        elif not acquired then
-            error JvErrorKind.Busy "Another operation owns this session."
-        else
-            try
-                try
-                    if Threading.Volatile.Read(&disposed) <> 0 then
-                        error JvErrorKind.Disposed "Session has been disconnected."
+                    if active <> 0 || Threading.Volatile.Read(&disposed) <> 0 then
+                        false
                     else
-                        operation native
-                with ex ->
-                    Error
-                        { Api = api
-                          Code = Some ex.HResult
-                          Kind = JvErrorKind.Invocation
-                          Outputs = Map.empty
-                          Message = ex.Message }
-            finally
-                lock operationGate (fun () ->
-                    active <- 0
-                    Threading.Monitor.PulseAll operationGate)
+                        // Only owned watch shutdown is joined by Disconnect. Other concurrent
+                        // public operations retain the documented Busy contract.
+                        active <- if api = "JVWatchEventClose" then 2 else 1
+                        true)
+
+            if Threading.Volatile.Read(&disposed) <> 0 then
+                if acquired then
+                    lock operationGate (fun () ->
+                        active <- 0
+                        Threading.Monitor.PulseAll operationGate)
+
+                error JvErrorKind.Disposed "Session has been disconnected."
+            elif not acquired then
+                error JvErrorKind.Busy "Another operation owns this session."
+            else
+                try
+                    try
+                        if Threading.Volatile.Read(&disposed) <> 0 then
+                            error JvErrorKind.Disposed "Session has been disconnected."
+                        else
+                            operation native
+                    with ex ->
+                        Error
+                            { Api = api
+                              Code = Some ex.HResult
+                              Kind = JvErrorKind.Invocation
+                              Outputs = Map.empty
+                              Message = ex.Message }
+                finally
+                    lock operationGate (fun () ->
+                        active <- 0
+                        Threading.Monitor.PulseAll operationGate)
+
+        match dispatch with
+        | None -> execute ()
+        | Some invoke ->
+            // Legacy operations enter the STA queue before acquiring the session gate.
+            // Native reentry still observes Busy; delivery joins remain outside this scope.
+            try
+                invoke (fun () -> box (execute ())) :?> Result<'a, JvError>
+            with
+            | :? ObjectDisposedException -> error JvErrorKind.Disposed "Session has been disconnected."
+            | ex -> error JvErrorKind.Invocation ex.Message
 
     member internal this.BeginWatch(capacity, callback) =
         let delivery = new EventDelivery(capacity, callback)

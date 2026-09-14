@@ -526,7 +526,10 @@ type JvLinkService
     // a new instance each time StartWatchEvents is called.
     // BoundedCapacity limits memory growth if consumer is slow; events are dropped with notification when full.
     let eventQueueCapacity = defaultArg eventQueueCapacity 10_000
-    let mutable eventQueue = new BlockingCollection<string>(eventQueueCapacity)
+
+    let mutable eventQueue =
+        new BlockingCollection<Choice<string, Xanthos.JvEvent>>(eventQueueCapacity)
+
     let mutable eventConsumerThread: Thread option = None
     /// Counter for overflow events that need to be reported by the consumer thread.
     /// This avoids triggering the event stream directly from the STA thread callback.
@@ -540,7 +543,7 @@ type JvLinkService
         // Create a fresh queue - BlockingCollection cannot be reused after CompleteAdding()
         if eventQueue.IsAddingCompleted then
             eventQueue.Dispose()
-            eventQueue <- new BlockingCollection<string>(eventQueueCapacity)
+            eventQueue <- new BlockingCollection<Choice<string, Xanthos.JvEvent>>(eventQueueCapacity)
 
         let currentQueue = eventQueue // Capture for closure
 
@@ -564,7 +567,11 @@ type JvLinkService
                         // Parse the event in a protected block - parsing errors become Error results
                         let parseResult =
                             try
-                                Ok(Serialization.parseWatchEvent key)
+                                match key with
+                                | Choice1Of2 historical -> Ok(Serialization.parseWatchEvent historical)
+                                | Choice2Of2 native ->
+                                    Serialization.parseNativeWatchEvent native
+                                    |> Result.mapError (fun error -> ValidationError error.Message)
                             with parseEx ->
                                 logger.Error($"WatchEvent key parsing failed: {parseEx.Message}")
                                 Error(InteropError(Unexpected parseEx.Message))
@@ -1046,10 +1053,9 @@ type JvLinkService
     member _.StreamRealtimePayloads(spec: string, key: string) : seq<Result<JvPayload, XanthosError>> =
         guardOperationSeq "StreamRealtimePayloads" (fun () ->
             seq {
-                match Validation.normalizeDataspec spec, Validation.normalizeRealtimeKey key with
-                | Error err, _ -> yield Error err
-                | _, Error err -> yield Error err
-                | Ok normalizedSpec, Ok normalizedKey ->
+                match Validation.normalizeRealtimeRequest spec key with
+                | Error err -> yield Error err
+                | Ok(normalizedSpec, normalizedKey) ->
                     match initialize () with
                     | Error err -> yield Error err
                     | Ok() ->
@@ -1159,10 +1165,9 @@ type JvLinkService
                                 yielded <- true
                                 ValueTask<bool>(true) } }
 
-        match Validation.normalizeDataspec spec, Validation.normalizeRealtimeKey key with
-        | Error err, _ -> singleError err
-        | _, Error err -> singleError err
-        | Ok normalizedSpec, Ok normalizedKey ->
+        match Validation.normalizeRealtimeRequest spec key with
+        | Error err -> singleError err
+        | Ok(normalizedSpec, normalizedKey) ->
 
             { new IAsyncEnumerable<Result<JvPayload, XanthosError>> with
                 member _.GetAsyncEnumerator(ct) =
@@ -1739,7 +1744,12 @@ type JvLinkService
             let subscriptionResult =
                 result {
                     do! initialize ()
-                    do! runCom "JVWatchEvent" (fun () -> client.WatchEvent callback)
+
+                    do!
+                        runCom "JVWatchEvent" (fun () ->
+                            match box client with
+                            | :? INativeWatchEventSource as source -> source.WatchNativeEvent(Choice2Of2 >> callback)
+                            | _ -> client.WatchEvent(Choice1Of2 >> callback))
                 }
 
             match subscriptionResult with

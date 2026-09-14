@@ -134,7 +134,12 @@ type ComJvLinkClient(?useJvGets: bool, ?progId: string) as this =
 
     // The legacy interface is an adapter over the same operations as the functional API.
     // Its narrower historical return types remain lossy; use JvLink for all raw outputs.
-    let legacySession = lazy (new Xanthos.Session(this :> Xanthos.INativeJvLink))
+    let legacySession =
+        lazy
+            (new Xanthos.Session(
+                this :> Xanthos.INativeJvLink,
+                dispatch = (fun work -> dispatcher.Invoke("legacy", work))
+            ))
 
     let legacy result =
         result
@@ -196,8 +201,8 @@ type ComJvLinkClient(?useJvGets: bool, ?progId: string) as this =
 
     let useGets () =
         let isTrue (value: string) =
-            not (String.IsNullOrEmpty value)
-            && not (List.contains (value.ToLowerInvariant()) [ "0"; "false"; "no"; "off" ])
+            not (String.IsNullOrWhiteSpace value)
+            && not (List.contains (value.Trim().ToLowerInvariant()) [ "0"; "false"; "no"; "off" ])
 
         match useJvGetsOverride with
         | Some value -> value
@@ -484,6 +489,10 @@ type ComJvLinkClient(?useJvGets: bool, ?progId: string) as this =
             match this.Cleanup() with
             | Ok() -> ()
             | Error error -> Xanthos.CleanupFailure.report error
+
+    interface INativeWatchEventSource with
+        member _.WatchNativeEvent callback =
+            run (Xanthos.SdkOperations.watchEvent callback)
 
     interface IComDispatchProvider with
         member _.Dispatcher = dispatcher
