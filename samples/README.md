@@ -1,12 +1,12 @@
 # Samples
 
-This directory hosts runnable JV-Link examples. Each sample can be launched with `dotnet run --project samples/<SampleName>`; when the selected target framework is `net10.0-windows` it uses the real JV-Link COM client, while other frameworks fall back to the in-memory `JvLinkStub`.
+This directory hosts runnable JV-Link examples. Select a project and target framework explicitly with `dotnet run --project samples/<SampleName> --framework <TFM>`. Real COM use requires `net10.0-windows`, an x64 process and JV-Link 5.0 x64 with its key registered.
 
 ## Xanthos.Cli
 
 A comprehensive command-line interface for exercising every JV-Link API (bulk download, realtime streaming, housekeeping, movie APIs, event monitoring, etc.).
 
-> **Note**: All commands use `JvLinkService` and interact with the underlying COM client when available (Windows with JV-Link installed). On non-Windows platforms or when `--stub` is specified, the CLI falls back to `JvLinkStub` for testing purposes.
+COM commands connect through `JvLink.connect` and use the public functional API. `--com` requests COM explicitly; activation failure exits without switching to Stub. `--stub` selects the deterministic `JvLinkService`/`JvLinkStub` sample backend. With neither option, Windows selects COM and other operating systems select Stub. See [functional CLI execution](../docs/functional-cli.md).
 
 ### Environment Variables
 
@@ -24,7 +24,7 @@ A comprehensive command-line interface for exercising every JV-Link API (bulk do
 dotnet run --project samples/Xanthos.Cli --framework net10.0-windows -- <command> [options]
 ```
 
-Global options (`--sid`, `--service-key`, `--save-path`, `--stub`, `--diag`, `--help`) can appear before any command.
+Global options (`--sid`, `--service-key`, `--save-path`, `--com`, `--stub`, `--diag`, `--help`) can appear before any command.
 
 ### Command Examples
 
@@ -102,4 +102,4 @@ Run with `--help` to see the complete list. Commands are grouped as follows:
 
 ### Diagnostics
 
-COM diagnostics are routed through `Xanthos.Interop.Diagnostics` only when `--diag` is specified. On non-Windows platforms, the CLI automatically falls back to `JvLinkStub`, which exercises the same code paths for regression testing.
+COM diagnostics are routed through `Xanthos.Interop.Diagnostics` only when `--diag` is specified. Inspect `EVIDENCE:MODE` to distinguish COM from Stub; functional COM execution also emits `EVIDENCE:API=FUNCTIONAL`. Stub results do not establish real COM behavior.

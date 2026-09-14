@@ -17,7 +17,7 @@ converting COM exceptions and error codes into idiomatic `Result<'T, Error>` wor
 
 - **Type-safe API**: Discriminated unions and records model JV-Link data structures
 - **Error handling**: COM errors mapped to F# Result types
-- **Streaming support**: AsyncSeq-based streaming for large data sets
+- **Streaming support**: `seq` and `IAsyncEnumerable` streams for large data sets
 - **Cross-platform development**: Core logic runs on any .NET platform
   (COM interop requires Windows)
 - **Stub mode**: Deterministic `JvLinkStub` enables full testability in CI
@@ -64,9 +64,9 @@ match version with
 
 Public SDK operations are curried functions with `Session` last. `withSession`
 releases its COM instance and STA after success, an error result, or a consumer
-exception. See the [functional API contract](docs/functional-api.md),
-[compiled examples](samples/Xanthos.Functional/Examples.fs), and
-[record migration guide](docs/record-migration.md).
+exception. See the [functional API contract](https://github.com/cariandrum22/Xanthos/blob/develop/docs/functional-api.md),
+[compiled examples](https://github.com/cariandrum22/Xanthos/blob/develop/samples/Xanthos.Functional/Examples.fs), and
+[record migration guide](https://github.com/cariandrum22/Xanthos/blob/develop/docs/record-migration.md).
 
 ## Architecture
 
@@ -76,7 +76,7 @@ Xanthos follows a three-layer architecture:
 2. **Interop** (`Xanthos.Interop`) - COM interface implementations and test stubs
 3. **Runtime** (`Xanthos.Runtime`) - High-level service orchestration
 
-See [design/architecture/README.md](design/architecture/README.md) for detailed
+See [design/architecture/README.md](https://github.com/cariandrum22/Xanthos/blob/develop/design/architecture/README.md) for detailed
 documentation.
 
 ## CLI Commands (E2E Coverage)
@@ -292,7 +292,7 @@ See `tests/README.md` for the naming conventions used across the unit-test suite
 (e.g., how `*ErrorTests` vs `*AbnormalTests` are scoped, and the preferred
 `Given/When/Then` style for test names).
 For CLI E2E test design and coverage details, see
-[design/tests/e2e-cli.md](design/tests/e2e-cli.md).
+[design/tests/e2e-cli.md](https://github.com/cariandrum22/Xanthos/blob/develop/design/tests/e2e-cli.md).
 
 ### CI/CD
 
@@ -304,7 +304,7 @@ The project uses GitHub Actions for continuous integration:
 - **Code Quality**: Format checking with `dotnet fantomas --check .`
 - **Coverage**: VSTest Coverlet Cobertura, exact test-ID gates and separate OS/TFM artifacts
 
-See [`.github/workflows/ci.yml`](.github/workflows/ci.yml) for details.
+See [`.github/workflows/ci.yml`](https://github.com/cariandrum22/Xanthos/blob/develop/.github/workflows/ci.yml) for details.
 
 ### Windows COM Verification
 
@@ -326,7 +326,7 @@ Parameters:
 - `OutputDirectory` selects the ignored output directory.
 - `-SkipPublish -CliPath C:/absolute/path/Xanthos.Cli.exe` tests an existing x64 executable.
 
-The script reuses the registered x64 key, publishes the Windows CLI and verifies all 15 required/negative COM tests without skips or stub fallback. Run it on the signed-in Windows desktop. See [COM verification](tests/Xanthos.ComTests/README.md) and [functional CLI](docs/functional-cli.md) for stateful acquisition, consent and separate playback/live-notification checks.
+The script reuses the registered x64 key, publishes the Windows CLI and verifies all 15 required/negative COM tests without skips or stub fallback. Run it on the signed-in Windows desktop. See [COM verification](https://github.com/cariandrum22/Xanthos/blob/develop/tests/Xanthos.ComTests/README.md) and [functional CLI](https://github.com/cariandrum22/Xanthos/blob/develop/docs/functional-cli.md) for stateful acquisition, consent and separate playback/live-notification checks.
 
 ## Updating Error Catalog
 
@@ -354,14 +354,14 @@ script.
 Ensure the JV-Link COM registration exists before running the COM-backed samples:
 
 ```powershell
-pwsh scripts/check_jvlink.ps1
+pwsh scripts/check-jvlink.ps1
 ```
 
 The script resolves the default ProgID and exits non-zero if missing.
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT License - see [LICENSE](https://github.com/cariandrum22/Xanthos/blob/develop/LICENSE) for details.
 
 ## Contributing
 

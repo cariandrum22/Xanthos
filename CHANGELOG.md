@@ -14,19 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support JV-Link SDK 5.0 on Windows x64 through a functional F# API: all 26 methods, nine properties and seven event origins, with typed results and explicit session ownership.
 - Provide both `net10.0` (portable parsing) and `net10.0-windows` (COM and parsing) assets in the NuGet package.
 - Require three-OS Fast/Coverage gates and separate artifact verification; run managed Stress with recorded seeds.
-
 - Add controlled functional CLI scenarios, deterministic record and Session properties, and SDK-free Windows x64 boundary tests.
 - Add reviewed test inventories and Fast/Coverage/WindowsManaged/Stress profiles that reject missing cases, unexpected skips and invalid evidence; provide isolated SDK-free Windows CI verification.
-
 - Document intermittent native SDK `-413` failures and the caller contract for preserving errors without implicit retry or fallback.
-
 - Validate CLI backend and x64 evidence centrally in the test harness, with regression cases for fallback, conflicting markers and missing evidence.
-
 - Document the public functional ownership/error/time contract and the SDK-to-function migration map. Verify package consumption independently of project references and keep real COM, Stub and deferred service/UI evidence distinct.
-
 - Add lossless, curried `Records` parsers for all 38 official record types, including complete nested arrays, training/weight/mining sentinels and seven explicit legacy identifier layouts. See `docs/record-migration.md`.
 - Add pure `DataSpecs` metadata, parsing-option selection and optional JVOpen preflight for documented stream/option/time-range combinations.
-
 - Preserve codes from all 19 official tables through `Codes`, and provide byte-oriented `RecordBytes` readers with lossless headers and field-specific errors. See `docs/record-foundations.md`.
 
 ### Fixed
@@ -34,22 +28,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Isolate interactive settings verification before changing the saving flag; verify normal and exception recovery from fresh sessions and retain original cache/data integrity checks.
 - Keep consent-policy tests independent of shared thread-pool scheduling without extending their timeout or consent-wait assertions.
 - Allow CI to combine successful OS jobs across rerun attempts of the same workflow run, replace rerun artifacts, and require SDK-absence evidence in the Windows gate.
-
 - Preserve CLI notification errors through cleanup, report queue overflow and pending keys, and capture configuration/Stub output through the injected writer.
 - Unify coverage and test-evidence completeness checks, verify negative-control rejection reasons, and support reproducible varying-seed Stress runs for existing FsCheck properties.
-
 - Bound poisoned-service STA shutdown while retaining normal consent waits and deferred cleanup on the owning STA.
 - Preserve application exceptions during implicit disposal; keep explicit cleanup errors and retryable watch-stop failures observable. Join cancellation-owned shutdown before disconnecting.
 - Serialize legacy COM getters, preserve all seven native event origins, and validate historical/full-width realtime inputs before native calls.
 - Honor capture read-method option precedence and record the actual method in fixture metadata.
 - Interpret WH and SE weight changes consistently as signed kilograms while preserving source signs and raw magnitudes.
-
 - Use an Intel macOS CI runner for the explicit x64 CLI test suite.
 - Include the functional sample in the solution so Release solution builds also compile the sample in Release.
 - Allow the expanded solution's lint scan to finish within the CI time budget; retain its existing non-blocking warning policy.
-
 - Initialize JV-Link's owned STA with a Japanese native thread locale, preserving Japanese COM text and image-pattern arguments when the caller uses an English culture.
-
 - Preserve the seven notification origins and official event keys, report queue/consumer failures, and release partially registered COM handlers and owned delivery threads.
 - Preserve movie-list no-data and download-pending outcomes, and close data sessions after SDK setup cancellation or an empty movie-list open.
 - Retain the native filename and size in `JvError.Outputs` for SDK read failures so callers can identify a damaged file.
@@ -61,8 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Route CLI COM commands through the public functional API. Add `session-check` for open/status/read/skip/cancel/close/reopen in one Session; preserve parsed records, image states and actual movie-list buffers.
 - Capture raw COM fixtures with acquisition metadata and SHA-256 sidecars; prefix filenames with the dataspec to separate streams.
-
-- Functional event subscriptions return `Subscription`; use `JvLink.unsubscribe` and `subscriptionError`. Callbacks run on an owned worker with a bounded queue. See `docs/functional-events.md` for shutdown, cancellation and key handling.
+- The functional `JvLink` API is new in 0.3.0; its outcome types do not replace published 0.2.0 function signatures. Functional event subscriptions return `Subscription`; use `JvLink.unsubscribe` and `subscriptionError`. Callbacks run on an owned worker with a bounded queue. See `docs/functional-events.md` for shutdown, cancellation and key handling.
 - The new functional `JvLink.movieOpen` returns `VideoOpenOutcome` (`Opened` / `NoData`). `VideoReadOutcome` now includes `DownloadPending`; callers should wait and read again for that case, and close either open outcome.
 - `JvLink.openRealtime` returns `RealtimeOpenOutcome`, without placeholder file counts or timestamps that JVRTOpen does not provide.
 - Update the build SDK to .NET 10.0.401 and use global.json in CI and release workflows, excluding preview SDKs.
@@ -76,6 +64,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - COM use requires the Windows target, an x64 process and JV-Link 5.0 x64 with its service key registered. Portable record parsing does not require the SDK.
 - Previous record modules are now under `Xanthos.Legacy.Records`. Runtime payload parsing delegates to `Records`, carries complete official models for all 38 types and preserves located failures in `RecordError`. Unofficial H5 is treated as unknown. See [record migration](docs/record-migration.md) and the [functional API contract](docs/functional-api.md).
+- Update exhaustive matches on `XanthosError` for the new `RecordError` case. Existing payload union case names now carry the official record models, so consumers must update their field access and rebuild.
+- Legacy `JvLinkService.WatchEvents` retains its public type but now classifies native events using their SDK origin and official key. Consumers must use `Event` instead of assuming an application-added `0B` prefix or treating a change timestamp as `ParticipantId`. `Serialization.parseWatchEvent` remains available for historical application-formatted strings.
+
+### Known Limitations
+
+- All seven notification origins have deterministic contract coverage; live delivery of every origin has not been verified.
+- Historical identifier and odds layouts are tested with specification-based fixtures; real legacy captures have not yet been obtained.
+- Intermittent native SDK `-413` errors remain observable to callers. Xanthos does not hide them with automatic retries or backend fallback.
 
 ## [0.2.0] - 2026-02-22
 

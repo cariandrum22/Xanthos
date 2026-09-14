@@ -164,8 +164,9 @@ dotnet fsharplint lint Xanthos.sln
 
 ### Error Handling
 
-- COM errors: `Result<'T, ComError>`
-- Business logic errors: `Result<'T, XanthosError>`
+- Functional SDK operations: `Result<'T, JvError>`; inspect `JvErrorKind`, `Api`, the native `Code` and `Outputs` without discarding unknown SDK codes.
+- Record parsing: `Result<'T, RecordParseError>` with the record, field and original byte position.
+- Legacy COM/service operations retain `ComError` / `XanthosError`; runtime parsing failures use `XanthosError.RecordError`.
 - Catch exceptions at boundaries and convert to Result
 
 ## Testing
