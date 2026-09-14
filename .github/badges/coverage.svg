@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="170" height="20" role="img" aria-label="managed lines: 89.2% (7277/8154)">
-  <title>managed lines: 89.2% (7277/8154)</title><desc>Xanthos; source be9498bde4a9ff0dfd39782238bea3a41a6fb182; https://github.com/cariandrum22/Xanthos/actions/runs/34816583162; excludes native COM execution.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="170" height="20" role="img" aria-label="managed lines: 89.3% (7284/8154)">
+  <title>managed lines: 89.3% (7284/8154)</title><desc>Xanthos; source 4c8615302c8919586ec96f5baa928ebf563f8829; https://github.com/cariandrum22/Xanthos/actions/runs/34873279364; excludes native COM execution.</desc>
   <linearGradient id="s" x2="0" y2="100%"><stop offset="0" stop-color="#bbb" stop-opacity=".1"/><stop offset="1" stop-opacity=".1"/></linearGradient>
   <clipPath id="r"><rect width="170" height="20" rx="3"/></clipPath>
   <g clip-path="url(#r)"><path fill="#555" d="M0 0h110v20H0z"/><path fill="#4c1" d="M110 0h60v20h-60z"/><path fill="url(#s)" d="M0 0h170v20H0z"/></g>
-  <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11"><text x="55" y="14">managed lines</text><text x="140" y="14">89.2%</text></g>
+  <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11"><text x="55" y="14">managed lines</text><text x="140" y="14">89.3%</text></g>
 </svg>
