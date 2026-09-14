@@ -183,12 +183,12 @@ Image normal/NoImage/error outcomes are separate. Playback requests returning ze
 
 SDK consent waits for the user's decision without an automatic timeout. Refusal ends the request. Do not automate agreement. Record actual errors and deferred conditions without counting them as passes. A filtered subset is not the full COM gate.
 
-For Q08 evidence, `scripts/run-windows-managed-ci.ps1 -RunId <unique-id>` first
+For SDK-free Windows evidence, `scripts/run-windows-managed-ci.ps1 -RunId <unique-id>` first
 checks both registry views, SDK DLLs and services without activating COM. It requires
 a Windows x64 runner without JV-Link. The underlying profile accepts
 `-RequireSdkAbsent` and stores `windows-environment.json` beside its invocation.
 Ordinary local WindowsManaged runs remain usable with an installed SDK.
-The dedicated `q08-windows-managed.yml`
+The dedicated `windows-managed.yml`
 workflow runs only this profile and retains the environment record and TRX; its
 actual CI result is required separately from tests on an SDK-installed developer PC.
 

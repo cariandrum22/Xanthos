@@ -1,11 +1,11 @@
-name: Q08 Windows managed verification
+name: Windows x64 managed verification
 
 on:
   workflow_dispatch:
   pull_request:
     branches: [develop, 'feat/sdk5-functional-x64']
   push:
-    branches: ['verification/q08-*']
+    branches: ['verification/windows-managed-*']
 
 permissions:
   contents: read
@@ -21,13 +21,13 @@ jobs:
           global-json-file: global.json
       - name: Verify SDK absence and run Windows x64 boundaries
         shell: pwsh
-        run: ./scripts/run-windows-managed-ci.ps1 -RunId "q08-${{ github.run_id }}-${{ github.run_attempt }}"
-      - name: Preserve Q08 environment, invocation and TRX
+        run: ./scripts/run-windows-managed-ci.ps1 -RunId "windows-managed-${{ github.run_id }}-${{ github.run_attempt }}"
+      - name: Preserve Windows environment, invocation and TRX
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: q08-windows-managed
-          path: .artifacts/test-quality/q08-${{ github.run_id }}-${{ github.run_attempt }}/windows/
+          name: windows-managed
+          path: .artifacts/test-quality/windows-managed-${{ github.run_id }}-${{ github.run_attempt }}/windows/
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 7
