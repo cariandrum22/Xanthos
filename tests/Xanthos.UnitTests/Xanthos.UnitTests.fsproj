@@ -35,6 +35,7 @@
     <Compile Include="SpecialRegistrationTests.fs" />
     <Compile Include="RaceContractTests.fs" />
     <Compile Include="RunnerContractTests.fs" />
+    <Compile Include="WeightChangeRegressionTests.fs" />
     <Compile Include="PayoffContractTests.fs" />
     <Compile Include="VotesContractTests.fs" />
     <Compile Include="OddsContractTests.fs" />

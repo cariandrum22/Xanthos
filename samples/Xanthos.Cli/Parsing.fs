@@ -354,6 +354,7 @@ module Parsing =
         | "--max-records" :: [] -> Error "capture-fixtures: option '--max-records' requires a value."
         | "--max-records" :: v :: rest -> parseCaptureFixturesArgs { state with MaxRecords = Some v } rest
         | "--use-jvgets" :: rest -> parseCaptureFixturesArgs { state with UseJvGets = true } rest
+        | "--no-jvgets" :: rest -> parseCaptureFixturesArgs { state with UseJvGets = false } rest
         | u :: _ -> Error $"capture-fixtures: unknown option '{u}'."
 
     /// Default specs for comprehensive coverage of core record types
@@ -365,7 +366,7 @@ module Parsing =
     /// Default from time: 30 days ago
     let private defaultCaptureFromTime () = DateTime.Now.AddDays(-30.0)
 
-    let parseCaptureFixtures (tokens: string list) : Result<Command, string> =
+    let private parseCaptureFixturesWithDefault useJvGets (tokens: string list) : Result<Command, string> =
         result {
             let! raw =
                 parseCaptureFixturesArgs
@@ -374,7 +375,7 @@ module Parsing =
                       From = None
                       To = None
                       MaxRecords = None
-                      UseJvGets = false }
+                      UseJvGets = useJvGets }
                     tokens
 
             // All fields have sensible defaults - arguments are for override only
@@ -419,6 +420,9 @@ module Parsing =
                       MaxRecordsPerType = maxRecords
                       UseJvGets = raw.UseJvGets }
         }
+
+    let parseCaptureFixtures tokens =
+        parseCaptureFixturesWithDefault false tokens
 
     let parseCommand (name: string) (tokens: string list) : Result<Command, string> =
         match name.ToLowerInvariant() with
@@ -491,6 +495,11 @@ module Parsing =
             | [] when rawGlobals.ShowHelp -> return { Globals = globals; Command = Help }
             | [] -> return! Error "No command specified. Run with --help to list commands."
             | cmd :: rest ->
-                let! pc = parseCommand cmd rest
+                let! pc =
+                    if cmd.Equals("capture-fixtures", StringComparison.OrdinalIgnoreCase) then
+                        parseCaptureFixturesWithDefault (defaultArg globals.UseJvGets false) rest
+                    else
+                        parseCommand cmd rest
+
                 return { Globals = globals; Command = pc }
         }

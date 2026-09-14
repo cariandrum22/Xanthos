@@ -128,14 +128,14 @@ module internal RunnerParser =
 
         { Raw = number.Raw; Value = weight }
 
-    let private weightChange (reader: Reader) =
+    let private weightChange sign (reader: Reader) =
         let number = reader.Int "WeightChange" 329 3
 
         let change =
             match number.Value with
             | None -> WeightChange.Missing
             | Some 999 -> WeightChange.Unmeasurable
-            | Some n -> WeightChange.Kilograms n
+            | Some n -> WeightChange.Kilograms(if sign = "-" then -n else n)
 
         { Raw = number.Raw; Value = change }
 
@@ -197,7 +197,7 @@ module internal RunnerParser =
                   PreviousApprentice = reader.Code CodeTable.Apprentice "PreviousApprentice" 324
                   BodyWeight = weight reader
                   WeightChangeSign = sign
-                  WeightChange = weightChange reader
+                  WeightChange = weightChange sign reader
                   Abnormality = reader.Code CodeTable.Abnormality "Abnormality" 332
                   FinishPosition = reader.Int "FinishPosition" 333 2
                   ConfirmedPosition = reader.Int "ConfirmedPosition" 335 2

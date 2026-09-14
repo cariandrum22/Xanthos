@@ -39,3 +39,7 @@ Unknown record/code values are preserved rather than coerced to a known value. S
 | Earlier record modules | `Records.parse` / `parseWith`; previous layouts are isolated under `Xanthos.Legacy.Records` |
 
 The compatibility service remains available, but its models and error types are not aliases for the new public contract. Update call sites explicitly and retain specification-based tests when migrating.
+
+For both WH and SE records, `WeightChange.Kilograms n` is signed: a decrease of 4 kg is `Kilograms -4`. Use `n` directly for arithmetic or display; do not apply `ChangeSign` / `WeightChangeSign` again. The separate sign and three-character `Raw` magnitude remain available for source auditing. Blank and `999` continue to map to `Missing` and `Unmeasurable`.
+
+For CLI `capture-fixtures`, a command-level `--use-jvgets` or `--no-jvgets` takes precedence over the global option. Without either option, capture uses JVRead. Capture metadata records the actual selected method.

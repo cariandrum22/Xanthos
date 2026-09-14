@@ -116,7 +116,8 @@ Commands:
       --from <timestamp>    Start time YYYYMMDDHHmmss (default: 30 days ago).
       --to <timestamp>      End time YYYYMMDDHHmmss (optional).
       --max-records <n>     Max records per type (default: 10).
-      --use-jvgets          Force JVGets (default).
+      --use-jvgets          Force JVGets; overrides the global read-method option.
+      --no-jvgets           Force JVRead (capture default when no option is supplied).
 
 """
 

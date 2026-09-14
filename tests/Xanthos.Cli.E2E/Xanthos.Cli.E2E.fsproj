@@ -9,6 +9,7 @@
     <Compile Include="HarnessTests.fs" />
     <Compile Include="CliTests.fs" />
     <Compile Include="ConsentTests.fs" />
+    <Compile Include="CaptureParsingTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

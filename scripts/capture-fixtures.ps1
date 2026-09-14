@@ -140,9 +140,6 @@ Write-Host "Capturing fixtures..." -ForegroundColor Yellow
 
 # Build command arguments
 $cliArgs = @("--com")
-if ($UseJvGets) {
-    $cliArgs += @("--use-jvgets")
-}
 
 # Only add --sid if explicitly provided
 if (-not [string]::IsNullOrEmpty($Sid)) {
@@ -154,6 +151,9 @@ if (-not [string]::IsNullOrEmpty($To)) {
     $cliArgs += @("--to", $To)
 }
 $cliArgs += @("--max-records", $MaxRecords)
+if ($UseJvGets) {
+    $cliArgs += @("--use-jvgets")
+}
 
 $displayArgs = if (-not [string]::IsNullOrEmpty($Sid)) { $cliArgs -replace $Sid, "***" } else { $cliArgs }
 Write-Host "Command: $ExePath $($displayArgs -join ' ')"
