@@ -537,14 +537,6 @@ type JvLinkService
 
     /// Processes events from the queue in order on a dedicated background thread.
     let startEventConsumer () =
-        // Reset overflow counter from any previous session
-        System.Threading.Interlocked.Exchange(overflowCount, 0) |> ignore
-
-        // Create a fresh queue - BlockingCollection cannot be reused after CompleteAdding()
-        if eventQueue.IsAddingCompleted then
-            eventQueue.Dispose()
-            eventQueue <- new BlockingCollection<Choice<string, Xanthos.JvEvent>>(eventQueueCapacity)
-
         let currentQueue = eventQueue // Capture for closure
 
         let consumer =
@@ -1741,6 +1733,15 @@ type JvLinkService
                     // Queue was completed (service shutting down)
                     logger.Warn("WatchEvent received after shutdown - event discarded.")
 
+            // Prepare the next queue before registration, including a restart after shutdown.
+            // Discard callbacks belonging to a previous failed registration as well.
+            eventQueue.Dispose()
+            eventQueue <- new BlockingCollection<Choice<string, Xanthos.JvEvent>>(eventQueueCapacity)
+
+            // Clear the previous run before registration: SDK events can arrive synchronously
+            // during JVWatchEvent, before the service consumer has started.
+            System.Threading.Interlocked.Exchange(overflowCount, 0) |> ignore
+
             let subscriptionResult =
                 result {
                     do! initialize ()
@@ -1831,6 +1832,36 @@ type JvLinkService
     // -------------------------------------------------------------------------
     // Typed Record Parsing API
     // -------------------------------------------------------------------------
+
+    /// Fetches records using explicit identifier and odds conventions from the acquisition context.
+    member this.FetchTypedRecordsWith
+        (request: JvOpenRequest, options: Xanthos.Records.ParseOptions, ?cancellationToken: CancellationToken)
+        : Result<ParsedRecord list, XanthosError> =
+        result {
+            let! payloads = this.FetchPayloads(request, ?cancellationToken = cancellationToken)
+            return! PayloadParser.parsePayloadsWith options payloads
+        }
+
+    /// Fetches records with explicit parsing conventions, retaining successful records and failed payloads.
+    member this.FetchTypedRecordsCollectErrorsWith
+        (request: JvOpenRequest, options: Xanthos.Records.ParseOptions, ?cancellationToken: CancellationToken)
+        : Result<ParsedRecord list * (JvPayload * XanthosError) list, XanthosError> =
+        result {
+            let! payloads = this.FetchPayloads(request, ?cancellationToken = cancellationToken)
+            return PayloadParser.tryParsePayloadsWith options payloads
+        }
+
+    /// Parses one payload using explicit identifier and odds conventions.
+    static member ParsePayloadWith(options, payload: JvPayload) =
+        PayloadParser.parsePayloadWith options payload
+
+    /// Parses payloads using explicit identifier and odds conventions; fails on the first invalid record.
+    static member ParsePayloadsWith(options, payloads: JvPayload list) =
+        PayloadParser.parsePayloadsWith options payloads
+
+    /// Parses payloads using explicit conventions, retaining both successes and failures.
+    static member TryParsePayloadsWith(options, payloads: JvPayload list) =
+        PayloadParser.tryParsePayloadsWith options payloads
 
     /// <summary>
     /// Fetches payloads and parses them into strongly typed domain records.

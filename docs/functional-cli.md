@@ -18,7 +18,11 @@ Use a publication interval containing available data. This command exercises ope
 
 Downloads and realtime responses are parsed through `Records`; failures terminate with the record, field and byte position. Raw files can be retained with `download --output` or `capture-fixtures`. Historical identifier interpretation follows the requested dataspec; odds limits follow the race date. `DataSpecs.validateOpen` checks supported option/time-range combinations.
 
+Concatenated dataspecs such as `DIFFRACE` use `DataSpecs.parseOptionsForRecord` to choose the identifier format for each record kind. Combinations requesting both widths of the same record, such as `DIFFDIFN`, are rejected before `JVOpen`; acquire those streams separately. Byte length is not used to guess the acquisition format.
+
 `capture-fixtures` writes `SPEC_ID_NNN.bin` and a `.meta.json` sidecar with the acquisition interval (JST), dataspec, SDK version, source filename, parser status and SHA-256. Keep licensed captures in ignored local directories. Different dataspecs have distinct filenames.
+
+Capture saves raw bytes before parsing. Rejected records retain a sidecar with `parseStatus = "error: ..."`, including the field and byte position; collection continues with subsequent records and dataspecs. If any retained record failed parsing, the command exits with code 2 after collection and cleanup. Inspect the metadata before using captured records as validated fixtures. Ordinary download/realtime commands still stop on parsing errors.
 
 `watch-events --open-after` retains the notification origin and original key and retrieves its response through a separate owned Session. Ctrl+C cancels data/notification loops; SDK consent dialogs wait for the user's decision without an automatic timeout. Declining ends the request.
 

@@ -7,6 +7,52 @@ open Xunit
 open Xanthos
 
 module DataSpecContractTests =
+    [<Theory; Trait("Category", "Contract")>]
+    [<InlineData("DIFFRACE", "UM", true);
+      InlineData("RACEDIFF", "BR", true);
+      InlineData("DIFFBLDN", "HN", false);
+      InlineData("DIFFBLDN", "UM", true)>]
+    let ``Combined dataspec parsing selects the convention for each record kind`` spec id legacy =
+        match DataSpecs.parseOptionsForRecord spec id (DateOnly(2004, 8, 13)) with
+        | Ok options ->
+            Assert.Equal(
+                (if legacy then
+                     Data.IdentifierFormat.Legacy
+                 else
+                     Data.IdentifierFormat.Expanded),
+                options.IdentifierFormat
+            )
+
+            Assert.Equal(Data.OddsLimitFormat.Before20040814, options.OddsLimitFormat)
+        | Error message -> failwith message
+
+    [<Theory; Trait("Category", "Contract")>]
+    [<InlineData("DIFFDIFN", "UM"); InlineData("BLODBLDN", "HN"); InlineData("SNAPSNPN", "CK")>]
+    let ``Ambiguous identifier streams are rejected before acquisition and during option selection`` spec id =
+        let request =
+            { Dataspec = spec
+              FromTime = DateTime(2026, 9, 12)
+              ToTime = None
+              Option = 1 }
+
+        for result in
+            [ DataSpecs.validateOpen request
+              DataSpecs.parseOptionsForRecord spec id DateOnly.MaxValue |> Result.map ignore ] do
+            match result with
+            | Error message -> Assert.Contains("Ambiguous identifier formats", message)
+            | Ok _ -> failwith "Mixed widths were guessed"
+
+    [<Fact; Trait("Category", "Contract")>]
+    let ``Unknown records remain preservable while unknown streams and unexplained identifier layouts fail`` () =
+        Assert.True(DataSpecs.parseOptionsForRecord "DIFFRACE" "ZZ" DateOnly.MaxValue |> Result.isOk)
+
+        Assert.True(
+            DataSpecs.parseOptionsForRecord "RACEZZZZ" "RA" DateOnly.MaxValue
+            |> Result.isError
+        )
+
+        Assert.True(DataSpecs.parseOptionsForRecord "RACE" "UM" DateOnly.MaxValue |> Result.isError)
+
     [<Fact; Trait("Category", "Contract")>]
     let ``Every dataspec record set and open option matches the independent spreadsheet`` () =
         use doc =

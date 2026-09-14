@@ -112,6 +112,57 @@ module DataSpecs =
                     Data.OddsLimitFormat.Current }
             : Records.ParseOptions)
 
+    let private identifierRecords =
+        Set.ofList [ "UM"; "BR"; "HN"; "SK"; "CK"; "HS"; "BT" ]
+
+    let private resolveBlocks (dataspec: string) =
+        if String.IsNullOrEmpty dataspec || dataspec.Length % 4 <> 0 then
+            Error "Dataspec must contain one or more four-character identifiers."
+        else
+            [ for i in 0..4 .. dataspec.Length - 1 -> dataspec.Substring(i, 4) ]
+            |> List.fold
+                (fun result id ->
+                    result
+                    |> Result.bind (fun found ->
+                        match tryFind id with
+                        | Some definition -> Ok(definition :: found)
+                        | None -> Error $"Unknown dataspec: {id}."))
+                (Ok [])
+
+    let private formatsFor recordId definitions =
+        definitions
+        |> List.filter (fun definition ->
+            definition.RecordIds.Contains recordId
+            || definition.SetupRecordIds.Contains recordId)
+        |> List.map _.IdentifierFormat
+        |> List.distinct
+
+    /// Resolves concatenated dataspecs using record identity, never by guessing from byte length.
+    /// Shared legacy/expanded layouts are ambiguous and must be acquired separately.
+    let parseOptionsForRecord dataspec recordId (raceDate: DateOnly) =
+        resolveBlocks dataspec
+        |> Result.bind (fun definitions ->
+            let format =
+                if not (identifierRecords.Contains recordId) then
+                    Ok Data.IdentifierFormat.Expanded
+                else
+                    match formatsFor recordId definitions with
+                    | [ format ] -> Ok format
+                    | [] -> Error $"No identifier format is defined for {recordId} in {dataspec}."
+                    | _ ->
+                        Error
+                            $"Ambiguous identifier formats for {recordId} in {dataspec}; acquire the streams separately."
+
+            format
+            |> Result.map (fun identifierFormat ->
+                { IdentifierFormat = identifierFormat
+                  OddsLimitFormat =
+                    if raceDate < DateOnly(2004, 8, 14) then
+                        Data.OddsLimitFormat.Before20040814
+                    else
+                        Data.OddsLimitFormat.Current }
+                : Records.ParseOptions))
+
     /// Optional preflight. Low-level JvLink.openData still preserves the native return code.
     /// The interval is (FromTime, ToTime], in service-local Japanese time.
     let validateOpen (request: OpenRequest) =
@@ -120,19 +171,25 @@ module DataSpecs =
         elif request.ToTime |> Option.exists (fun ending -> ending < request.FromTime) then
             Error "End time precedes start time."
         else
-            let blocks =
-                [ for i in 0..4 .. request.Dataspec.Length - 1 -> request.Dataspec.Substring(i, 4) ]
-
-            blocks
-            |> List.fold
-                (fun result id ->
-                    result
-                    |> Result.bind (fun () ->
-                        match tryFind id with
-                        | None -> Error $"Unknown dataspec: {id}."
-                        | Some d when not (d.OpenOptions.Contains request.Option) ->
-                            Error $"{id} does not support JVOpen option {request.Option}."
-                        | Some d when request.ToTime.IsSome && not d.SupportsEndTime ->
-                            Error $"{id} does not support an end time; the SDK returns NoData."
-                        | Some _ -> Ok()))
-                (Ok())
+            resolveBlocks request.Dataspec
+            |> Result.bind (fun definitions ->
+                match
+                    identifierRecords
+                    |> Seq.tryFind (fun id -> (formatsFor id definitions).Length > 1)
+                with
+                | Some id ->
+                    Error
+                        $"Ambiguous identifier formats for {id} in {request.Dataspec}; acquire the streams separately."
+                | None ->
+                    definitions
+                    |> List.fold
+                        (fun result d ->
+                            result
+                            |> Result.bind (fun () ->
+                                if not (d.OpenOptions.Contains request.Option) then
+                                    Error $"{d.Id} does not support JVOpen option {request.Option}."
+                                elif request.ToTime.IsSome && not d.SupportsEndTime then
+                                    Error $"{d.Id} does not support an end time; the SDK returns NoData."
+                                else
+                                    Ok()))
+                        (Ok()))

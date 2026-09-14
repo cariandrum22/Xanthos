@@ -150,6 +150,10 @@ exception internal SessionCleanupException of JvError
 type internal INativeCleanup =
     abstract Cleanup: unit -> Result<unit, JvError>
 
+/// Identifies synchronous reentry on the native owner even when the caller waits on another thread.
+type internal INativeExecutionContext =
+    abstract IsCurrentThread: bool
+
 module internal CleanupFailure =
     let report (error: JvError) =
         try

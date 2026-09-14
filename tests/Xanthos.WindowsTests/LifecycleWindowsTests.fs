@@ -15,8 +15,11 @@ type LifecycleDispatchTarget() =
     let mutable watchCloses = 0
     member val OnRead: unit -> unit = ignore with get, set
     member val OnWatchClose: unit -> unit = ignore with get, set
+    member val OnWatch: unit -> unit = ignore with get, set
     member val CloseCode = 0 with get, set
     member val WatchCloseCode = 0 with get, set
+    member val WatchCode = 0 with get, set
+    member val ImageCode = 0 with get, set
     member _.Closes = Volatile.Read(&closes)
     member _.WatchCloses = Volatile.Read(&watchCloses)
     member _.JVInit(_: string) = 0
@@ -37,7 +40,16 @@ type LifecycleDispatchTarget() =
         Interlocked.Increment(&closes) |> ignore
         this.CloseCode
 
-    member _.JVWatchEvent() = 0
+    member this.JVWatchEvent() =
+        this.OnWatch()
+        this.WatchCode
+
+    member this.JVCourseFile(_: string, path: byref<string>, explanation: byref<string>) =
+        path <- "controlled-course.png"
+        explanation <- "controlled explanation"
+        this.ImageCode
+
+    member this.JVCourseFile2(_: string, _: string) = this.ImageCode
 
     member this.JVWatchEventClose() =
         Interlocked.Increment(&watchCloses) |> ignore
@@ -88,6 +100,68 @@ module LifecycleWindowsTests =
           FromTime = DateTime(2026, 9, 12)
           Option = 1 }
 
+    [<Theory; InlineData(0); InlineData(-1); InlineData(-100)>]
+    let ``Legacy course image adapter preserves absence instead of returning a nonexistent file`` code =
+        let target = LifecycleDispatchTarget(ImageCode = code)
+        let owner = OwnerProbe()
+        use client = new ComJvLinkClient(owner.Activation target)
+        let legacy = client :> IJvLinkClient
+        let first = legacy.CourseFile "9999999905240011"
+        let second = legacy.CourseFile2("9999999905240011", "controlled.png")
+
+        if code = 0 then
+            Assert.Equal(Ok("controlled-course.png", "controlled explanation"), first)
+            Assert.Equal(Ok(), second)
+        elif code = -1 then
+            Assert.Equal(Error(Xanthos.Core.InvalidInput "No matching data exists"), first)
+            Assert.Equal(Error(Xanthos.Core.InvalidInput "No matching data exists"), second)
+        else
+            Assert.True(Result.isError first)
+            Assert.True(Result.isError second)
+
+    [<Fact>]
+    let ``Missing COM registration remains a handled error after forced finalization in a child process`` () =
+        let script =
+            IO.Path.Combine(IO.Path.GetTempPath(), "Xanthos-Finalizer-" + Guid.NewGuid().ToString("N") + ".fsx")
+
+        let assembly = typeof<ComJvLinkClient>.Assembly.Location.Replace("\"", "\"\"")
+
+        let source =
+            "#r @\""
+            + assembly
+            + "\"\n"
+            + "open System\nopen Xanthos.Interop\n"
+            + "let failActivation () =\n"
+            + "    try\n        use client = new ComJvLinkClient(progId = \"Xanthos.Unregistered.FinalizerRegression\")\n        failwith \"unexpected activation\"\n"
+            + "    with ComActivationException _ -> ()\n"
+            + "for _ in 1 .. 32 do failActivation ()\n"
+            + "GC.Collect()\nGC.WaitForPendingFinalizers()\nGC.Collect()\n"
+            + "printfn \"FINALIZATION_COMPLETED\"\n"
+
+        try
+            IO.File.WriteAllText(script, source)
+            let start = Diagnostics.ProcessStartInfo("dotnet")
+            start.UseShellExecute <- false
+            start.CreateNoWindow <- true
+            start.RedirectStandardOutput <- true
+            start.RedirectStandardError <- true
+
+            for argument in [ "fsi"; "--exec"; script ] do
+                start.ArgumentList.Add argument
+
+            use child = Diagnostics.Process.Start start
+            let output = child.StandardOutput.ReadToEndAsync()
+            let errors = child.StandardError.ReadToEndAsync()
+
+            if not (child.WaitForExit 60000) then
+                child.Kill(true)
+                failwith "Finalization subprocess did not finish"
+
+            Assert.True(child.ExitCode = 0, output.Result + errors.Result)
+            Assert.Contains("FINALIZATION_COMPLETED", output.Result)
+        finally
+            IO.File.Delete script
+
     let private connector (sink: JvLinkEventSink option ref) remove =
         { ComEventConnector.Connect =
             fun instance callback ->
@@ -99,6 +173,84 @@ module LifecycleWindowsTests =
                       Dispids = [ 1..7 ]
                       Delegates = [ for _ in 1..7 -> Action<string>(ignore) :> Delegate ] }
           Disconnect = ComEventConnection.disconnectWith remove }
+
+    [<Theory; InlineData(1000, 513, 513, 0); InlineData(2, 9, 2, 7)>]
+    let ``Legacy notifications use only the service queue with observable overflow`` capacity sent expected dropped =
+        let target = LifecycleDispatchTarget()
+        let probe = OwnerProbe()
+        let sink = ref None
+
+        let client =
+            new ComJvLinkClient(probe.Activation target, eventConnector = connector sink (fun _ _ -> ()))
+
+        use service = new JvLinkService(client, config, eventQueueCapacity = capacity)
+        use release = new ManualResetEventSlim()
+        use received = new CountdownEvent(expected)
+        let mutable overflows = 0
+        let mutable callbackThread = 0
+
+        use observed =
+            service.WatchEvents.Subscribe(fun event ->
+                match event with
+                | Ok notification ->
+                    callbackThread <- Environment.CurrentManagedThreadId
+                    Assert.Equal("202609120511", notification.RawKey)
+
+                    if received.CurrentCount = expected then
+                        release.Wait()
+
+                    received.Signal() |> ignore
+                | Error(Xanthos.Core.EventQueueOverflow count) -> Interlocked.Add(&overflows, count) |> ignore
+                | other -> failwithf "Unexpected delivery error: %A" other)
+
+        target.WatchCode <- -1
+        target.OnWatch <- fun () -> sink.Value.Value.JVEvtPay "failed-registration"
+        Assert.True(service.StartWatchEvents() |> Result.isError)
+        target.WatchCode <- 0
+
+        target.OnWatch <-
+            fun () ->
+                for _ in 1..sent do
+                    sink.Value.Value.JVEvtPay "202609120511"
+
+        try
+            service.StartWatchEvents() |> ok
+        finally
+            release.Set()
+
+        Assert.True(received.Wait(5000), "Accepted notifications were lost below the service queue")
+        service.StopWatchEvents() |> ok
+        Assert.Equal(dropped, overflows)
+        Assert.NotEqual(probe.Worker.ManagedThreadId, callbackThread)
+        Assert.Equal(1, target.WatchCloses)
+        received.Reset expected
+        overflows <- 0
+        service.StartWatchEvents() |> ok
+        Assert.True(received.Wait(5000), "Restart lost notifications received during registration")
+        service.StopWatchEvents() |> ok
+        Assert.Equal(dropped, overflows)
+        Assert.Equal(2, target.WatchCloses)
+
+    [<Fact>]
+    let ``Native STA reentry can request disconnect without waiting on its calling thread`` () =
+        let target = LifecycleDispatchTarget()
+        let probe = OwnerProbe()
+        let client = new ComJvLinkClient(probe.Activation target)
+        let session = new Session(client :> INativeJvLink)
+
+        target.OnRead <-
+            fun () ->
+                Assert.Equal(Ok(), JvLink.disconnect session)
+                Assert.Equal(0, probe.Releases)
+
+        let read =
+            Task.Factory.StartNew((fun () -> JvLink.read session), TaskCreationOptions.LongRunning)
+
+        Assert.True(read.Wait(5000), "Reentrant disconnect blocked the owning STA")
+        read.Result |> ok |> ignore
+        JvLink.disconnect session |> ok
+        Assert.Equal(1, probe.Releases)
+        Assert.False(probe.Worker.IsAlive)
 
     [<Fact>]
     let ``Poisoned legacy service bounds shutdown and defers release to original STA`` () =

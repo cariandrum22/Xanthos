@@ -7,6 +7,9 @@ open System
 type Session internal (native: INativeJvLink, ?dispatch: (unit -> obj) -> obj) =
     let mutable disposed = 0
     let mutable active = 0
+    let mutable activeThread = 0
+    let mutable closing = false
+    let mutable deferredDisconnect = false
     let operationGate = obj ()
     let mutable watch: (int64 * EventDelivery) option = None
     let mutable lastDelivery: EventDelivery option = None
@@ -14,9 +17,11 @@ type Session internal (native: INativeJvLink, ?dispatch: (unit -> obj) -> obj) =
     let mutable deliveries: EventDelivery list = []
 
     member internal _.WatchError = lastDelivery |> Option.bind _.Error
-    member internal _.IsDisposed = Threading.Volatile.Read(&disposed) <> 0
 
-    member internal _.Run(api, operation: INativeJvLink -> Result<'a, JvError>) =
+    member internal _.IsDisposed =
+        lock operationGate (fun () -> closing || Threading.Volatile.Read(&disposed) <> 0)
+
+    member internal this.Run(api, operation: INativeJvLink -> Result<'a, JvError>) =
         let error kind message =
             Error
                 { Api = api
@@ -28,18 +33,20 @@ type Session internal (native: INativeJvLink, ?dispatch: (unit -> obj) -> obj) =
         let execute () =
             let acquired =
                 lock operationGate (fun () ->
-                    if active <> 0 || Threading.Volatile.Read(&disposed) <> 0 then
+                    if active <> 0 || closing || Threading.Volatile.Read(&disposed) <> 0 then
                         false
                     else
-                        // Only owned watch shutdown is joined by Disconnect. Other concurrent
-                        // public operations retain the documented Busy contract.
+                        // Ordinary operations still reject concurrent operations with Busy.
+                        // Disconnect closes admission and joins the current owner.
                         active <- if api = "JVWatchEventClose" then 2 else 1
+                        activeThread <- Environment.CurrentManagedThreadId
                         true)
 
-            if Threading.Volatile.Read(&disposed) <> 0 then
+            if this.IsDisposed then
                 if acquired then
                     lock operationGate (fun () ->
                         active <- 0
+                        activeThread <- 0
                         Threading.Monitor.PulseAll operationGate)
 
                 error JvErrorKind.Disposed "Session has been disconnected."
@@ -48,7 +55,7 @@ type Session internal (native: INativeJvLink, ?dispatch: (unit -> obj) -> obj) =
             else
                 try
                     try
-                        if Threading.Volatile.Read(&disposed) <> 0 then
+                        if this.IsDisposed then
                             error JvErrorKind.Disposed "Session has been disconnected."
                         else
                             operation native
@@ -62,6 +69,7 @@ type Session internal (native: INativeJvLink, ?dispatch: (unit -> obj) -> obj) =
                 finally
                     lock operationGate (fun () ->
                         active <- 0
+                        activeThread <- 0
                         Threading.Monitor.PulseAll operationGate)
 
         match dispatch with
@@ -152,27 +160,49 @@ type Session internal (native: INativeJvLink, ?dispatch: (unit -> obj) -> obj) =
     member internal this.Disconnect() =
         let onDeliveryThread = deliveries |> List.exists _.IsCurrentThread
 
-        let acquired =
+        let onNativeThread =
+            match native with
+            | :? INativeExecutionContext as context -> context.IsCurrentThread
+            | _ -> false
+
+        let acquired, defer =
             lock operationGate (fun () ->
-                while active = 2 || (active = 3 && not onDeliveryThread) do
-                    Threading.Monitor.Wait operationGate |> ignore
+                closing <- true
 
-                if active <> 0 then
-                    false
+                if
+                    active <> 0
+                    && (activeThread = Environment.CurrentManagedThreadId
+                        || onDeliveryThread
+                        || onNativeThread)
+                then
+                    // Joining this operation/callback from itself would deadlock.
+                    // Keep a strong owner until the in-flight operation returns.
+                    let schedule = active <> 3 && not deferredDisconnect
+
+                    if schedule then
+                        deferredDisconnect <- true
+
+                    false, schedule
                 else
-                    active <- 3
-                    true)
+                    while active <> 0 do
+                        Threading.Monitor.Wait operationGate |> ignore
 
-        if not acquired && onDeliveryThread && this.IsDisposed then
-            // An external Disconnect may be joining this callback.
+                    if Threading.Volatile.Read(&disposed) <> 0 then
+                        false, false
+                    else
+                        active <- 3
+                        activeThread <- Environment.CurrentManagedThreadId
+                        true, false)
+
+        if not acquired then
+            if defer then
+                Threading.ThreadPool.QueueUserWorkItem(fun _ ->
+                    match this.Disconnect() with
+                    | Ok() -> ()
+                    | Error error -> CleanupFailure.report error)
+                |> ignore
+
             Ok()
-        elif not acquired then
-            Error
-                { Api = "disconnect"
-                  Code = None
-                  Kind = JvErrorKind.Busy
-                  Outputs = Map.empty
-                  Message = "Wait for the active SDK call to return before disconnecting." }
         else
             try
                 try
@@ -201,6 +231,7 @@ type Session internal (native: INativeJvLink, ?dispatch: (unit -> obj) -> obj) =
             finally
                 lock operationGate (fun () ->
                     active <- 0
+                    activeThread <- 0
                     Threading.Monitor.PulseAll operationGate)
 
     interface IDisposable with
@@ -208,3 +239,15 @@ type Session internal (native: INativeJvLink, ?dispatch: (unit -> obj) -> obj) =
             match this.Disconnect() with
             | Ok() -> ()
             | Error error -> CleanupFailure.report error
+
+    /// Shared scoped ownership path, also exercised with controlled native operations.
+    member internal this.WithScope action =
+        try
+            let result = action this
+
+            match this.Disconnect() with
+            | Ok() -> result
+            | Error error -> Error error
+        with _ ->
+            this.Disconnect() |> ignore
+            reraise ()

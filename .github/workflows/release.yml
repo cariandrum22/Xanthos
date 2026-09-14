@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (without v prefix, e.g., 0.1.0)'
+        description: 'Source version to release (without v prefix, e.g., 0.3.0)'
         required: true
         type: string
 
@@ -20,6 +20,10 @@ jobs:
   build-and-test:
     name: Build and Test
     runs-on: windows-latest
+    env:
+      XANTHOS_E2E_MODE: STUB
+      XANTHOS_E2E_SID: CI_TEST_SID
+      XANTHOS_E2E_SERVICE_KEY: CI_TEST_KEY
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -29,24 +33,40 @@ jobs:
         with:
           global-json-file: global.json
 
+      - name: Verify release version matches source
+        shell: pwsh
+        env:
+          REQUESTED_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          $version = if ($env:GITHUB_EVENT_NAME -eq 'workflow_dispatch') {
+            $env:REQUESTED_VERSION
+          } else {
+            $env:GITHUB_REF -replace '^refs/tags/v', ''
+          }
+          ./scripts/assert-release-version.ps1 -RequestedVersion $version
+
       - name: Restore dependencies
         run: dotnet restore
 
       - name: Build solution
         run: dotnet build --no-restore --configuration Release
 
-      - name: Run unit tests
-        run: dotnet test tests/Xanthos.UnitTests --no-build --configuration Release
+      - name: Run required release test profiles
+        shell: pwsh
+        run: |
+          ./scripts/run-test-profile.ps1 -Profile Fast -RunId "release-${{ github.run_id }}-${{ github.run_attempt }}" -NoBuild
+          ./scripts/run-test-profile.ps1 -Profile Coverage -RunId "release-${{ github.run_id }}-${{ github.run_attempt }}" -NoBuild
+          ./scripts/run-test-profile.ps1 -Profile WindowsManaged -RunId "release-${{ github.run_id }}-${{ github.run_attempt }}" -RequireSdkAbsent
 
-      - name: Run property tests
-        run: dotnet test tests/Xanthos.PropertyTests --no-build --configuration Release
-
-      - name: Run E2E tests
-        run: dotnet test tests/Xanthos.Cli.E2E --no-build --configuration Release
-        env:
-          XANTHOS_E2E_MODE: STUB
-          XANTHOS_E2E_SID: CI_TEST_SID
-          XANTHOS_E2E_SERVICE_KEY: CI_TEST_KEY
+      - name: Retain release test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          overwrite: true
+          path: .artifacts/test-quality/release-${{ github.run_id }}-${{ github.run_attempt }}/
+          include-hidden-files: true
+          if-no-files-found: error
 
   publish:
     name: Publish to NuGet
@@ -61,28 +81,17 @@ jobs:
         with:
           global-json-file: global.json
 
-      - name: Extract version from tag or input
-        id: version
-        shell: bash
-        run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            VERSION="${{ github.event.inputs.version }}"
-          else
-            VERSION="${GITHUB_REF#refs/tags/v}"
-          fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Version: $VERSION"
-
       - name: Restore dependencies
         run: dotnet restore
 
-      - name: Build and pack (Windows target only)
-        run: dotnet pack src/Xanthos/Xanthos.fsproj --configuration Release -p:Version=${{ steps.version.outputs.version }} -p:TargetFrameworks=net10.0-windows --output ./nupkg
+      - name: Pack both target frameworks at the source version
+        run: dotnet pack src/Xanthos/Xanthos.fsproj --configuration Release --output ./nupkg
 
       - name: Upload NuGet package artifact
         uses: actions/upload-artifact@v4
         with:
           name: nuget-package
+          overwrite: true
           path: ./nupkg/*.nupkg
           retention-days: 7
 
@@ -108,7 +117,7 @@ jobs:
           path: ./nupkg
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3.0.3
         with:
           generate_release_notes: true
           files: ./nupkg/*.nupkg

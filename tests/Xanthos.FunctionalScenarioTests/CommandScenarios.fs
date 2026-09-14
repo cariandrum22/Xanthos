@@ -7,6 +7,45 @@ open Xunit
 open Xanthos.Cli.Types
 
 module CommandScenarios =
+    [<Theory; InlineData("DIFFRACE"); InlineData("RACEDIFF")>]
+    let ``Combined dataspec download parses legacy breeder bytes without changing the request`` spec =
+        let native = new NativeFake(SettingsStore())
+        // Independent 537-byte legacy breeder layout; the six-digit ID starts at byte 12.
+        let bytes = Array.create 537 (byte ' ')
+        Array.Copy(Text.Encoding.ASCII.GetBytes("BR220260912123456"), bytes, 17)
+        bytes[535] <- 13uy
+        bytes[536] <- 10uy
+        Host.supplyRecord native bytes
+        let readHandler = native.Handler
+        let mutable openedSpec = ""
+
+        native.Handler <-
+            fun api args ->
+                if api = "JVOpen" then
+                    openedSpec <- unbox args[0]
+
+                readHandler api args
+
+        let code, output =
+            Host.run native [| "--use-jvgets"; "download"; "--spec"; spec; "--from"; "20260905000000" |]
+
+        Assert.True((code = 0), output)
+        Assert.Equal(spec, openedSpec)
+        Assert.Contains("RECORD id=BR bytes=537 parsed=true method=JVGets", output)
+        Assert.Equal(1, native.Disposals)
+
+    [<Fact>]
+    let ``Ambiguous combined dataspec download never calls JVOpen`` () =
+        let native = new NativeFake(SettingsStore())
+
+        let code, output =
+            Host.run native [| "download"; "--spec"; "DIFFDIFN"; "--from"; "20260905000000" |]
+
+        Assert.Equal(2, code)
+        Assert.Contains("Ambiguous identifier formats", output)
+        Assert.DoesNotContain("JVOpen", native.Calls)
+        Assert.Equal(1, native.Disposals)
+
     // One stable Theory ID per Command case; arguments are explicit, not derived
     // from the production parser. Unsupported SDK access directions must fail.
     let private commands =

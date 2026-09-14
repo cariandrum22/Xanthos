@@ -9,7 +9,6 @@
     <PackageId>Xanthos</PackageId>
     <AssemblyName>Xanthos</AssemblyName>
     <RootNamespace>Xanthos</RootNamespace>
-    <Version>0.2.0</Version>
     <Authors>cariandrum22</Authors>
     <Description>F# wrapper library for the JRA-VAN JV-Link COM API. Provides type-safe access to Japanese horse racing data.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -18,7 +17,7 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>fsharp;jra-van;jv-link;horse-racing;com-interop;xanthos</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <Copyright>Copyright (c) 2025 cariandrum22</Copyright>
+    <Copyright>Copyright (c) 2025-2026 cariandrum22</Copyright>
   </PropertyGroup>
 
   <!-- Define WINDOWS constant for Windows target -->

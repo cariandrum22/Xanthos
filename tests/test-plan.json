@@ -58920,6 +58920,665 @@
       "profiles": [
         "WindowsManaged"
       ]
+    },
+    {
+      "id": "T-270d679716b7d45c1115",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.ReleaseCompatibilityTests.Legacy service parsing options retain old identifier records and partial successes",
+      "displayName": "Xanthos.UnitTests.ReleaseCompatibilityTests.Legacy service parsing options retain old identifier records and partial successes(spec: \"DIFF\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-efb54d31fb407b7cba23",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.ReleaseCompatibilityTests.Legacy service parsing options retain old identifier records and partial successes",
+      "displayName": "Xanthos.UnitTests.ReleaseCompatibilityTests.Legacy service parsing options retain old identifier records and partial successes(spec: \"RCOV\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-c9b6995e589e34f9d15d",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.ReleaseCompatibilityTests.Legacy service parsing options retain old identifier records and partial successes",
+      "displayName": "Xanthos.UnitTests.ReleaseCompatibilityTests.Legacy service parsing options retain old identifier records and partial successes(spec: \"TCOV\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-1f22096c4c66774943d3",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.ReleaseCompatibilityTests.Legacy service parsing options retain old identifier records and partial successes",
+      "displayName": "Xanthos.UnitTests.ReleaseCompatibilityTests.Legacy service parsing options retain old identifier records and partial successes(spec: \"HOSE\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-19db76f100565d9f5470",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.ReleaseCompatibilityTests.Legacy service parsing options retain old identifier records and partial successes",
+      "displayName": "Xanthos.UnitTests.ReleaseCompatibilityTests.Legacy service parsing options retain old identifier records and partial successes(spec: \"BLOD\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-22bc11741abd78137b5f",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.ReleaseCompatibilityTests.String SDK properties normalize null BSTR without losing nonempty values",
+      "displayName": "Xanthos.UnitTests.ReleaseCompatibilityTests.String SDK properties normalize null BSTR without losing nonempty values(value: \"sdk-value\", expected: \"sdk-value\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-9365a69acbbdbdfa28d1",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.ReleaseCompatibilityTests.String SDK properties normalize null BSTR without losing nonempty values",
+      "displayName": "Xanthos.UnitTests.ReleaseCompatibilityTests.String SDK properties normalize null BSTR without losing nonempty values(value: \"\", expected: \"\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-1298f9bd5a5fc6c97d5e",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.ReleaseCompatibilityTests.String SDK properties normalize null BSTR without losing nonempty values",
+      "displayName": "Xanthos.UnitTests.ReleaseCompatibilityTests.String SDK properties normalize null BSTR without losing nonempty values(value: null, expected: \"\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-a5ff7021f392c72e1f83",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.ReleaseCompatibilityTests.Legacy service parsing options retain old identifier records and partial successes",
+      "displayName": "Xanthos.UnitTests.ReleaseCompatibilityTests.Legacy service parsing options retain old identifier records and partial successes(spec: \"SNAP\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-ed08329dbb8e71219f18",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.ReleaseCompatibilityTests.Legacy service exposes historical odds interpretation without changing default parsing",
+      "displayName": "Xanthos.UnitTests.ReleaseCompatibilityTests.Legacy service exposes historical odds interpretation without changing default parsing",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-3eba6a888c67d61af54f",
+      "project": "tests/Xanthos.FunctionalScenarioTests/Xanthos.FunctionalScenarioTests.fsproj",
+      "fqn": "Xanthos.FunctionalScenarioTests.CaptureReadMethodScenarios.Capture retains malformed bytes and diagnostics then continues records and dataspecs",
+      "displayName": "Xanthos.FunctionalScenarioTests.CaptureReadMethodScenarios.Capture retains malformed bytes and diagnostics then continues records and dataspecs",
+      "groups": [
+        "FunctionalScenarioTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "tfm": "net10.0",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ]
+    },
+    {
+      "id": "T-464ca0bfdf6808772349",
+      "project": "tests/Xanthos.WindowsTests/Xanthos.WindowsTests.fsproj",
+      "fqn": "Xanthos.WindowsTests.LifecycleWindowsTests.Legacy course image adapter preserves absence instead of returning a nonexistent file",
+      "displayName": "Xanthos.WindowsTests.LifecycleWindowsTests.Legacy course image adapter preserves absence instead of returning a nonexistent file(code: -1)",
+      "groups": [
+        "WindowsTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "windows"
+      ],
+      "tfm": "net10.0-windows",
+      "profiles": [
+        "WindowsManaged"
+      ]
+    },
+    {
+      "id": "T-7b21594c637d93545b95",
+      "project": "tests/Xanthos.WindowsTests/Xanthos.WindowsTests.fsproj",
+      "fqn": "Xanthos.WindowsTests.LifecycleWindowsTests.Missing COM registration remains a handled error after forced finalization in a child process",
+      "displayName": "Xanthos.WindowsTests.LifecycleWindowsTests.Missing COM registration remains a handled error after forced finalization in a child process",
+      "groups": [
+        "WindowsTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "windows"
+      ],
+      "tfm": "net10.0-windows",
+      "profiles": [
+        "WindowsManaged"
+      ]
+    },
+    {
+      "id": "T-e2f421db2255471a25a2",
+      "project": "tests/Xanthos.WindowsTests/Xanthos.WindowsTests.fsproj",
+      "fqn": "Xanthos.WindowsTests.LifecycleWindowsTests.Legacy course image adapter preserves absence instead of returning a nonexistent file",
+      "displayName": "Xanthos.WindowsTests.LifecycleWindowsTests.Legacy course image adapter preserves absence instead of returning a nonexistent file(code: 0)",
+      "groups": [
+        "WindowsTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "windows"
+      ],
+      "tfm": "net10.0-windows",
+      "profiles": [
+        "WindowsManaged"
+      ]
+    },
+    {
+      "id": "T-eb2282d3886a0920b7e6",
+      "project": "tests/Xanthos.WindowsTests/Xanthos.WindowsTests.fsproj",
+      "fqn": "Xanthos.WindowsTests.LifecycleWindowsTests.Legacy course image adapter preserves absence instead of returning a nonexistent file",
+      "displayName": "Xanthos.WindowsTests.LifecycleWindowsTests.Legacy course image adapter preserves absence instead of returning a nonexistent file(code: -100)",
+      "groups": [
+        "WindowsTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "windows"
+      ],
+      "tfm": "net10.0-windows",
+      "profiles": [
+        "WindowsManaged"
+      ]
+    },
+    {
+      "id": "T-59b97d1e38052fb34f6b",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.DataSpecContractTests.Combined dataspec parsing selects the convention for each record kind",
+      "displayName": "Xanthos.UnitTests.DataSpecContractTests.Combined dataspec parsing selects the convention for each record kind(spec: \"RACEDIFF\", id: \"BR\", legacy: True)",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-c816e7378e1cdcc8ee66",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.DataSpecContractTests.Combined dataspec parsing selects the convention for each record kind",
+      "displayName": "Xanthos.UnitTests.DataSpecContractTests.Combined dataspec parsing selects the convention for each record kind(spec: \"DIFFBLDN\", id: \"UM\", legacy: True)",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-244723a0c80dbabe5a8b",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.DataSpecContractTests.Ambiguous identifier streams are rejected before acquisition and during option selection",
+      "displayName": "Xanthos.UnitTests.DataSpecContractTests.Ambiguous identifier streams are rejected before acquisition and during option selection(spec: \"BLODBLDN\", id: \"HN\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-0c1a36879048ba0a27a6",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LifecycleRegressionTests.Notification callback can request disconnect while another native call owns the session",
+      "displayName": "Xanthos.UnitTests.LifecycleRegressionTests.Notification callback can request disconnect while another native call owns the session",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-8c478c30ba85991f8fce",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.DataSpecContractTests.Combined dataspec parsing selects the convention for each record kind",
+      "displayName": "Xanthos.UnitTests.DataSpecContractTests.Combined dataspec parsing selects the convention for each record kind(spec: \"DIFFBLDN\", id: \"HN\", legacy: False)",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-0a70881f0ea15026522c",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.DataSpecContractTests.Unknown records remain preservable while unknown streams and unexplained identifier layouts fail",
+      "displayName": "Xanthos.UnitTests.DataSpecContractTests.Unknown records remain preservable while unknown streams and unexplained identifier layouts fail",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-d7aa400923cd7d3ce5c8",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LifecycleRegressionTests.Scoped cleanup joins an ordinary native call and preserves the body outcome",
+      "displayName": "Xanthos.UnitTests.LifecycleRegressionTests.Scoped cleanup joins an ordinary native call and preserves the body outcome(throws: False)",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-ca0e5083e9d6c3c05f14",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LifecycleRegressionTests.Reentrant disconnect defers release until the native operation returns",
+      "displayName": "Xanthos.UnitTests.LifecycleRegressionTests.Reentrant disconnect defers release until the native operation returns",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-2adc67d05af83ccb8358",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.DataSpecContractTests.Combined dataspec parsing selects the convention for each record kind",
+      "displayName": "Xanthos.UnitTests.DataSpecContractTests.Combined dataspec parsing selects the convention for each record kind(spec: \"DIFFRACE\", id: \"UM\", legacy: True)",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-a0b58bc21a1012531449",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.DataSpecContractTests.Ambiguous identifier streams are rejected before acquisition and during option selection",
+      "displayName": "Xanthos.UnitTests.DataSpecContractTests.Ambiguous identifier streams are rejected before acquisition and during option selection(spec: \"SNAPSNPN\", id: \"CK\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-6de84064b25a13a315ba",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LifecycleRegressionTests.Scoped cleanup joins an ordinary native call and preserves the body outcome",
+      "displayName": "Xanthos.UnitTests.LifecycleRegressionTests.Scoped cleanup joins an ordinary native call and preserves the body outcome(throws: True)",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-8ba9e7b1b87661d7e9c0",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LifecycleRegressionTests.Concurrent disconnect callers join the same ordinary operation and release once",
+      "displayName": "Xanthos.UnitTests.LifecycleRegressionTests.Concurrent disconnect callers join the same ordinary operation and release once",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-5cb030a5e333ea417f28",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.DataSpecContractTests.Ambiguous identifier streams are rejected before acquisition and during option selection",
+      "displayName": "Xanthos.UnitTests.DataSpecContractTests.Ambiguous identifier streams are rejected before acquisition and during option selection(spec: \"DIFFDIFN\", id: \"UM\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-7073fc9e078fedfc780b",
+      "project": "tests/Xanthos.FunctionalScenarioTests/Xanthos.FunctionalScenarioTests.fsproj",
+      "fqn": "Xanthos.FunctionalScenarioTests.CommandScenarios.Ambiguous combined dataspec download never calls JVOpen",
+      "displayName": "Xanthos.FunctionalScenarioTests.CommandScenarios.Ambiguous combined dataspec download never calls JVOpen",
+      "groups": [
+        "FunctionalScenarioTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "tfm": "net10.0",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ]
+    },
+    {
+      "id": "T-620f7ce20c87077dfa77",
+      "project": "tests/Xanthos.FunctionalScenarioTests/Xanthos.FunctionalScenarioTests.fsproj",
+      "fqn": "Xanthos.FunctionalScenarioTests.CommandScenarios.Combined dataspec download parses legacy breeder bytes without changing the request",
+      "displayName": "Xanthos.FunctionalScenarioTests.CommandScenarios.Combined dataspec download parses legacy breeder bytes without changing the request(spec: \"DIFFRACE\")",
+      "groups": [
+        "FunctionalScenarioTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "tfm": "net10.0",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ]
+    },
+    {
+      "id": "T-4edb692468b4a4474a6d",
+      "project": "tests/Xanthos.FunctionalScenarioTests/Xanthos.FunctionalScenarioTests.fsproj",
+      "fqn": "Xanthos.FunctionalScenarioTests.CommandScenarios.Combined dataspec download parses legacy breeder bytes without changing the request",
+      "displayName": "Xanthos.FunctionalScenarioTests.CommandScenarios.Combined dataspec download parses legacy breeder bytes without changing the request(spec: \"RACEDIFF\")",
+      "groups": [
+        "FunctionalScenarioTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "tfm": "net10.0",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ]
+    },
+    {
+      "id": "T-c226c51ecfcb7b3a98d5",
+      "project": "tests/Xanthos.WindowsTests/Xanthos.WindowsTests.fsproj",
+      "fqn": "Xanthos.WindowsTests.LifecycleWindowsTests.Native STA reentry can request disconnect without waiting on its calling thread",
+      "displayName": "Xanthos.WindowsTests.LifecycleWindowsTests.Native STA reentry can request disconnect without waiting on its calling thread",
+      "groups": [
+        "WindowsTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "windows"
+      ],
+      "tfm": "net10.0-windows",
+      "profiles": [
+        "WindowsManaged"
+      ]
+    },
+    {
+      "id": "T-bb014284acd894efd69a",
+      "project": "tests/Xanthos.WindowsTests/Xanthos.WindowsTests.fsproj",
+      "fqn": "Xanthos.WindowsTests.LifecycleWindowsTests.Legacy notifications use only the service queue with observable overflow",
+      "displayName": "Xanthos.WindowsTests.LifecycleWindowsTests.Legacy notifications use only the service queue with observable overflow(capacity: 2, sent: 9, expected: 2, dropped: 7)",
+      "groups": [
+        "WindowsTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "windows"
+      ],
+      "tfm": "net10.0-windows",
+      "profiles": [
+        "WindowsManaged"
+      ]
+    },
+    {
+      "id": "T-0a7db82f7760b4e74b27",
+      "project": "tests/Xanthos.WindowsTests/Xanthos.WindowsTests.fsproj",
+      "fqn": "Xanthos.WindowsTests.LifecycleWindowsTests.Legacy notifications use only the service queue with observable overflow",
+      "displayName": "Xanthos.WindowsTests.LifecycleWindowsTests.Legacy notifications use only the service queue with observable overflow(capacity: 1000, sent: 513, expected: 513, dropped: 0)",
+      "groups": [
+        "WindowsTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "windows"
+      ],
+      "tfm": "net10.0-windows",
+      "profiles": [
+        "WindowsManaged"
+      ]
     }
   ],
   "optionalSkipAllowlist": [

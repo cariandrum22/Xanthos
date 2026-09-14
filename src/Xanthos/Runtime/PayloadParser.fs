@@ -100,30 +100,36 @@ module PayloadParser =
 
     /// Parses multiple payloads, returning all successfully parsed records.
     /// Fails fast on the first parse error without processing remaining payloads.
-    let parsePayloads (payloads: JvPayload list) : Result<ParsedRecord list, XanthosError> =
+    let parsePayloadsWith options (payloads: JvPayload list) : Result<ParsedRecord list, XanthosError> =
         payloads
         |> List.fold
             (fun acc payload ->
                 match acc with
                 | Error e -> Error e // Already failed, skip remaining payloads
                 | Ok records ->
-                    match parsePayload payload with
+                    match parsePayloadWith options payload with
                     | Ok record -> Ok(record :: records)
                     | Error e -> Error e)
             (Ok [])
         |> Result.map List.rev
 
+    let parsePayloads payloads =
+        parsePayloadsWith Records.ParseOptions.Default payloads
+
     /// Parses payloads, collecting both successes and failures
-    let tryParsePayloads (payloads: JvPayload list) : ParsedRecord list * (JvPayload * XanthosError) list =
+    let tryParsePayloadsWith options (payloads: JvPayload list) : ParsedRecord list * (JvPayload * XanthosError) list =
         let mutable successes = []
         let mutable failures = []
 
         for payload in payloads do
-            match parsePayload payload with
+            match parsePayloadWith options payload with
             | Ok record -> successes <- record :: successes
             | Error err -> failures <- (payload, err) :: failures
 
         (List.rev successes, List.rev failures)
+
+    let tryParsePayloads payloads =
+        tryParsePayloadsWith Records.ParseOptions.Default payloads
 
     /// Filters parsed records by type
     let filterByType<'T> (records: ParsedRecord list) (extractor: ParsedRecord -> 'T option) : 'T list =

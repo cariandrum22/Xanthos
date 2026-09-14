@@ -7,8 +7,10 @@ open Xanthos.Core.Errors
 /// Use this to tune timeout/retry values based on expected data volume and network conditions.
 type ComRetryConfig =
     {
-        /// Maximum time to wait for a single COM call before considering it hung.
-        /// Default: 30 seconds. Increase for slow connections or large data volumes.
+        /// Maximum wait for a noninteractive COM call; expiry does not abort native work.
+        /// JVOpen, JVRTOpen, JVSetUIProperties and JVMVPlay/WithType on the owned COM STA
+        /// wait without this timeout because the SDK may require a user's decision.
+        /// Default: 30 seconds for calls to which the timeout applies.
         Timeout: TimeSpan
         /// Number of retry attempts for transient failures (communication errors).
         /// Default: 2 for general calls, 0 for read operations (which have their own retry logic).

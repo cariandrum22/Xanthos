@@ -41,6 +41,10 @@ type internal ComClientActivation =
 type ComJvLinkClient
     internal (activation: ComClientActivation, ?useJvGets: bool, ?progId: string, ?eventConnector: ComEventConnector) as this
     =
+    // A failed constructor has no complete ownership graph for finalization.
+    // Enable the finalizer only after every field has been initialized.
+    do GC.SuppressFinalize this
+
     let useJvGetsOverride = useJvGets
     let eventConnector = defaultArg eventConnector ComEventConnector.Default
     // Note: The ProgID is "JVDTLab.JVLink" (not "JVDTLabLib.JVLink")
@@ -68,12 +72,14 @@ type ComJvLinkClient
     let mutable eventSubscription: EventSubscription option = None
     let mutable disposeState = 0
     let lifetime = NativeSessionLifetime()
+    let mutable nativeThreadId = 0
 
     let comObj =
         try
             dispatcher.Invoke(
                 "JVLink.Activate",
                 fun () ->
+                    nativeThreadId <- Environment.CurrentManagedThreadId
                     JvLinkLocale.initialize ()
                     let instance = activation.Create jvType
                     Diagnostics.emit $"COM activation succeeded for ProgID '{progId}' ({IntPtr.Size * 8}-bit)."
@@ -227,6 +233,8 @@ type ComJvLinkClient
             elif not (isNull gets) then isTrue gets
             else true
 
+    do GC.ReRegisterForFinalize this
+
     new(?useJvGets: bool, ?progId: string) =
         new ComJvLinkClient(ComClientActivation.Default, ?useJvGets = useJvGets, ?progId = progId)
 
@@ -288,7 +296,8 @@ type ComJvLinkClient
             run (Xanthos.SdkOperations.deleteFile filename)
 
         member _.WatchEvent callback =
-            run (Xanthos.SdkOperations.watchEvent (fun event -> callback event.RawKey))
+            legacySession.Value.Run("JVWatchEvent", fun native -> native.Watch(fun event -> callback event.RawKey))
+            |> legacy
 
         member _.WatchEventClose() =
             run Xanthos.SdkOperations.watchEventClose
@@ -312,10 +321,19 @@ type ComJvLinkClient
 
         member _.CourseFile key =
             run (Xanthos.SdkOperations.courseFile key)
-            |> Result.map (fun image -> image.Value.Filepath, image.Value.Explanation)
+            |> Result.bind (fun image ->
+                if image.State = Xanthos.ImageState.Available then
+                    Ok(image.Value.Filepath, image.Value.Explanation)
+                else
+                    Error(InvalidInput "No matching data exists"))
 
         member _.CourseFile2(key, path) =
-            run (Xanthos.SdkOperations.courseFile2 key path) |> Result.map ignore
+            run (Xanthos.SdkOperations.courseFile2 key path)
+            |> Result.bind (fun image ->
+                if image.State = Xanthos.ImageState.Available then
+                    Ok()
+                else
+                    Error(InvalidInput "No matching data exists"))
 
         member _.SilksFile(pattern, path) =
             run (Xanthos.SdkOperations.silksFile pattern path)
@@ -505,6 +523,9 @@ type ComJvLinkClient
     interface Xanthos.INativeCleanup with
         member this.Cleanup() = this.Cleanup()
 
+    interface Xanthos.INativeExecutionContext with
+        member _.IsCurrentThread = nativeThreadId = Environment.CurrentManagedThreadId
+
     interface IComAbandonable with
         member this.Abandon() = this.Abandon(TimeSpan.FromSeconds 5.)
 
@@ -516,7 +537,10 @@ type ComJvLinkClient
 
     interface INativeWatchEventSource with
         member _.WatchNativeEvent callback =
-            run (Xanthos.SdkOperations.watchEvent callback)
+            // JvLinkService already owns a bounded, observable delivery queue.
+            // Do not insert the functional subscription queue before it.
+            legacySession.Value.Run("JVWatchEvent", fun native -> native.Watch callback)
+            |> legacy
 
     interface IComDispatchProvider with
         member _.Dispatcher = dispatcher
@@ -601,7 +625,12 @@ type ComJvLinkClient
             with ex ->
                 Error(nativeError "JVWatchEventClose" ex)
 
-    override this.Finalize() = this.Abandon(TimeSpan.Zero)
+    override this.Finalize() =
+        // Finalization must never terminate the process, including shutdown failures.
+        try
+            this.Abandon(TimeSpan.Zero)
+        with _ ->
+            ()
 #else
 module ComJvLinkClient =
     let notAvailable () =

@@ -214,8 +214,10 @@ CI evidence uses the stable `ci-<github.run_id>` identity. Each OS artifact reco
 its producing `githubRunAttempt`; rerunning a failed OS job replaces that artifact.
 The summary accepts earlier successful OS attempts from the same run and commit,
 rejects mixed attempts within one OS artifact, and records the selected attempts.
-Partial, full and summary-only reruns have synthetic regression controls; hosted
-rerun acceptance must still be recorded against an actual workflow run.
+Partial, full and summary-only reruns have synthetic regression controls. Hosted
+reruns also require evidence from the actual workflow: [this develop run passed
+on attempt 4](https://github.com/cariandrum22/Xanthos/actions/runs/34801904534).
+Retain each run's artifact manifest to identify which OS attempts were combined.
 
 ### Reporting and release checks
 

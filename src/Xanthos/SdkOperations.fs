@@ -327,6 +327,7 @@ module internal SdkOperations =
             fun native ->
                 native.Get name
                 |> Result.bind (function
+                    | null when typeof<'a> = typeof<string> -> Ok(unbox<'a> (box ""))
                     | :? 'a as value -> Ok value
                     | _ -> mismatch name typeof<'a>.Name)
         )

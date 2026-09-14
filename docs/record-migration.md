@@ -60,6 +60,8 @@ Odds limits changed when trifecta sales began on 2004-08-14. Choose `Before20040
 
 `DataSpecs.parseOptions dataspec raceDate` selects both conventions and returns `None` for an unknown dataspec. `DataSpecs.tryFind` exposes expected normal/setup record sets and allowed options. Treat these sets as the documented baseline; preserve unrecognized records when the service adds new types.
 
+For concatenated dataspecs, use `DataSpecs.parseOptionsForRecord dataspec recordId raceDate`. It selects identifier width from the streams that can supply that record and selects odds limits from the record's race date. Ambiguous legacy/expanded sources for the same record return an error; `validateOpen` also rejects those combinations before acquisition. Unknown record IDs remain preservable, while unknown dataspecs or an unexplained identifier layout return errors.
+
 Call the optional pure `DataSpecs.validateOpen request` before acquisition to check dataspec/option combinations and time bounds. The interval is `(FromTime, ToTime]`, measured by delivery timestamp in Japanese service time. TOKU, DIFF/DIFN, HOSE/HOSN, HOYU and COMM do not allow an end time: the SDK returns NoData for that request. A NoData response to such a request does not demonstrate that the archive is empty. Low-level `JvLink.openData` retains native return codes without applying this optional preflight.
 
 ## Training, mining and entry statistics
@@ -81,5 +83,7 @@ CK supplies race-entry results for the horse and its connections. Its jockey/tra
 | BR/BN as breeding/offspring records | BR is breeder; BN is owner |
 
 `Runtime.PayloadParser` and `JvLinkService.ParsePayload` now use the canonical parser. Their existing `TKRecord`, `RARecord`, etc. case names carry the new complete models. `parsePayloadWith` accepts explicit parsing options. A `RecordError` preserves the original `RecordParseError` within the runtime error union.
+
+The compatibility service's original parsing methods use expanded identifiers and current odds limits. For legacy streams or odds from before 2004-08-14, supply `Records.ParseOptions` to `JvLinkService.ParsePayloadWith`, `ParsePayloadsWith` or `TryParsePayloadsWith`. Acquisition has corresponding `FetchTypedRecordsWith(request, options)` and `FetchTypedRecordsCollectErrorsWith(request, options)` methods. The latter retains successfully parsed records alongside failed payloads. `PayloadParser.parsePayloadsWith` and `tryParsePayloadsWith` expose the same choices as curried functions. Select options from the dataspec and the record's race date; split acquisitions with different format conventions before applying a single options value.
 
 Previous parsing behavior is isolated under `Xanthos.Legacy.Records` for migration reference. Those models contain known specification mismatches and are not used by default. Tests importing that namespace verify old compatibility behavior; they do not establish official record compliance.
