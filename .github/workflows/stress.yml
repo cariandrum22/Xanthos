@@ -1,0 +1,28 @@
+name: Managed Stress
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 18 * * 0'
+permissions:
+  contents: read
+jobs:
+  stress:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Run records, replayable FsCheck properties and session models without SDK
+        shell: pwsh
+        run: ./scripts/run-test-profile.ps1 -Profile Stress -RunId 'stress-${{ github.run_id }}-${{ github.run_attempt }}'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stress-windows
+          overwrite: true
+          path: .artifacts/test-quality/stress-${{ github.run_id }}-${{ github.run_attempt }}/windows/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14

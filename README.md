@@ -296,19 +296,21 @@ For CLI E2E test design and coverage details, see
 
 ### CI/CD
 
-The existing workflow builds and tests on Linux, macOS, and Windows. The separate
-Q08 workflow verifies Windows x64 managed boundaries without JV-Link activation.
-The dependent `ci/sdk5-quality-gates` PR prepares explicit Fast/Coverage gates,
-separate OS/TFM artifacts and scheduled Stress; those gates are not enabled here.
+The project uses GitHub Actions for continuous integration:
 
-See [`.github/workflows/ci.yml`](.github/workflows/ci.yml) and
-[the Q08 workflow](.github/workflows/q08-windows-managed.yml).
+- **Build & Test**: Runs on Linux, macOS, and Windows
+- **Functional scenarios**: Production CLI with a controlled native boundary; legacy Stub smoke is separate
+- **WindowsManaged**: Windows x64 STA/ABI tests without JV-Link activation
+- **Code Quality**: Format checking with `dotnet fantomas --check .`
+- **Coverage**: VSTest Coverlet Cobertura, exact test-ID gates and separate OS/TFM artifacts
+
+See [`.github/workflows/ci.yml`](.github/workflows/ci.yml) for details.
 
 ### Windows COM Verification
 
-Managed boundary tests do not activate JV-Link. Actual SDK operations require
-the separate local COM profile with an installed SDK and registered subscription
-key before release.
+CI checks the managed Windows boundary without activating JV-Link. Actual SDK
+operations require the separate local COM profile with an installed SDK and
+registered subscription key before release.
 
 Before tagging the initial release (and for any later COM regression), run the bundled
 PowerShell workflow on a Windows machine with JV-Link installed:

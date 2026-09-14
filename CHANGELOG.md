@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Prepare three-OS Fast/Coverage gates, separate artifact verification and scheduled managed Stress; hosted verification remains pending.
+
 - Add controlled functional CLI scenarios, deterministic record and Session properties, and SDK-free Windows x64 boundary tests.
 - Add reviewed test inventories and Fast/Coverage/WindowsManaged/Stress profiles that reject missing cases, unexpected skips and invalid evidence; provide isolated SDK-free Windows CI verification.
 
@@ -24,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Preserve codes from all 19 official tables through `Codes`, and provide byte-oriented `RecordBytes` readers with lossless headers and field-specific errors. See `docs/record-foundations.md`; full record-layout migration remains separate.
 
 ### Fixed
+
+- Allow CI to combine successful OS jobs across rerun attempts of the same workflow run, replace rerun artifacts, and require SDK-absence evidence in the Windows gate.
 
 - Preserve CLI notification errors through cleanup, report queue overflow and pending keys, and capture configuration/Stub output through the injected writer.
 - Unify coverage and test-evidence completeness checks, verify negative-control rejection reasons, and support reproducible varying-seed Stress runs for existing FsCheck properties.
