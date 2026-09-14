@@ -12,8 +12,10 @@ module EventAssetScenarios =
         | Ok value -> value
         | Error error -> failwithf "%A" error
 
-    [<Fact>]
-    let ``S12 production callback failure when CLI consumer is blocked is observable`` () =
+    [<Theory>]
+    [<InlineData(false)>]
+    [<InlineData(true)>]
+    let ``S12 production callback failure when CLI consumer is blocked is observable`` cleanupFails =
         let native = new NativeFake(SettingsStore())
         let session = new Session(native)
         use entered = new ManualResetEventSlim(false)
@@ -22,8 +24,17 @@ module EventAssetScenarios =
         let output = ResizeArray<string>()
         native.OnWatch <- fun () -> native.Emit EventKind.Pay "202609130601"
 
+        if cleanupFails then
+            native.StopWatchError <-
+                Some
+                    { Api = "JVWatchEventClose"
+                      Code = Some -1
+                      Kind = JvErrorKind.Invocation
+                      Outputs = Map.empty
+                      Message = "controlled close failure" }
+
         let writer (text: string) =
-            output.Add text
+            lock output (fun () -> output.Add text)
 
             if text.StartsWith("EVENT origin=") then
                 entered.Set()
@@ -40,14 +51,29 @@ module EventAssetScenarios =
             Assert.True(entered.Wait(TimeSpan.FromSeconds 5.))
             native.Emit EventKind.Pay "202609130602"
             native.Emit EventKind.Pay "202609130603"
-            Assert.True(SpinWait.SpinUntil((fun () -> session.WatchError |> Option.isSome), 5000))
-            Assert.Equal("eventCallback", session.WatchError.Value.Api)
+
+            Assert.True(
+                SpinWait.SpinUntil(
+                    (fun () -> lock output (fun () -> output |> Seq.exists _.StartsWith("QUEUE_OVERFLOW"))),
+                    5000
+                )
+            )
         finally
             release.Set()
 
         Assert.True(operation.Wait(TimeSpan.FromSeconds 5.))
         Assert.Equal(2, operation.Result)
-        Assert.Contains("CLI event queue capacity", String.Join("\n", output))
+        let text = String.Join("\n", output)
+        Assert.Contains("cliEventQueue failed", text)
+        Assert.Contains("CLI event queue capacity", text)
+        Assert.Contains("key=202609130603", text)
+        Assert.Contains("origin=Pay", text)
+        Assert.Contains("EVENT_PENDING origin=Pay rawKey=202609130602 retrieval=not-run", text)
+        Assert.Contains("accepted=2 processed=1 pending=1", text)
+
+        if cleanupFails then
+            Assert.Contains("Cleanup failed: JVWatchEventClose", text)
+
         Assert.Equal(1, native.Disposals)
 
     [<Fact>]

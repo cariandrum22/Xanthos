@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../Shared/ReplayProperty.fs" Link="ReplayProperty.fs" />
     <Compile Include="ComArchitectureTests.fs" />
     <Compile Include="FunctionalApiTests.fs" />
     <Compile Include="SdkOperationContractTests.fs" />

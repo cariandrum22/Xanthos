@@ -5,10 +5,12 @@ param(
     [string]$Filter,
     [string]$FromTime,
     [string]$CollectorStatePath,
-    [switch]$NoBuild
+    [switch]$NoBuild,
+    [switch]$RequireSdkAbsent
 )
 $ErrorActionPreference = 'Stop'
 if ($RunId -notmatch '^[A-Za-z0-9_-]+$') { throw 'RunId must be a safe single path component.' }
+if ($RequireSdkAbsent -and $Profile -ne 'WindowsManaged') { throw 'RequireSdkAbsent is only supported for WindowsManaged.' }
 $platform = if ($IsWindows) { 'windows' } elseif ($IsMacOS) { 'macos' } else { 'linux' }
 $baseDirectory = Join-Path '.artifacts/test-quality' "$RunId/$platform"
 if ($Profile -eq 'Com') {
@@ -52,11 +54,24 @@ if (-not $Projects) {
         'Fast' { @('UnitTests', 'PropertyTests', 'Cli.E2E', 'FunctionalScenarioTests') }
         'Coverage' { @('UnitTests', 'PropertyTests', 'FunctionalScenarioTests') }
         'WindowsManaged' { @('WindowsTests') }
-        'Stress' { @('UnitTests', 'FunctionalScenarioTests') }
+        'Stress' { @('UnitTests', 'PropertyTests', 'FunctionalScenarioTests') }
         'OptionalFixtures' { @('UnitTests') }
     }
 }
 $plan = Get-Content 'tests/test-plan.json' -Raw | ConvertFrom-Json
+$previousReplay = $env:XANTHOS_PROPERTY_REPLAY
+if ($Profile -eq 'Stress') {
+    if (-not $env:XANTHOS_PROPERTY_REPLAY) {
+        $env:XANTHOS_PROPERTY_REPLAY = "$(Get-Random -Minimum 1 -Maximum 2147483647),11400714819323198485"
+    }
+    if ($env:XANTHOS_PROPERTY_REPLAY -notmatch '^\d+,\d+$') { throw 'XANTHOS_PROPERTY_REPLAY must be seed,gamma.' }
+    $parts = $env:XANTHOS_PROPERTY_REPLAY.Split(',')
+    $seedValue = 0UL; $gammaValue = 0UL
+    if (-not [uint64]::TryParse($parts[0], [ref]$seedValue) -or -not [uint64]::TryParse($parts[1], [ref]$gammaValue) -or $gammaValue % 2 -eq 0) {
+        throw 'Property seed and gamma must be UInt64 values; gamma must be odd.'
+    }
+    Write-Output "Stress property replay: $env:XANTHOS_PROPERTY_REPLAY"
+}
 $previousProfile = $env:XANTHOS_TEST_PROFILE
 $previousFailureDirectory = $env:XANTHOS_FAILURE_DIRECTORY
 $env:XANTHOS_TEST_PROFILE = $Profile
@@ -69,16 +84,19 @@ foreach ($name in $Projects) {
     if (Test-Path -LiteralPath $directory) { throw "Refusing to reuse a result directory: $directory" }
     New-Item -ItemType Directory -Path $directory -Force | Out-Null
     $env:XANTHOS_FAILURE_DIRECTORY = Join-Path (Resolve-Path -LiteralPath $directory).Path 'generated-failures'
+    if ($RequireSdkAbsent) {
+        & "$PSScriptRoot/record-windows-managed-environment.ps1" -Directory $directory -RunId $RunId -Commit (git rev-parse HEAD)
+    }
     $selection = $Filter
     $optional = @($plan.cases | Where-Object { $_.project -ceq $project -and $_.requirement -ceq 'optional-fixture' })
     if (-not $selection) {
         if ($Profile -eq 'OptionalFixtures') { $selection = ($optional | ForEach-Object { "FullyQualifiedName=$($_.fqn)" }) -join '|' }
         elseif ($Profile -eq 'Stress') {
-            $selection = if ($name -eq 'UnitTests') { 'FullyQualifiedName~OfficialRecordProperties|FullyQualifiedName~RecordFieldBoundaryProperties|FullyQualifiedName~FieldCategoryProperties|FullyQualifiedName~FieldApplicabilityProperties|FullyQualifiedName~FormatAndDataSpecProperties' } else { 'FullyQualifiedName~SessionModelTests' }
+            $selection = if ($name -eq 'UnitTests') { 'FullyQualifiedName~Xanthos.UnitTests.PropertyTests|FullyQualifiedName~OfficialRecordProperties|FullyQualifiedName~RecordFieldBoundaryProperties|FullyQualifiedName~FieldCategoryProperties|FullyQualifiedName~FieldApplicabilityProperties|FullyQualifiedName~FormatAndDataSpecProperties' } elseif ($name -eq 'PropertyTests') { 'FullyQualifiedName~Xanthos.PropertyTests' } else { 'FullyQualifiedName~SessionModelTests' }
         }
         elseif ($optional.Count -gt 0) { $selection = ($optional | ForEach-Object { "FullyQualifiedName!=$($_.fqn)" }) -join '&' }
     }
-    $context = [ordered]@{ runId = $RunId; profile = $Profile; project = $project; os = $platform; tfm = $tfm; commit = (git rev-parse HEAD); startedAt = [DateTimeOffset]::UtcNow.ToString('o'); filter = $selection; diagnosticFilter = [bool]$Filter; exitCode = $null }
+    $context = [ordered]@{ runId = $RunId; profile = $Profile; project = $project; os = $platform; tfm = $tfm; commit = (git rev-parse HEAD); startedAt = [DateTimeOffset]::UtcNow.ToString('o'); filter = $selection; diagnosticFilter = [bool]$Filter; propertyReplay = $env:XANTHOS_PROPERTY_REPLAY; githubRunId = $env:GITHUB_RUN_ID; githubRunAttempt = $env:GITHUB_RUN_ATTEMPT; exitCode = $null }
     $arguments = @('test', $project, '-c', 'Release', '--logger', 'trx;LogFileName=results.trx', '--results-directory', $directory)
     if ($NoBuild) { $arguments += '--no-build' }
     if ($selection) { $arguments += @('--filter', $selection) }
@@ -102,6 +120,7 @@ foreach ($name in $Projects) {
 }
 }
 finally {
+    $env:XANTHOS_PROPERTY_REPLAY = $previousReplay
     $env:XANTHOS_TEST_PROFILE = $previousProfile
     $env:XANTHOS_FAILURE_DIRECTORY = $previousFailureDirectory
 }

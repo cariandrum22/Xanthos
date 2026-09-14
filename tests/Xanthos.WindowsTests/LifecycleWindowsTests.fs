@@ -137,8 +137,13 @@ module LifecycleWindowsTests =
 
             let timer = Diagnostics.Stopwatch.StartNew()
             let shutdown = Task.Run(fun () -> service.Dispose())
-            Assert.True(shutdown.Wait(8000), "Poisoned Dispose exceeded its five-second STA wait")
-            Assert.True(timer.Elapsed < TimeSpan.FromSeconds 8.)
+
+            Assert.True(
+                shutdown.Wait(6000),
+                "Poisoned Dispose exceeded five seconds plus one second scheduling tolerance"
+            )
+
+            Assert.True(timer.Elapsed < TimeSpan.FromSeconds 6.)
             Assert.Equal(0, probe.Releases)
             Assert.True(probe.Worker.IsAlive)
 

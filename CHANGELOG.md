@@ -25,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Preserve CLI notification errors through cleanup, report queue overflow and pending keys, and capture configuration/Stub output through the injected writer.
+- Unify coverage and test-evidence completeness checks, verify negative-control rejection reasons, and support reproducible varying-seed Stress runs for existing FsCheck properties.
+
 - Bound poisoned-service STA shutdown while retaining normal consent waits and deferred cleanup on the owning STA.
 - Preserve application exceptions during implicit disposal; keep explicit cleanup errors and retryable watch-stop failures observable. Join cancellation-owned shutdown before disconnecting.
 - Serialize legacy COM getters, preserve all seven native event origins, and validate historical/full-width realtime inputs before native calls.

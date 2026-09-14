@@ -7,6 +7,54 @@ open Xunit
 open Xanthos
 
 module ScenarioTests =
+    [<Fact>]
+    let ``Injected writer captures stub output without a COM connection`` () =
+        let output = ResizeArray<string>()
+
+        let deps =
+            Host.dependencies (fun () -> failwith "Unexpected COM connection") output.Add CancellationToken.None
+
+        let code = Xanthos.Cli.Program.runWith deps [| "--stub"; "version" |]
+        Assert.Equal(0, code)
+        Assert.Contains("JV-Link version:", String.Join("\n", output))
+        Assert.Contains("EVIDENCE:MODE=STUB", String.Join("\n", output))
+
+    [<Fact>]
+    let ``Injected writer captures configuration errors before connecting`` () =
+        let output = ResizeArray<string>()
+
+        let deps =
+            Host.dependencies (fun () -> failwith "Unexpected COM connection") output.Add CancellationToken.None
+
+        let code =
+            Xanthos.Cli.Program.runWith deps [| "--com"; "--sid"; "invalid sid"; "version" |]
+
+        Assert.Equal(2, code)
+        Assert.Contains("Configuration error:", String.Join("\n", output))
+
+    [<Fact>]
+    let ``Watch cleanup failure after normal completion fails the command`` () =
+        let native = new NativeFake(SettingsStore())
+
+        native.StopWatchError <-
+            Some
+                { Api = "JVWatchEventClose"
+                  Code = Some -1
+                  Kind = JvErrorKind.Invocation
+                  Outputs = Map.empty
+                  Message = "controlled close failure" }
+
+        use source = new CancellationTokenSource()
+        native.OnWatch <- source.Cancel
+
+        let code, output =
+            Host.runWith (fun () -> Ok(new Session(native))) source.Token [| "watch-events" |]
+
+        Assert.Equal(2, code)
+        Assert.Contains("JVWatchEventClose failed", output)
+        Assert.Contains("controlled close failure", output)
+        Assert.Equal(1, native.Disposals)
+
     [<Theory>]
     [<InlineData("--use-jvgets")>]
     [<InlineData("--no-jvgets")>]

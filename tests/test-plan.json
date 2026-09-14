@@ -2158,10 +2158,30 @@
       ]
     },
     {
-      "id": "T-9db87dcc3b497d396365",
+      "id": "T-9ca5084a58a4ef12f382",
       "project": "tests/Xanthos.FunctionalScenarioTests/Xanthos.FunctionalScenarioTests.fsproj",
       "fqn": "Xanthos.FunctionalScenarioTests.EventAssetScenarios.S12 production callback failure when CLI consumer is blocked is observable",
-      "displayName": "Xanthos.FunctionalScenarioTests.EventAssetScenarios.S12 production callback failure when CLI consumer is blocked is observable",
+      "displayName": "Xanthos.FunctionalScenarioTests.EventAssetScenarios.S12 production callback failure when CLI consumer is blocked is observable(cleanupFails: True)",
+      "groups": [
+        "FunctionalScenarioTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "tfm": "net10.0",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ]
+    },
+    {
+      "id": "T-ed183f87e358b786fb2f",
+      "project": "tests/Xanthos.FunctionalScenarioTests/Xanthos.FunctionalScenarioTests.fsproj",
+      "fqn": "Xanthos.FunctionalScenarioTests.EventAssetScenarios.S12 production callback failure when CLI consumer is blocked is observable",
+      "displayName": "Xanthos.FunctionalScenarioTests.EventAssetScenarios.S12 production callback failure when CLI consumer is blocked is observable(cleanupFails: False)",
       "groups": [
         "FunctionalScenarioTests"
       ],
@@ -3181,7 +3201,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -3202,7 +3223,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -3223,7 +3245,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -3244,7 +3267,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -3265,7 +3289,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -3286,7 +3311,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -3307,7 +3333,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -3333,7 +3360,8 @@
       "tfm": "net10.0",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ]
     },
     {
@@ -3353,7 +3381,8 @@
       "tfm": "net10.0",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ]
     },
     {
@@ -3368,7 +3397,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -3389,7 +3419,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -3410,7 +3441,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -3431,7 +3463,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -3452,7 +3485,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -3473,7 +3507,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -3494,7 +3529,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -3515,7 +3551,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -3536,7 +3573,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -3557,7 +3595,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -3578,7 +3617,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -3599,7 +3639,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -3620,7 +3661,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -3641,7 +3683,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -3662,7 +3705,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -3683,7 +3727,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -3704,7 +3749,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -3725,7 +3771,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -3746,7 +3793,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -3767,7 +3815,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -3788,7 +3837,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -3809,7 +3859,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -35740,7 +35791,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -35761,7 +35813,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -35782,7 +35835,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -35803,7 +35857,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -35824,7 +35879,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -35845,7 +35901,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -35866,7 +35923,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -35887,7 +35945,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -35908,7 +35967,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -35929,7 +35989,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -35950,7 +36011,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -35971,7 +36033,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -35992,7 +36055,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -36013,7 +36077,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -36034,7 +36099,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -36055,7 +36121,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -36076,7 +36143,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -36097,7 +36165,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -36118,7 +36187,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -36139,7 +36209,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -36160,7 +36231,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -36181,7 +36253,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -36202,7 +36275,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -36223,7 +36297,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -36244,7 +36319,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -36265,7 +36341,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -36286,7 +36363,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -36307,7 +36385,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -36328,7 +36407,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -36349,7 +36429,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -36370,7 +36451,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -36391,7 +36473,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -36412,7 +36495,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -36433,7 +36517,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -36454,7 +36539,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -36475,7 +36561,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -36496,7 +36583,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -36517,7 +36605,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -36538,7 +36627,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -36559,7 +36649,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -36580,7 +36671,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -36601,7 +36693,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -36622,7 +36715,8 @@
       "requirement": "required",
       "profiles": [
         "Fast",
-        "Coverage"
+        "Coverage",
+        "Stress"
       ],
       "tfm": "net10.0",
       "os": [
@@ -57854,6 +57948,66 @@
       ]
     },
     {
+      "id": "T-255fc0b0b08a7a3d40ed",
+      "project": "tests/Xanthos.FunctionalScenarioTests/Xanthos.FunctionalScenarioTests.fsproj",
+      "fqn": "Xanthos.FunctionalScenarioTests.ScenarioTests.Watch cleanup failure after normal completion fails the command",
+      "displayName": "Xanthos.FunctionalScenarioTests.ScenarioTests.Watch cleanup failure after normal completion fails the command",
+      "groups": [
+        "FunctionalScenarioTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "tfm": "net10.0",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ]
+    },
+    {
+      "id": "T-5bcebbe90de9ec98e755",
+      "project": "tests/Xanthos.FunctionalScenarioTests/Xanthos.FunctionalScenarioTests.fsproj",
+      "fqn": "Xanthos.FunctionalScenarioTests.ScenarioTests.Injected writer captures stub output without a COM connection",
+      "displayName": "Xanthos.FunctionalScenarioTests.ScenarioTests.Injected writer captures stub output without a COM connection",
+      "groups": [
+        "FunctionalScenarioTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "tfm": "net10.0",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ]
+    },
+    {
+      "id": "T-becf8966e6a24512f07d",
+      "project": "tests/Xanthos.FunctionalScenarioTests/Xanthos.FunctionalScenarioTests.fsproj",
+      "fqn": "Xanthos.FunctionalScenarioTests.ScenarioTests.Injected writer captures configuration errors before connecting",
+      "displayName": "Xanthos.FunctionalScenarioTests.ScenarioTests.Injected writer captures configuration errors before connecting",
+      "groups": [
+        "FunctionalScenarioTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "tfm": "net10.0",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ]
+    },
+    {
       "id": "T-d25103583b02fa8c8843",
       "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
       "fqn": "Xanthos.UnitTests.LegacyRegressionTests.Availability cleanup failure returns false and service disposal retains body exception",
@@ -63339,7 +63493,8 @@
       "T-9ca246d7fc1bdc499c8b",
       "T-9cacffbfe92a5f1dd78c",
       "T-9d36ba4eb73dfab77018",
-      "T-9db87dcc3b497d396365",
+      "T-9ca5084a58a4ef12f382",
+      "T-ed183f87e358b786fb2f",
       "T-9dbf8b1be64d94ffb22a",
       "T-9ea1754d6acb9f57bd1b",
       "T-a00f855bd7a2fb2608cf",

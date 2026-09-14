@@ -70,3 +70,24 @@ foreach ($fault in @('valid', 'missing-case', 'zero', 'skip', 'fail', 'duplicate
 }
 $results | ConvertTo-Json -Depth 8 | Set-Content (Join-Path $root 'gate-negative-cases.json') -Encoding utf8
 Write-Output "PASS: $($results.Count) synthetic evidence controls."
+
+# Structural coverage failures must reach their intended rule, not only the hash guard.
+$coverageSource = Join-Path $root 'coverage-source'
+Write-SyntheticRun $coverageSource $cases[0] windows Coverage
+& "$PSScriptRoot/test-coverage-validator.ps1" -SourceDirectory $coverageSource -OutputDirectory (Join-Path $root 'coverage-controls') -PlanPath $planPath
+
+$environmentPath = Join-Path $root 'windows-environment.json'
+foreach ($fault in @('valid', 'missing', 'sdk-present', 'dll-present', 'wrong-commit', 'wrong-architecture')) {
+    $state = @{ runId = $RunId; commit = 'synthetic-commit'; os = 'windows'; architecture = 'X64'; pointerSize = 8; sdkAbsent = $true; sdkActivatedByPreflight = $false; status = 'pass'; registrations = @(); nativeFiles = @(); services = @() }
+    switch ($fault) {
+        'sdk-present' { $state.sdkAbsent = $false }
+        'dll-present' { $state.nativeFiles = @('synthetic.dll') }
+        'wrong-commit' { $state.commit = 'another-commit' }
+        'wrong-architecture' { $state.architecture = 'X86' }
+    }
+    $state | ConvertTo-Json | Set-Content $environmentPath -Encoding utf8
+    $selected = if ($fault -eq 'missing') { Join-Path $root 'absent.json' } else { $environmentPath }
+    & (Join-Path $PSHOME 'pwsh') -NoProfile -File "$PSScriptRoot/assert-sdk-absence.ps1" -Path $selected -RunId $RunId -Commit synthetic-commit *> (Join-Path $root "sdk-$fault.log")
+    if (($fault -eq 'valid') -ne ($LASTEXITCODE -eq 0)) { throw "Unexpected SDK absence validator outcome: $fault" }
+}
+Write-Output 'PASS: six SDK absence evidence controls.'

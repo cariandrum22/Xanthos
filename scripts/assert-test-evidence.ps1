@@ -35,7 +35,7 @@ foreach ($definition in $trx.TestRun.TestDefinitions.UnitTest) {
 }
 $seen = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
 $passed = 0; $skipped = 0
-foreach ($result in @($trx.TestRun.Results.UnitTestResult)) {
+foreach ($result in @($trx.TestRun.Results.UnitTestResult | Where-Object { $null -ne $_ })) {
     if (-not $byName.ContainsKey($result.testName)) { throw "Unexpected or unmapped test: $($result.testName)" }
     $case = $byName[$result.testName]
     if (-not $seen.Add($case.id)) { throw "Duplicate result: $($case.id)" }

@@ -20,6 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../Shared/ReplayProperty.fs" Link="ReplayProperty.fs" />
     <Compile Include="Generators.fs" />
     <Compile Include="PropertyTests.fs" />
     <Compile Include="TextRoundtripTests.fs" />

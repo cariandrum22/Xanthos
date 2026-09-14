@@ -20,7 +20,8 @@ if ($hashes.Count -ne 1) { throw 'Conflicting collector attachments in one run.'
 if ($context.profile -eq 'Coverage' -and ($context.coverageSha256.Count -ne 1 -or $hashes[0].ToLowerInvariant() -cne $context.coverageSha256[0])) { throw 'Coverage differs from the completed invocation hash.' }
 $report = $reports | Sort-Object { $_.FullName.Length } | Select-Object -First 1
 if ($report.Length -eq 0 -or $report.LastWriteTimeUtc -lt $started.UtcDateTime) { throw 'Empty or stale coverage report.' }
-[xml]$xml = Get-Content -LiteralPath $report.FullName -Raw
+try { [xml]$xml = Get-Content -LiteralPath $report.FullName -Raw }
+catch { throw 'Malformed coverage XML.' }
 $package = @($xml.coverage.packages.package | Where-Object name -CEQ 'Xanthos')
 if ($package.Count -ne 1) { throw 'Coverage must contain exactly one Xanthos production module.' }
 $lines = @{}
@@ -34,23 +35,11 @@ foreach ($class in $package[0].classes.class) {
 }
 $covered = @($lines.Values | Where-Object { $_ -gt 0 }).Count
 if ($lines.Count -eq 0 -or $covered -eq 0) { throw 'No executed Xanthos production lines.' }
-[xml]$trx = Get-Content -LiteralPath (Join-Path $directory 'results.trx') -Raw
-$results = @($trx.TestRun.Results.UnitTestResult)
-$plan = Get-Content -LiteralPath $PlanPath -Raw | ConvertFrom-Json
-$planned = @($plan.cases | Where-Object { $_.project -ceq $Project -and (-not $context.profile -or $context.profile -cin $_.profiles) })
-$names = [Collections.Generic.Dictionary[string, object]]::new([StringComparer]::Ordinal)
-foreach ($case in $planned) { $names[$case.displayName] = $case }
-$ids = @()
-foreach ($result in $results) {
-    if (-not $names.ContainsKey($result.testName)) { throw "Unmapped coverage test: $($result.testName)" }
-    $case = $names[$result.testName]
-    if ($result.outcome -cne 'Passed' -and -not ($result.outcome -ceq 'NotExecuted' -and $case.id -cin $plan.optionalSkipAllowlist)) {
-        throw "Unsuccessful coverage test: $($case.id) $($result.outcome)"
-    }
-    $ids += $case.id
-}
-if ($ids.Count -eq 0 -or @($ids | Sort-Object -Unique).Count -ne $ids.Count) { throw 'Missing or duplicate coverage test identities.' }
-if (-not $context.filter -and $ids.Count -ne $planned.Count) { throw 'Incomplete full coverage suite.' }
+# One authoritative TRX/plan contract. Revalidate rather than trust an old manifest.
+if ($context.diagnosticFilter) { throw 'Diagnostic coverage is not full-suite acceptance evidence.' }
+& "$PSScriptRoot/assert-test-evidence.ps1" -ResultsDirectory $directory -RunId $RunId -Profile $context.profile -Project $Project -ExpectedOs $context.os -ExpectedTfm $context.tfm -PlanPath $PlanPath
+$evidence = Get-Content (Join-Path $directory 'test-evidence.json') -Raw | ConvertFrom-Json
+$ids = @($evidence.caseIds)
 # Module totals include branch identities from the collector. Do not sum method
 # line entries (F# generated methods can share a source line).
 $branchLines = @{}

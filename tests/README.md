@@ -18,7 +18,7 @@ are written beneath `.artifacts/test-quality/<run>/<os>/<tfm>/<profile>/`.
 | Fast | Unit/Contract, FsCheck, functional CLI scenarios, legacy Stub smoke | All three CI operating systems; SDK unnecessary |
 | Coverage | Unit, Property and FunctionalScenario projects with VSTest Coverlet collector | Production module and individual results required |
 | WindowsManaged | Actual WINDOWS assembly, STA, locale, HWND, BSTR/SAFEARRAY and registration rollback | Windows x64, no JV-Link activation or key |
-| Stress | Official record generators and session models | Fixed seeds; local runs (scheduled CI prepared separately) |
+| Stress | Official record generators, all existing FsCheck properties and session models | Recorded FsCheck seed; fixed record/model seeds |
 | OptionalFixtures | Exact 13-case fixture allowlist | Missing data is `not-run`, never a passing real-data test |
 | Com | Existing 15 required/negative tests against published CLI | Registered JV-Link 5.0 x64; explicit publication interval |
 | Interactive | Exclusive real settings change, fresh-session verification and restoration | Signed-in desktop; notification collector must have ended |
@@ -39,6 +39,13 @@ checks exact values, byte ownership, call order and cleanup. Production `--com`
 uses the real connection factory. No public injection API or fake CLI option
 exists. See [functional scenarios](Xanthos.FunctionalScenarioTests/scenarios.md).
 
+CLI notification queues are bounded. Overflow fails the command with its origin,
+key and capacity; accepted but unprocessed keys appear as `EVENT_PENDING` with
+`retrieval=not-run`, followed by counts. These keys can be retrieved later;
+`--open-after` does not claim they were retrieved. Cleanup failures are reported
+alongside the original error. Subscription overflow can also stop delivery before
+events reach the CLI queue; this is not a lossless durable notification collector.
+
 The 54 cases in `Cli.E2E` are legacy Stub smoke, consent boundaries and harness
 checks. They are not 54 successful native API operations. The two independent
 setter/getter smoke tests were renamed from `round-trip` to `separate process
@@ -56,6 +63,9 @@ wrong run/OS/TFM and changed TRX hashes fail `assert-test-evidence.ps1`.
 Coverage must contain executed production lines; no percentage threshold or
 production exclusion hides missing measurements. Reports remain separate by
 OS/TFM/project. Identical collector attachment copies count once.
+Coverage reuses the same TRX/plan validator. Explicit diagnostic coverage subsets
+are rejected as acceptance evidence. Negative controls check specific rejection
+reasons, including a separate hash-tampering control.
 
 Discover each of the six test projects with
 `dotnet test <project> -c Release --no-build --list-tests`. For FunctionalScenario,
@@ -80,8 +90,12 @@ Fast uses three fixed record/model seeds: 104729, 130363 and 155921. Each offici
 record ID receives 100 examples per seed; Stress raises this to 1,000 without
 source edits. Nonblank bodies, leap dates and missing dates have asserted
 classification counts. Legacy formats and field-codec boundaries supplement
-the independent 1,270-field contracts. FsCheck uses replay `104729,130363`, size
-100 and domain-specific shrinking. Model failures save the seed and original/
+the independent 1,270-field contracts. Fast FsCheck uses replay `104729,130363`, size
+100 and domain-specific shrinking. Stress includes the existing UnitTests and
+PropertyTests properties and chooses a fresh replay seed, stored as `propertyReplay`
+in each invocation. To reproduce it, set `XANTHOS_PROPERTY_REPLAY=seed,gamma` before
+running the Stress profile with a fresh run ID. Direct Stress test runs also require
+this variable. Model failures save the seed and original/
 minimized integer command traces; commands are defined in `SessionModelTests.fs`.
 Stress uses ten model seeds, 100 sequences each, with 200–250 operations.
 Use `-Filter 'FullyQualifiedName~OfficialRecordProperties'` for a local subset.
@@ -171,7 +185,10 @@ SDK consent waits for the user's decision without an automatic timeout. Refusal 
 
 For Q08 evidence, `scripts/run-windows-managed-ci.ps1 -RunId <unique-id>` first
 checks both registry views, SDK DLLs and services without activating COM. It requires
-a Windows x64 runner without JV-Link. The dedicated `q08-windows-managed.yml`
+a Windows x64 runner without JV-Link. The underlying profile accepts
+`-RequireSdkAbsent` and stores `windows-environment.json` beside its invocation.
+Ordinary local WindowsManaged runs remain usable with an installed SDK.
+The dedicated `q08-windows-managed.yml`
 workflow runs only this profile and retains the environment record and TRX; its
 actual CI result is required separately from tests on an SDK-installed developer PC.
 

@@ -23,6 +23,7 @@ type internal NativeFake(store: SettingsStore) =
     member val Handler: string -> obj[] -> Result<obj, JvError> option = (fun _ _ -> None) with get, set
     member val OnWatch: unit -> unit = ignore with get, set
     member val DisposeError: JvError option = None with get, set
+    member val StopWatchError: JvError option = None with get, set
 
     member _.Emit kind key =
         callback |> Option.iter (fun action -> action { Kind = kind; RawKey = key })
@@ -79,10 +80,14 @@ type internal NativeFake(store: SettingsStore) =
             this.OnWatch()
             Ok()
 
-        member _.StopWatch() =
+        member this.StopWatch() =
             lock calls (fun () -> calls.Add "JVWatchEventClose")
-            callback <- None
-            Ok()
+
+            match this.StopWatchError with
+            | Some error -> Error error
+            | None ->
+                callback <- None
+                Ok()
 
         member this.Dispose() =
             lock calls (fun () -> calls.Add "Dispose")

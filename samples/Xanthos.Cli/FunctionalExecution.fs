@@ -100,6 +100,11 @@ type internal CommandRunner(dependencies: Dependencies) =
             exitCode <- 2
             printfn "%s failed: code=%A %s" error.Api error.Code error.Message
 
+            for name in [ "key"; "origin"; "capacity" ] do
+                error.Outputs
+                |> Map.tryFind name
+                |> Option.iter (fun value -> printfn "%s=%s" name value)
+
             error.Outputs
             |> Map.tryFind "filename"
             |> Option.iter (fun value -> printfn "Recovery filename: %s" value)
@@ -293,44 +298,104 @@ type internal CommandRunner(dependencies: Dependencies) =
 
     let watch config (args: WatchArgs) (token: CancellationToken) session =
         use queue = new BlockingCollection<JvEvent>(dependencies.EventQueueCapacity)
+        let gate = obj ()
+        let mutable overflow = None
+        let mutable accepting = true
+        let mutable accepted = 0L
+        let mutable processed = 0L
 
         let enqueue event =
-            if not (queue.TryAdd event) then
-                raise (InvalidOperationException("CLI event queue capacity was exceeded."))
+            let mutable failed = false
+
+            lock gate (fun () ->
+                if accepting && overflow.IsNone then
+                    if queue.TryAdd event then
+                        accepted <- accepted + 1L
+                    else
+                        failed <- true
+
+                        overflow <-
+                            Some
+                                { Api = "cliEventQueue"
+                                  Code = None
+                                  Kind = JvErrorKind.Busy
+                                  Outputs =
+                                    Map.ofList
+                                        [ "key", event.RawKey
+                                          "origin", string event.Kind
+                                          "capacity", string dependencies.EventQueueCapacity ]
+                                  Message =
+                                    "CLI event queue capacity was exceeded; pending keys are listed for later retrieval." })
+
+            if failed then
+                printfn
+                    "QUEUE_OVERFLOW origin=%A rawKey=%s capacity=%d"
+                    event.Kind
+                    event.RawKey
+                    dependencies.EventQueueCapacity
 
         use subscription = JvLink.subscribe enqueue session |> require
         let timer = Diagnostics.Stopwatch.StartNew()
+        let mutable bodyFailed = false
 
         try
-            while not token.IsCancellationRequested
-                  && (args.Duration |> Option.forall (fun span -> timer.Elapsed < span)) do
-                JvLink.subscriptionError subscription
+            try
+                while not token.IsCancellationRequested
+                      && (args.Duration |> Option.forall (fun span -> timer.Elapsed < span)) do
+                    lock gate (fun () -> overflow)
+                    |> Option.iter (fun e -> raise (CommandFailure e))
+
+                    JvLink.subscriptionError subscription
+                    |> Option.iter (fun e -> raise (CommandFailure e))
+
+                    let mutable evt = Unchecked.defaultof<JvEvent>
+
+                    if queue.TryTake(&evt) then
+                        printfn "EVENT origin=%A rawKey=%s" evt.Kind evt.RawKey
+
+                        if args.OpenAfterRealtime then
+                            let request = JvLink.toRealtimeRequest evt |> require
+
+                            let code =
+                                withConnection
+                                    config
+                                    (realtime
+                                        true
+                                        { Spec = request.Dataspec
+                                          Key = request.Key
+                                          Continuous = false }
+                                        token)
+
+                            if code <> 0 then
+                                invalid "watch-events" "Event retrieval failed."
+
+                        processed <- processed + 1L
+                    else
+                        token.WaitHandle.WaitOne(100) |> ignore
+                // Cancellation/duration must not hide an overflow that raced with exit.
+                lock gate (fun () ->
+                    accepting <- false
+                    overflow)
+                |> Option.orElseWith (fun () -> JvLink.subscriptionError subscription)
                 |> Option.iter (fun e -> raise (CommandFailure e))
-
-                let mutable evt = Unchecked.defaultof<JvEvent>
-
-                if queue.TryTake(&evt) then
-                    printfn "EVENT origin=%A rawKey=%s" evt.Kind evt.RawKey
-
-                    if args.OpenAfterRealtime then
-                        let request = JvLink.toRealtimeRequest evt |> require
-
-                        let code =
-                            withConnection
-                                config
-                                (realtime
-                                    true
-                                    { Spec = request.Dataspec
-                                      Key = request.Key
-                                      Continuous = false }
-                                    token)
-
-                        if code <> 0 then
-                            invalid "watch-events" "Event retrieval failed."
-                else
-                    token.WaitHandle.WaitOne(100) |> ignore
+            with _ ->
+                bodyFailed <- true
+                reraise ()
         finally
-            JvLink.unsubscribe subscription |> require
+            lock gate (fun () -> accepting <- false)
+            let stopped = JvLink.unsubscribe subscription
+            // Accepted keys are retained in output even when retrieval cannot continue.
+            let pending = queue.Count
+            let mutable evt = Unchecked.defaultof<JvEvent>
+
+            while queue.TryTake(&evt) do
+                printfn "EVENT_PENDING origin=%A rawKey=%s retrieval=not-run" evt.Kind evt.RawKey
+
+            printfn "Watch summary: accepted=%d processed=%d pending=%d" accepted processed pending
+
+            match stopped with
+            | Error error when bodyFailed -> printfn "Cleanup failed: %s code=%A %s" error.Api error.Code error.Message
+            | result -> result |> require
 
         printfn "Watch stopped."
 
