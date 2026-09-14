@@ -71,6 +71,8 @@ module Parsing =
             | "--save-path" :: [] -> Error "Option '--save-path' requires a value."
             | "--save-path" :: v :: rest -> loop { raw with SavePath = Some v } rest
             | "--stub" :: rest -> loop { raw with ForceStub = true } rest
+            | "--com" :: rest -> loop { raw with ForceCom = true } rest
+            | "--non-interactive" :: rest -> loop { raw with NonInteractive = true } rest
             | "--diag" :: rest -> loop { raw with EnableDiagnostics = true } rest
             | "--use-jvgets" :: rest -> loop { raw with UseJvGets = Some true } rest
             | "--no-jvgets" :: rest -> loop { raw with UseJvGets = Some false } rest
@@ -83,6 +85,8 @@ module Parsing =
               ServiceKey = None
               SavePath = None
               ForceStub = false
+              ForceCom = false
+              NonInteractive = false
               EnableDiagnostics = false
               ShowHelp = false
               UseJvGets = None }
@@ -91,6 +95,12 @@ module Parsing =
 
     let buildGlobalSettings (raw: GlobalRawOptions) : Result<GlobalSettings, string> =
         result {
+            do!
+                if raw.ForceStub && raw.ForceCom then
+                    Error "Choose either --com or --stub."
+                else
+                    Ok()
+
             if raw.ShowHelp then
                 return
                     { Sid = ""
@@ -98,6 +108,7 @@ module Parsing =
                       SavePath = None
                       StubPreference = StubPreference.PreferCom
                       EnableDiagnostics = raw.EnableDiagnostics
+                      NonInteractive = raw.NonInteractive
                       UseJvGets = None }
             else
                 // SID defaults to "UNKNOWN" - can be overridden via --sid or environment variable
@@ -118,6 +129,8 @@ module Parsing =
                 let basePref =
                     if raw.ForceStub then
                         StubPreference.ForcedByUser
+                    elif raw.ForceCom then
+                        StubPreference.PreferCom
                     elif not (OperatingSystem.IsWindows()) then
                         StubPreference.ForcedByPlatform
                     else
@@ -129,6 +142,7 @@ module Parsing =
                       SavePath = savePath
                       StubPreference = basePref
                       EnableDiagnostics = raw.EnableDiagnostics
+                      NonInteractive = raw.NonInteractive
                       UseJvGets = raw.UseJvGets }
         }
 
@@ -340,6 +354,7 @@ module Parsing =
         | "--max-records" :: [] -> Error "capture-fixtures: option '--max-records' requires a value."
         | "--max-records" :: v :: rest -> parseCaptureFixturesArgs { state with MaxRecords = Some v } rest
         | "--use-jvgets" :: rest -> parseCaptureFixturesArgs { state with UseJvGets = true } rest
+        | "--no-jvgets" :: rest -> parseCaptureFixturesArgs { state with UseJvGets = false } rest
         | u :: _ -> Error $"capture-fixtures: unknown option '{u}'."
 
     /// Default specs for comprehensive coverage of core record types
@@ -351,7 +366,7 @@ module Parsing =
     /// Default from time: 30 days ago
     let private defaultCaptureFromTime () = DateTime.Now.AddDays(-30.0)
 
-    let parseCaptureFixtures (tokens: string list) : Result<Command, string> =
+    let private parseCaptureFixturesWithDefault useJvGets (tokens: string list) : Result<Command, string> =
         result {
             let! raw =
                 parseCaptureFixturesArgs
@@ -360,7 +375,7 @@ module Parsing =
                       From = None
                       To = None
                       MaxRecords = None
-                      UseJvGets = false }
+                      UseJvGets = useJvGets }
                     tokens
 
             // All fields have sensible defaults - arguments are for override only
@@ -406,10 +421,18 @@ module Parsing =
                       UseJvGets = raw.UseJvGets }
         }
 
+    let parseCaptureFixtures tokens =
+        parseCaptureFixturesWithDefault false tokens
+
     let parseCommand (name: string) (tokens: string list) : Result<Command, string> =
         match name.ToLowerInvariant() with
         | "help" -> ensureNoExtra "help" tokens |> Result.map (fun () -> Help)
         | "download" -> parseDownload tokens
+        | "session-check" ->
+            parseDownload tokens
+            |> Result.map (function
+                | Download args -> SessionCheck args
+                | command -> command)
         | "realtime" -> parseRealtime tokens
         | "status" -> ensureNoExtra "status" tokens |> Result.map (fun () -> Status)
         | "skip" -> ensureNoExtra "skip" tokens |> Result.map (fun () -> Skip)
@@ -472,6 +495,11 @@ module Parsing =
             | [] when rawGlobals.ShowHelp -> return { Globals = globals; Command = Help }
             | [] -> return! Error "No command specified. Run with --help to list commands."
             | cmd :: rest ->
-                let! pc = parseCommand cmd rest
+                let! pc =
+                    if cmd.Equals("capture-fixtures", StringComparison.OrdinalIgnoreCase) then
+                        parseCaptureFixturesWithDefault (defaultArg globals.UseJvGets false) rest
+                    else
+                        parseCommand cmd rest
+
                 return { Globals = globals; Command = pc }
         }

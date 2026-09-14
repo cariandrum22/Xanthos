@@ -1,5 +1,7 @@
 <Project>
   <PropertyGroup>
+    <VersionPrefix>0.3.0</VersionPrefix>
+
     <!-- Enable cross-compilation of Windows targets on non-Windows systems -->
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
 

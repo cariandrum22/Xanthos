@@ -4,6 +4,17 @@ open System
 open Xanthos.Core
 
 module ComClientFactory =
+    let internal tryCreateWithActivator (activate: unit -> IJvLinkClient) : Result<IJvLinkClient, ComFault> =
+        try
+            Ok(activate ())
+        with
+        | ComActivationException fault -> Error fault
+        | ex ->
+            Error
+                { Reason = ComFaultReason.ActivationFailure
+                  Details = $"JV-Link activation failed in a {IntPtr.Size * 8}-bit process: {ex.Message}"
+                  Exception = Some ex }
+
     /// <summary>
     /// Attempts to create a COM-backed JV-Link client.
     /// </summary>
@@ -14,45 +25,30 @@ module ComClientFactory =
     /// </returns>
     /// <remarks>
     /// <para>
-    /// <b>Important:</b> JV-Link COM server only runs in 32-bit (x86) processes.
-    /// Attempting to create a client from a 64-bit process will fail with
-    /// REGDB_E_CLASSNOTREG because the COM server is not registered for 64-bit.
+    /// Windows resolves the COM registration matching the current process architecture.
+    /// Install the x64 JV-Link server for an x64 process, or x86 for an x86 process.
     /// </para>
     /// <para>
-    /// Ensure your application targets x86 or AnyCPU with "Prefer 32-bit" enabled.
+    /// Activation failures are returned explicitly; this function never creates a stub.
     /// </para>
     /// </remarks>
     let tryCreate (useJvGets: bool option) : Result<IJvLinkClient, ComFault> =
 #if WINDOWS
-        // JV-Link COM server is x86 only - fail early with clear error message
-        if Environment.Is64BitProcess then
-            Error
-                { Reason = ComFaultReason.ActivationFailure
-                  Details =
-                    "JV-Link COM server requires a 32-bit (x86) process. "
-                    + "The current process is 64-bit. Configure your application to target x86 or "
-                    + "use AnyCPU with 'Prefer 32-bit' enabled in project settings."
-                  Exception = None }
-        else
-            try
-                let client =
-                    match useJvGets with
-                    | Some value -> new ComJvLinkClient(useJvGets = value) :> IJvLinkClient
-                    | None -> new ComJvLinkClient() :> IJvLinkClient
+        let progId =
+            match Environment.GetEnvironmentVariable "XANTHOS_COM_PROGID" with
+            | null
+            | "" -> "JVDTLab.JVLink"
+            | value -> value
 
-                Ok client
-            with
-            | ComActivationException fault -> Error fault
-            | ex ->
-                Error
-                    { Reason = ComFaultReason.ActivationFailure
-                      Details = ex.Message
-                      Exception = Some ex }
+        tryCreateWithActivator (fun () ->
+            match useJvGets with
+            | Some value -> new ComJvLinkClient(useJvGets = value, progId = progId) :> IJvLinkClient
+            | None -> new ComJvLinkClient(progId = progId) :> IJvLinkClient)
 #else
         let details =
             if OperatingSystem.IsWindows() then
                 "COM interop is available only in the net10.0-windows build."
-                + " Ensure you reference the Windows target and run in a 32-bit (x86) process."
+                + " Reference the Windows target and install JV-Link matching your process architecture."
             else
                 "Non-Windows platform"
 
@@ -69,14 +65,24 @@ module ComClientFactory =
     /// This function properly releases the COM reference after checking availability
     /// to prevent RCW (Runtime Callable Wrapper) leaks.
     /// </remarks>
-    let isComAvailable () =
-        match tryCreate None with
+    let internal isComAvailableWith create =
+        match create () with
         | Ok c ->
-            c.Close()
-            // Properly dispose the COM client if it implements IDisposable
-            match box c with
-            | :? IDisposable as d -> d.Dispose()
-            | _ -> ()
-
-            true
+            try
+                match box c with
+                | :? Xanthos.INativeCleanup as cleanup ->
+                    match cleanup.Cleanup() with
+                    | Ok() -> true
+                    | Error error ->
+                        Xanthos.CleanupFailure.report error
+                        false
+                | _ ->
+                    (c: IJvLinkClient).Dispose()
+                    true
+            with ex ->
+                Diagnostics.emit $"COM availability cleanup failed: {ex.Message}"
+                false
         | Error _ -> false
+
+    let isComAvailable () =
+        isComAvailableWith (fun () -> tryCreate None)

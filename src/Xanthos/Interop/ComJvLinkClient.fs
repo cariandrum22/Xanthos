@@ -12,18 +12,50 @@ open Xanthos.Interop.ComInterop
 exception ComActivationException of ComFault
 
 #if WINDOWS
+module internal JvLinkLocale =
+    [<DllImport("kernel32.dll", SetLastError = true)>]
+    extern bool SetThreadLocale(uint32 locale)
+
+    let initialize () =
+        // JV-Link converts Japanese BSTR values through the native thread locale.
+        // Configure only the owned STA, leaving the caller and OS settings intact.
+        let culture = Globalization.CultureInfo.GetCultureInfo("ja-JP")
+        Globalization.CultureInfo.CurrentCulture <- culture
+        Globalization.CultureInfo.CurrentUICulture <- culture
+
+        if not (SetThreadLocale(uint32 culture.LCID)) then
+            raise (ComponentModel.Win32Exception(Marshal.GetLastWin32Error()))
+
 /// Reflection-based JV-Link COM client implementation that avoids static COM references.
 /// Implements IDisposable to properly release COM resources and prevent RCW leaks.
-type ComJvLinkClient(?useJvGets: bool) =
+type internal ComClientActivation =
+    { Resolve: string -> Type
+      Create: Type -> obj
+      Release: obj -> unit }
+
+    static member Default =
+        { Resolve = fun id -> Type.GetTypeFromProgID(id, throwOnError = false)
+          Create = fun nativeType -> Activator.CreateInstance nativeType
+          Release = fun instance -> Marshal.FinalReleaseComObject(instance) |> ignore }
+
+type ComJvLinkClient
+    internal (activation: ComClientActivation, ?useJvGets: bool, ?progId: string, ?eventConnector: ComEventConnector) as this
+    =
+    // A failed constructor has no complete ownership graph for finalization.
+    // Enable the finalizer only after every field has been initialized.
+    do GC.SuppressFinalize this
+
     let useJvGetsOverride = useJvGets
+    let eventConnector = defaultArg eventConnector ComEventConnector.Default
     // Note: The ProgID is "JVDTLab.JVLink" (not "JVDTLabLib.JVLink")
     // JVDTLabLib is the type library name used in VB6 references
-    let progId = "JVDTLab.JVLink"
-    let jvType = Type.GetTypeFromProgID(progId, throwOnError = false)
+    let progId = defaultArg progId "JVDTLab.JVLink"
+    let jvType = activation.Resolve progId
 
     do
         if isNull jvType then
-            Diagnostics.emit $"COM activation failed: ProgID '{progId}' not found. Falling back to stub."
+            Diagnostics.emit
+                $"COM activation failed: ProgID '{progId}' is not registered for this {IntPtr.Size * 8}-bit process."
 
             raise (
                 ComActivationException
@@ -35,1148 +67,570 @@ type ComJvLinkClient(?useJvGets: bool) =
     let dispatcher: IComDispatcher =
         new StaThreadDispatcher("JV-Link STA Dispatcher") :> IComDispatcher
 
-    let syncRoot = obj ()
-    // Reusable byte buffer for JVGets to avoid repeated allocations
-    let getsBuffer = Array.zeroCreate<byte> 65536
-    let getsFilename = System.Text.StringBuilder(260)
-    let clear (sb: System.Text.StringBuilder) = sb.Clear() |> ignore
     // Event sink for COM event delivery (instance-based, not global)
     let eventSink = JvLinkEventSink()
     let mutable eventSubscription: EventSubscription option = None
-    let mutable disposed = false
+    let mutable disposeState = 0
+    let lifetime = NativeSessionLifetime()
+    let mutable nativeThreadId = 0
 
     let comObj =
         try
             dispatcher.Invoke(
                 "JVLink.Activate",
                 fun () ->
-                    Diagnostics.emit $"COM activation succeeded for ProgID '{progId}'."
-                    Activator.CreateInstance jvType
+                    nativeThreadId <- Environment.CurrentManagedThreadId
+                    JvLinkLocale.initialize ()
+                    let instance = activation.Create jvType
+                    Diagnostics.emit $"COM activation succeeded for ProgID '{progId}' ({IntPtr.Size * 8}-bit)."
+                    instance
             )
         with ex ->
             (dispatcher :> IDisposable).Dispose()
             reraise ()
 
-    let invokeOnSta name work = dispatcher.Invoke(name, work)
+    let invokeOnSta name work =
+        if System.Threading.Volatile.Read(&disposeState) <> 0 then
+            raise (ObjectDisposedException("ComJvLinkClient"))
 
-    let invoke (name: string) (args: obj[]) : obj =
-        invokeOnSta name (fun () ->
-            lock syncRoot (fun () ->
+        dispatcher.Invoke(name, work)
+
+    let resultOnSta name work =
+        try
+            invokeOnSta name work
+        with :? ObjectDisposedException ->
+            Error(InvalidState $"{name}: JV-Link client has been disposed.")
+
+    let nativeError api (ex: exn) : Xanthos.JvError =
+        let rec cause (error: exn) =
+            match error with
+            | :? TargetInvocationException when not (isNull error.InnerException) -> cause error.InnerException
+            | _ -> error
+
+        let actual = cause ex
+
+        match actual with
+        | Xanthos.SessionCleanupException error -> error
+        | _ ->
+            { Api = api
+              Code = Some actual.HResult
+              Kind =
+                if actual :? ObjectDisposedException then
+                    Xanthos.JvErrorKind.Disposed
+                else
+                    Xanthos.JvErrorKind.Invocation
+              Outputs = Map.empty
+              Message = actual.Message }
+
+    let nativeInvoke name flags (args: obj[]) byRefIndices =
+        try
+            invokeOnSta name (fun () ->
+                let modifiers =
+                    if List.isEmpty byRefIndices then
+                        null
+                    else
+                        let mutable modifier = ParameterModifier(args.Length)
+
+                        for index in byRefIndices do
+                            modifier.[index] <- true
+
+                        [| modifier |]
+
                 Diagnostics.emit $"CALL {name} args={args.Length}"
 
-                try
-                    let rv = jvType.InvokeMember(name, BindingFlags.InvokeMethod, null, comObj, args)
-                    let typeName = if isNull rv then "null" else rv.GetType().Name
-                    Diagnostics.emit ($"RET {name} type={typeName}")
-                    rv
-                with ex ->
-                    Diagnostics.emit $"ERR {name} ex={ex.Message}"
+                let value =
+                    jvType.InvokeMember(name, flags, null, comObj, args, modifiers, null, null)
 
-                    raise (
-                        ComActivationException
-                            { Reason = ComFaultReason.InvocationFailure
-                              Details = $"Invocation failure calling {name}: {ex.Message}"
-                              Exception = Some ex }
-                    )))
+                match value with
+                | :? int as code when flags = BindingFlags.InvokeMethod ->
+                    lifetime.Observe(name, code)
+                    Diagnostics.emit $"OK {name} code={code}"
+                | _ -> ()
 
-    let invokeCode name args : int =
-        match invoke name args with
-        | :? int as i ->
-            Diagnostics.emit $"OK {name} code={i}"
-            i
-        | null ->
-            Diagnostics.emit $"OK {name} code=0 (null)"
-            0
-        | other ->
-            Diagnostics.emit $"WARN unexpected return type from {name}: {other.GetType().Name}"
-            0
+                Ok value)
+        with ex ->
+            Error(nativeError name ex)
 
-    /// Invokes a COM method with explicit ByRef parameter handling.
-    /// byRefIndexes specifies which parameter indexes should be passed by reference.
-    let invokeWithByRef (name: string) (args: obj[]) (byRefIndexes: int list) : int =
-        invokeOnSta name (fun () ->
-            lock syncRoot (fun () ->
-                Diagnostics.emit $"CALL {name} args={args.Length}"
+    // The legacy interface is an adapter over the same operations as the functional API.
+    // Its narrower historical return types remain lossy; use JvLink for all raw outputs.
+    let legacySession =
+        lazy
+            (new Xanthos.Session(
+                this :> Xanthos.INativeJvLink,
+                dispatch = (fun work -> dispatcher.Invoke("legacy", work))
+            ))
 
-                try
-                    let modifiers =
-                        if List.isEmpty byRefIndexes then
-                            null
-                        else
-                            let mutable pm = ParameterModifier(args.Length)
+    let legacy result =
+        result
+        |> Result.mapError (fun (error: Xanthos.JvError) ->
+            match error.Kind, error.Code with
+            | Xanthos.JvErrorKind.Sdk, Some code ->
+                match ErrorCodes.interpret error.Api code with
+                | Error mapped -> mapped
+                | Ok() -> Unexpected error.Message
+            | Xanthos.JvErrorKind.Invocation, Some code -> CommunicationFailure(code, error.Message)
+            | Xanthos.JvErrorKind.InvalidInput, _ -> InvalidInput error.Message
+            | _ -> InvalidState error.Message)
 
-                            for idx in byRefIndexes do
-                                if idx >= 0 && idx < args.Length then
-                                    pm.[idx] <- true
+    let run operation = operation legacySession.Value |> legacy
 
-                            [| pm |]
-
-                    let rv =
-                        jvType.InvokeMember(
-                            name,
-                            BindingFlags.InvokeMethod,
-                            null,
-                            comObj,
-                            args,
-                            modifiers,
-                            null,
-                            null
-                        )
-
-                    match rv with
-                    | :? int as i ->
-                        Diagnostics.emit $"OK {name} code={i}"
-                        i
-                    | null ->
-                        Diagnostics.emit $"OK {name} code=0 (null)"
-                        0
-                    | other ->
-                        Diagnostics.emit $"WARN unexpected return type from {name}: {other.GetType().Name}"
-                        0
-                with ex ->
-                    Diagnostics.emit $"ERR {name} ex={ex.Message}"
-
-                    raise (
-                        ComActivationException
-                            { Reason = ComFaultReason.InvocationFailure
-                              Details = $"Invocation failure calling {name}: {ex.Message}"
-                              Exception = Some ex }
-                    )))
-
-    let getPropertyInt name =
-        invokeOnSta $"get-{name}" (fun () ->
-            lock syncRoot (fun () ->
-                try
-                    jvType.InvokeMember(name, BindingFlags.GetProperty, null, comObj, [||]) :?> int
-                with ex ->
-                    Diagnostics.emit $"ERR reading property {name}: {ex.Message}"
-                    0))
-
-    let getPropertyString name =
-        invokeOnSta $"get-{name}" (fun () ->
-            lock syncRoot (fun () ->
-                try
-                    match jvType.InvokeMember(name, BindingFlags.GetProperty, null, comObj, [||]) with
-                    | :? string as s -> s
-                    | null -> ""
-                    | _ -> ""
-                with ex ->
-                    Diagnostics.emit $"ERR reading property {name}: {ex.Message}"
-                    ""))
-
-    let getPropertyInt64 name =
-        invokeOnSta $"get-{name}" (fun () ->
-            lock syncRoot (fun () ->
-                try
-                    match jvType.InvokeMember(name, BindingFlags.GetProperty, null, comObj, [||]) with
-                    | :? int64 as i -> i
-                    | :? int as i -> int64 i
-                    | _ -> 0L
-                with ex ->
-                    Diagnostics.emit $"ERR reading property {name}: {ex.Message}"
-                    0L))
-
-    // Result-returning property getters for explicit error handling
-    let tryGetPropertyInt name : Result<int, ComError> =
-        invokeOnSta $"try-get-{name}" (fun () ->
-            lock syncRoot (fun () ->
-                try
-                    Ok(jvType.InvokeMember(name, BindingFlags.GetProperty, null, comObj, [||]) :?> int)
-                with ex ->
-                    Diagnostics.emit $"ERR reading property {name}: {ex.Message}"
-                    Error(Unexpected $"Failed to read property {name}: {ex.Message}")))
-
-    let tryGetPropertyString name : Result<string, ComError> =
-        invokeOnSta $"try-get-{name}" (fun () ->
-            lock syncRoot (fun () ->
-                try
-                    match jvType.InvokeMember(name, BindingFlags.GetProperty, null, comObj, [||]) with
-                    | :? string as s -> Ok s
-                    | null -> Ok ""
-                    | _ -> Ok ""
-                with ex ->
-                    Diagnostics.emit $"ERR reading property {name}: {ex.Message}"
-                    Error(Unexpected $"Failed to read property {name}: {ex.Message}")))
-
-    let tryGetPropertyInt64 name : Result<int64, ComError> =
-        invokeOnSta $"try-get-{name}" (fun () ->
-            lock syncRoot (fun () ->
-                try
-                    match jvType.InvokeMember(name, BindingFlags.GetProperty, null, comObj, [||]) with
-                    | :? int64 as i -> Ok i
-                    | :? int as i -> Ok(int64 i)
-                    | _ -> Ok 0L
-                with ex ->
-                    Diagnostics.emit $"ERR reading property {name}: {ex.Message}"
-                    Error(Unexpected $"Failed to read property {name}: {ex.Message}")))
-
-    let tryGetPropertyIntPtr name : Result<IntPtr, ComError> =
-        invokeOnSta $"try-get-{name}" (fun () ->
-            lock syncRoot (fun () ->
-                try
-                    match jvType.InvokeMember(name, BindingFlags.GetProperty, null, comObj, [||]) with
-                    | :? int64 as i -> Ok(IntPtr i)
-                    | :? int as i -> Ok(IntPtr i)
-                    | :? IntPtr as p -> Ok p
-                    | _ -> Ok IntPtr.Zero
-                with ex ->
-                    Diagnostics.emit $"ERR reading property {name}: {ex.Message}"
-                    Error(Unexpected $"Failed to read property {name}: {ex.Message}")))
-
-    let tryGetPropertyBool name : Result<bool, ComError> =
-        tryGetPropertyInt name |> Result.map (fun v -> v <> 0)
-
-    let setPropertyInt name (value: int) : Result<unit, ComError> =
-        invokeOnSta $"set-{name}" (fun () ->
-            lock syncRoot (fun () ->
-                try
-                    jvType.InvokeMember(name, BindingFlags.SetProperty, null, comObj, [| box value |])
-                    |> ignore
-
-                    Diagnostics.emit $"OK set property {name}={value}"
-                    Ok()
-                with ex ->
-                    Diagnostics.emit $"ERR setting property {name}: {ex.Message}"
-                    Error(Unexpected ex.Message)))
-
-    let setPropertyString name (value: string) : Result<unit, ComError> =
-        invokeOnSta $"set-{name}" (fun () ->
-            lock syncRoot (fun () ->
-                try
-                    jvType.InvokeMember(name, BindingFlags.SetProperty, null, comObj, [| box value |])
-                    |> ignore
-
-                    Diagnostics.emit $"OK set property {name}=\"{value}\""
-                    Ok()
-                with ex ->
-                    Diagnostics.emit $"ERR setting property {name}: {ex.Message}"
-                    Error(Unexpected ex.Message)))
-
-    let interpretCode methodName code = ErrorCodes.interpret methodName code
-
-    let ensureSuccess methodName code =
-        match interpretCode methodName code with
-        | Ok() ->
-            Diagnostics.emit $"OK {methodName} code={code}"
-            Ok()
-        | Error e ->
-            Diagnostics.emit $"FAIL {methodName} code={code} -> {e}"
-            Error e
-
-    // Helper to read and parse m_CurrentFileTimestamp after a successful JVRead/JVGets call.
-    // Returns None if the property is empty, "00000000000000", or cannot be parsed.
-    let getCurrentTimestamp () : DateTime option =
-        match tryGetPropertyString "m_CurrentFileTimestamp" with
-        | Ok timestamp when not (String.IsNullOrWhiteSpace timestamp) && timestamp <> "00000000000000" ->
+    let timestamp () =
+        Xanthos.SdkOperations.getCurrentFileTimestamp legacySession.Value
+        |> Result.map (fun raw ->
             match
                 DateTime.TryParseExact(
-                    timestamp,
+                    raw,
                     "yyyyMMddHHmmss",
                     Globalization.CultureInfo.InvariantCulture,
                     Globalization.DateTimeStyles.None
                 )
             with
-            | true, dt -> Some dt
-            | false, _ -> None
-        | _ -> None
+            | true, parsed -> Some parsed
+            | _ -> None)
+        |> legacy
 
-    // Determines whether to use JVGets (byte array) instead of JVRead (BSTR).
-    // Priority:
-    //  1) constructor parameter (useJvGets)
-    //  2) XANTHOS_USE_JVREAD environment variable (opt-out; set to 1/true to use JVRead)
-    //  3) XANTHOS_USE_JVGETS environment variable (legacy; set to 0/false to use JVRead)
-    //  4) default: true (use JVGets)
-    //
-    // The decision is cached because it does not change within a session and emitting this
-    // diagnostic on every record creates excessive log noise.
-    let useJvGetsCached =
-        lazy
-            (let parseEnvBool (envValue: string) : bool option =
-                if isNull envValue then
+    let mapOpen =
+        function
+        | Xanthos.OpenOutcome.Opened metadata ->
+            { HasData = true
+              ReadCount = metadata.ReadCount
+              DownloadCount = metadata.DownloadCount
+              LastFileTimestamp =
+                if metadata.LastFileTimestamp = "" then
                     None
                 else
-                    let normalized = envValue.Trim().ToLowerInvariant()
-
-                    match normalized with
-                    | "" -> None
-                    | "0"
-                    | "false"
-                    | "no"
-                    | "off" -> Some false
-                    | _ -> Some true
-
-             match useJvGetsOverride with
-             | Some value ->
-                 Diagnostics.emit $"UseJvGets override={value} (from config)"
-                 value
-             | None ->
-                 let jvReadEnv = Environment.GetEnvironmentVariable("XANTHOS_USE_JVREAD")
-
-                 match parseEnvBool jvReadEnv with
-                 | Some useJvRead ->
-                     let useJvGets = not useJvRead
-                     Diagnostics.emit $"XANTHOS_USE_JVREAD env='{jvReadEnv}' -> useJvGets={useJvGets}"
-                     useJvGets
-                 | None ->
-                     let jvGetsEnv = Environment.GetEnvironmentVariable("XANTHOS_USE_JVGETS")
-
-                     match parseEnvBool jvGetsEnv with
-                     | Some useJvGets ->
-                         Diagnostics.emit $"XANTHOS_USE_JVGETS env='{jvGetsEnv}' -> useJvGets={useJvGets}"
-                         useJvGets
-                     | None ->
-                         Diagnostics.emit "UseJvGets default=true (JVGets)"
-                         true)
-
-    let checkUseJvGets () = useJvGetsCached.Value
-
-    // JVRead implementation: uses BSTR with UTF-16 byte extraction
-    // JVRead returns data as BSTR. JV-Link writes Shift-JIS bytes to the BSTR buffer, but COM
-    // interprets these as Unicode code units. We extract the low bytes from each char to recover
-    // the original Shift-JIS bytes.
-    let readRecordViaJvRead () : Result<JvReadOutcome, ComError> =
-        let size = 65536
-        // Pass empty strings; COM will populate them as ByRef parameters
-        let args: obj[] = [| ""; size; "" |]
-        // Use invokeWithByRef to properly handle ByRef parameters (buff=0, filename=2)
-        let code = invokeWithByRef "JVRead" args [ 0; 2 ]
-
-        if code = 0 then
-            Ok EndOfStream
-        elif code = -1 then
-            Ok FileBoundary
-        elif code = -3 then
-            Ok DownloadPending
-        elif code < -1 then
-            match interpretCode "JVRead" code with
-            | Ok() -> Ok EndOfStream
-            | Error e -> Error e
-        else
-            let readBytes = code
-            // Read back the modified string from the args array (COM should have updated it)
-            let buffStr =
-                match args.[0] with
-                | :? string as s -> s
-                | _ -> ""
-            // JV-Link writes Shift-JIS bytes directly to the BSTR buffer.
-            // COM interprets each byte as a UTF-16 code unit (character).
-            // To recover the original Shift-JIS bytes, extract the low byte from each character.
-            let actualData =
-                if String.IsNullOrEmpty buffStr then
-                    Array.empty
+                    Some metadata.LastFileTimestamp }
+        | Xanthos.OpenOutcome.NoData metadata ->
+            { HasData = false
+              ReadCount = metadata.ReadCount
+              DownloadCount = metadata.DownloadCount
+              LastFileTimestamp =
+                if metadata.LastFileTimestamp = "" then
+                    None
                 else
-                    // Each character holds one Shift-JIS byte in its low byte
-                    let count = min readBytes buffStr.Length
-                    buffStr.ToCharArray().[0 .. count - 1] |> Array.map (fun c -> byte c)
+                    Some metadata.LastFileTimestamp }
 
-            Ok(
-                Payload
-                    { Timestamp = getCurrentTimestamp ()
-                      Data = actualData }
-            )
+    let videoAvailability =
+        function
+        | Xanthos.VideoAvailability.Available -> Ok MovieAvailability.Available
+        | Xanthos.VideoAvailability.Unpublished -> Ok MovieAvailability.Unavailable
+        | Xanthos.VideoAvailability.Missing -> Ok MovieAvailability.NotFound
+        | Xanthos.VideoAvailability.Unknown code ->
+            Error(InvalidState $"Legacy MovieAvailability cannot represent SDK code {code}; use JvLink.movieCheck.")
 
-    // JVGets implementation: uses SAFEARRAY<byte> for raw Shift-JIS bytes
-    // This avoids string marshalling issues.
-    let readRecordViaJvGets () : Result<JvReadOutcome, ComError> =
-        // Use same buffer size as JVRead (64KB) to handle large records (analysis/master data)
-        // Per spec, 'size' tells JV-Link the max bytes to copy - truncation occurs if too small
-        let size = 65536
-        clear getsFilename
-        // Prepare SAFEARRAY<byte> placeholder. Passing an empty byte[] lets the COM interop layer allocate a new one.
-        let mutable bytesHolder: obj = box (Array.zeroCreate<byte> 0)
-        // JVGets expects: buff() As Byte (ByRef), size As Long, fname As String (ByRef)
-        // Pass empty string for fname - COM will write back the filename
-        let args: obj[] = [| bytesHolder; size; "" |]
-        // Use invokeWithByRef with indices [0; 2] to properly handle ByRef parameters
-        let code = invokeWithByRef "JVGets" args [ 0; 2 ]
-        Diagnostics.emit $"JVGets returned code={code}"
+    let useGets () =
+        let isTrue (value: string) =
+            not (String.IsNullOrWhiteSpace value)
+            && not (List.contains (value.Trim().ToLowerInvariant()) [ "0"; "false"; "no"; "off" ])
 
-        if code = 0 then
-            Ok EndOfStream
-        elif code = -1 then
-            Ok FileBoundary
-        elif code = -3 then
-            Ok DownloadPending
-        elif code < -1 then
-            match interpretCode "JVGets" code with
-            | Ok() -> Ok EndOfStream
-            | Error e -> Error e
-        else
-            // Extract resulting SAFEARRAY<Byte> from ByRef parameter
-            let extractedBytes =
-                match args.[0] with
-                | :? (byte[]) as direct -> direct
-                | :? Array as a when a.GetType().GetElementType() = typeof<byte> ->
-                    let tmp = Array.zeroCreate<byte> a.Length
+        match useJvGetsOverride with
+        | Some value -> value
+        | None ->
+            let read = Environment.GetEnvironmentVariable "XANTHOS_USE_JVREAD"
+            let gets = Environment.GetEnvironmentVariable "XANTHOS_USE_JVGETS"
 
-                    for i in 0 .. a.Length - 1 do
-                        match a.GetValue i with
-                        | :? byte as b -> tmp.[i] <- b
-                        | _ -> ()
+            if not (isNull read) then not (isTrue read)
+            elif not (isNull gets) then isTrue gets
+            else true
 
-                    tmp
-                | _ -> Array.empty
+    do GC.ReRegisterForFinalize this
 
-            Diagnostics.emit $"JVGets extractedBytes.Length={extractedBytes.Length}"
-            // Copy only the bytes indicated by the return code
-            let actualData =
-                if code <= extractedBytes.Length then
-                    Array.sub extractedBytes 0 code
-                else
-                    extractedBytes
-
-            Diagnostics.emit $"JVGets actualData.Length={actualData.Length}"
-
-            Ok(
-                Payload
-                    { Timestamp = getCurrentTimestamp ()
-                      Data = actualData }
-            )
-    // Note: Avoid forced GC here - unpinning the handle is sufficient.
-    // Forced GC per-record causes significant performance degradation.
-
-    // Main read dispatcher - selects implementation based on cached decision.
-    let readRecord () : Result<JvReadOutcome, ComError> =
-        if checkUseJvGets () then
-            readRecordViaJvGets ()
-        else
-            readRecordViaJvRead ()
-
-    let mapJvGetsCode (code: int) : Result<int, ComError> =
-        if code >= 0 then
-            Ok code
-        else
-            match code with
-            | -1 -> Ok -1
-            | -3 -> Ok -3
-            | other ->
-                match interpretCode "JVGets" other with
-                | Ok() -> Ok 0
-                | Error e -> Error e
-
-    let mapComFault methodName (fault: ComFault) =
-        let reasonText =
-            match fault.Reason with
-            | ComFaultReason.ActivationFailure -> "COM activation failure"
-            | ComFaultReason.MethodResolutionFailure -> "COM method resolution failure"
-            | ComFaultReason.InvocationFailure -> "COM invocation failure"
-
-        let methodPart =
-            if String.IsNullOrWhiteSpace methodName then
-                reasonText
-            else
-                $"{reasonText} during {methodName}"
-
-        let message =
-            if String.IsNullOrWhiteSpace fault.Details then
-                methodPart
-            else
-                $"{methodPart}: {fault.Details}"
-
-        CommunicationFailure(ErrorCodes.ComConnectionFailure, message)
-
-    let protect methodName (work: unit -> Result<'a, ComError>) =
-        try
-            work ()
-        with ComActivationException fault ->
-            Error(mapComFault methodName fault)
+    new(?useJvGets: bool, ?progId: string) =
+        new ComJvLinkClient(ComClientActivation.Default, ?useJvGets = useJvGets, ?progId = progId)
 
     interface IJvLinkClient with
-        member _.Init sid =
-            protect "JVInit" (fun () -> ensureSuccess "JVInit" (invokeCode "JVInit" [| sid |]))
+        member _.Init sid = run (Xanthos.SdkOperations.init sid)
 
         member _.Open request =
-            protect "JVOpen" (fun () ->
-                // JVOpen signature: spec, fromTime, option, readcount (ByRef), downloadcount (ByRef), lastfiletimestamp (ByRef)
-                // Initialize ByRef parameters with default values
-                let args: obj[] =
-                    [| request.Spec
-                       request.FromTime.ToString("yyyyMMddHHmmss")
-                       request.Option
-                       box 0 // readcount (ByRef out)
-                       box 0 // downloadcount (ByRef out)
-                       box "" |] // lastfiletimestamp (ByRef out)
-                // Use invokeWithByRef with indices [3; 4; 5] for ByRef parameters
-                let code = invokeWithByRef "JVOpen" args [ 3; 4; 5 ]
-
-                // Extract ByRef output values
-                let readCount =
-                    match args.[3] with
-                    | :? int as i -> i
-                    | _ -> 0
-
-                let downloadCount =
-                    match args.[4] with
-                    | :? int as i -> i
-                    | _ -> 0
-
-                let lastFileTimestamp =
-                    match args.[5] with
-                    | :? string as s when not (String.IsNullOrWhiteSpace s) -> Some s
-                    | _ -> None
-
-                Diagnostics.emit
-                    $"JVOpen ByRef: readCount={readCount}, downloadCount={downloadCount}, lastFileTimestamp={lastFileTimestamp}"
-
-                // JVOpen returns -1 when no matching data exists for the specified parameters.
-                // This is a normal condition - return HasData=false to indicate no data available.
-                if code = -1 then
-                    Diagnostics.emit "OK JVOpen code=-1 (no matching data)"
-
-                    Ok
-                        { HasData = false
-                          ReadCount = readCount
-                          DownloadCount = downloadCount
-                          LastFileTimestamp = lastFileTimestamp }
-                else
-                    ensureSuccess "JVOpen" code
-                    |> Result.map (fun () ->
-                        { HasData = true
-                          ReadCount = readCount
-                          DownloadCount = downloadCount
-                          LastFileTimestamp = lastFileTimestamp }))
+            run (
+                Xanthos.SdkOperations.openData
+                    { Dataspec = request.Spec
+                      FromTime = request.FromTime
+                      ToTime = None
+                      Option = request.Option }
+            )
+            |> Result.map mapOpen
 
         member _.OpenRealtime(spec, key) =
-            protect "JVRTOpen" (fun () ->
-                let code = invokeCode "JVRTOpen" [| spec; key |]
-                // JVRTOpen returns -1 when no matching data exists for the specified parameters.
-                // Note: JVRTOpen does not have ByRef parameters like JVOpen
-                if code = -1 then
-                    Diagnostics.emit "OK JVRTOpen code=-1 (no matching data)"
+            run (Xanthos.SdkOperations.openRealtime spec key)
+            |> Result.map (fun outcome ->
+                // The legacy result requires counts that JVRTOpen does not supply.
+                { HasData = outcome = Xanthos.RealtimeOpenOutcome.Opened
+                  ReadCount = 0
+                  DownloadCount = 0
+                  LastFileTimestamp = None })
 
-                    Ok
-                        { HasData = false
-                          ReadCount = 0
-                          DownloadCount = 0
-                          LastFileTimestamp = None }
+        member _.Read() =
+            run (
+                if useGets () then
+                    Xanthos.SdkOperations.gets
                 else
-                    ensureSuccess "JVRTOpen" code
-                    |> Result.map (fun () ->
-                        { HasData = true
-                          ReadCount = 0
-                          DownloadCount = 0
-                          LastFileTimestamp = None }))
-
-        member _.Read() = protect "JVRead" readRecord
+                    Xanthos.SdkOperations.read
+            )
+            |> Result.map (fun result ->
+                match result.State with
+                | Xanthos.ReadState.Record ->
+                    Payload
+                        { Data = result.Data
+                          Timestamp = timestamp () |> Result.defaultValue None }
+                | Xanthos.ReadState.FileBoundary -> FileBoundary
+                | Xanthos.ReadState.DownloadPending -> DownloadPending
+                | Xanthos.ReadState.EndOfStream -> EndOfStream)
 
         member _.Gets(buffer: byref<string>, bufferSize: int, filename: byref<string>) =
-            // Cannot use 'protect' here because byref parameters cannot be captured by closures.
-            try
-                // Prepare SAFEARRAY<byte> placeholder. Passing an empty byte[] lets the COM interop layer allocate a new one.
-                let mutable bytesHolder: obj = box (Array.zeroCreate<byte> 0)
-                // JVGets signature: buff() As Byte (ByRef), size As Long, fname As String (ByRef)
-                // Pass empty string for fname - COM will write back the filename
-                let args: obj[] = [| bytesHolder; bufferSize; "" |]
-                // Use invokeWithByRef with indices [0; 2] to properly handle ByRef parameters
-                let code = invokeWithByRef "JVGets" args [ 0; 2 ]
-
-                // For non-positive codes (EOF, FileBoundary, DownloadPending, errors), don't decode
-                // COM may reuse arrays with residual data from previous calls
-                if code <= 0 then
-                    buffer <- ""
-                else
-                    // Extract resulting SAFEARRAY<Byte>
-                    let extractedBytes =
-                        match args.[0] with
-                        | :? (byte[]) as direct -> direct
-                        | :? Array as a when a.GetType().GetElementType() = typeof<byte> ->
-                            let tmp = Array.zeroCreate<byte> a.Length
-
-                            for i in 0 .. a.Length - 1 do
-                                match a.GetValue i with
-                                | :? byte as b -> tmp.[i] <- b
-                                | _ -> ()
-
-                            tmp
-                        | _ -> Array.empty
-
-                    // Trim to actual bytes indicated by return code to avoid residual garbage
-                    let actualBytes =
-                        if code <= extractedBytes.Length then
-                            Array.sub extractedBytes 0 code
-                        else
-                            extractedBytes
-
-                    // Decode bytes directly (Shift-JIS) instead of re-encoding from a string.
-                    buffer <- Text.decodeShiftJis actualBytes
-
-                // Extract filename from the ByRef parameter
-                filename <-
-                    match args.[2] with
-                    | :? string as s -> s
-                    | _ -> ""
-
-                mapJvGetsCode code
-            with ComActivationException fault ->
-                Error(mapComFault "JVGets" fault)
+            match run (Xanthos.SdkOperations.getsWithCapacity bufferSize) with
+            | Error error -> Error error
+            | Ok result ->
+                buffer <- Text.decodeShiftJis result.Data
+                filename <- result.Filename
+                Ok result.ReturnCode
 
         member _.Close() =
-            try
-                ignore (invokeCode "JVClose" [||])
-            with _ ->
-                ()
+            run Xanthos.SdkOperations.closeData |> ignore
 
-        member _.Status() =
-            protect "JVStatus" (fun () ->
-                let code = invokeCode "JVStatus" [||]
-
-                if code >= 0 then
-                    Ok code
-                else
-                    interpretCode "JVStatus" code |> Result.map (fun () -> 0))
-
-        member _.Skip() =
-            protect "JVSkip" (fun () -> ensureSuccess "JVSkip" (invokeCode "JVSkip" [||]))
-
-        member _.Cancel() =
-            protect "JVCancel" (fun () -> ensureSuccess "JVCancel" (invokeCode "JVCancel" [||]))
+        member _.Status() = run Xanthos.SdkOperations.status
+        member _.Skip() = run Xanthos.SdkOperations.skip
+        member _.Cancel() = run Xanthos.SdkOperations.cancel
 
         member _.DeleteFile filename =
-            protect "JVFiledelete" (fun () -> ensureSuccess "JVFiledelete" (invokeCode "JVFiledelete" [| filename |]))
+            run (Xanthos.SdkOperations.deleteFile filename)
 
-        member _.WatchEvent(callback) =
-            protect "JVWatchEvent" (fun () ->
-                invokeOnSta "JVWatchEvent.Setup" (fun () ->
-                    // Set up the event sink callback
-                    eventSink.SetCallback(callback)
-                    // Attempt to connect the event sink to COM connection points
-                    match ComEventConnection.tryConnect comObj eventSink with
-                    | Some subscription ->
-                        // Connection succeeded - store subscription and invoke JVWatchEvent
-                        eventSubscription <- Some subscription
-
-                        match ensureSuccess "JVWatchEvent" (invokeCode "JVWatchEvent" [||]) with
-                        | Ok() as success -> success
-                        | Error _ as err ->
-                            // JVWatchEvent failed - disconnect and clean up to prevent RCW leak
-                            ComEventConnection.disconnect subscription
-                            eventSubscription <- None
-                            eventSink.ClearCallback()
-                            err
-                    | None ->
-                        // COM event connection failed - events will not be delivered
-                        // Return error so caller knows watch events won't work
-                        eventSink.ClearCallback()
-
-                        Error(
-                            CommunicationFailure(
-                                ErrorCodes.ComConnectionFailure,
-                                "COM event connection failed; JV-Link events cannot be delivered. Verify the _IJVLinkEvents IID and DISPIDs match the type library."
-                            )
-                        )))
+        member _.WatchEvent callback =
+            legacySession.Value.Run("JVWatchEvent", fun native -> native.Watch(fun event -> callback event.RawKey))
+            |> legacy
 
         member _.WatchEventClose() =
-            protect "JVWatchEventClose" (fun () ->
-                invokeOnSta "JVWatchEventClose" (fun () ->
-                    // Disconnect event sink (instance-based cleanup)
-                    match eventSubscription with
-                    | Some sub ->
-                        ComEventConnection.disconnect sub
-                        eventSubscription <- None
-                    | None -> ()
+            run Xanthos.SdkOperations.watchEventClose
 
-                    eventSink.ClearCallback()
-                    ensureSuccess "JVWatchEventClose" (invokeCode "JVWatchEventClose" [||])))
-
-        member _.SetUiProperties() =
-            protect "JVSetUIProperties" (fun () ->
-                ensureSuccess "JVSetUIProperties" (invokeCode "JVSetUIProperties" [||]))
+        member _.SetUiProperties() = run Xanthos.SdkOperations.configureUi
 
         member _.SetSaveFlag enabled =
-            protect "JVSetSaveFlag" (fun () ->
-                ensureSuccess "JVSetSaveFlag" (invokeCode "JVSetSaveFlag" [| if enabled then 1 else 0 |]))
+            run (Xanthos.SdkOperations.setSaveFlag enabled)
 
         member _.SetServiceKeyDirect key =
-            protect "JVSetServiceKey" (fun () ->
-                // JVSetServiceKey returns:
-                //   0: Success - key registered
-                //  -100/-101: "パラメータが不正あるいはレジストリへの保存に失敗既に利用キーが登録されている"
-                //             This is an ERROR (invalid param, registry save failed, or already registered with no change)
-                // Only 0 is success; all negative codes are errors per JV-Link spec.
-                ensureSuccess "JVSetServiceKey" (invokeCode "JVSetServiceKey" [| key |]))
+            run (Xanthos.SdkOperations.setServiceKey key)
 
         member _.SetSavePathDirect path =
-            protect "JVSetSavePath" (fun () -> ensureSuccess "JVSetSavePath" (invokeCode "JVSetSavePath" [| path |]))
+            run (Xanthos.SdkOperations.setSavePath path)
 
         member _.SetParentWindowHandleDirect handle =
-            setPropertyInt "ParentHWnd" (int handle)
+            run (Xanthos.SdkOperations.setParentWindowHandle handle)
 
-        member _.SetPayoffDialogSuppressedDirect _suppressed =
-            // NOTE: In COM mode, the m_payflag property is effectively read-only (write fails).
-            // Users can still change this setting via JVSetUIProperties (interactive dialog).
-            Error(
-                InvalidState
-                    "m_payflag cannot be set programmatically in COM mode (property is read-only). Use JVSetUIProperties to change this setting."
-            )
+        member _.SetPayoffDialogSuppressedDirect _ =
+            Error(InvalidState "m_payflag is read-only; use JVSetUIProperties.")
 
         member _.CourseFile key =
-            protect "JVCourseFile" (fun () ->
-                // JVCourseFile: key (in), filepath (out ByRef), explanation (out ByRef)
-                //
-                // JV-Link COM implementations vary:
-                // - Some allocate fresh BSTRs for out-parameters (standard COM behavior).
-                // - Others appear to write into the provided BSTR buffer (non-standard but observed in the wild).
-                //
-                // Default to the buffered strategy (safer for long strings), but fall back to the allocate strategy
-                // when the decoded explanation looks like obvious mojibake/garbage.
-
-                let outStringBuffer (size: int) =
-                    if size <= 0 then "" else String(char 0, size)
-
-                let isPrivateUseChar (ch: char) =
-                    let code = int ch
-                    code >= 0xE000 && code <= 0xF8FF
-
-                let japaneseCount (s: string) =
-                    if String.IsNullOrEmpty s then
-                        0
-                    else
-                        s
-                        |> Seq.sumBy (fun ch ->
-                            let code = int ch
-
-                            if
-                                (code >= 0x3040 && code <= 0x309F) // Hiragana
-                                || (code >= 0x30A0 && code <= 0x30FF) // Katakana
-                                || (code >= 0x4E00 && code <= 0x9FFF)
-                            then // Kanji
-                                1
-                            else
-                                0)
-
-                let garbledScore (s: string) =
-                    if String.IsNullOrWhiteSpace s then
-                        Int32.MinValue
-                    else
-                        let mutable privateUse = 0
-                        let mutable control = 0
-                        let mutable replacement = 0
-                        let mutable ascii = 0
-
-                        for ch in s do
-                            if ch = '\uFFFD' then
-                                replacement <- replacement + 1
-                            elif isPrivateUseChar ch then
-                                privateUse <- privateUse + 1
-                            elif Char.IsControl ch && ch <> '\r' && ch <> '\n' && ch <> '\t' then
-                                control <- control + 1
-                            else
-                                let code = int ch
-
-                                if code >= 0x20 && code <= 0x7E then
-                                    ascii <- ascii + 1
-
-                        // Higher is better
-                        (japaneseCount s * 10) + ascii
-                        - (privateUse * 40)
-                        - (replacement * 50)
-                        - (control * 20)
-
-                let emitTextSummary (label: string) (text: string) =
-                    let safe = if isNull text then "" else text
-                    let maxHead = min 32 safe.Length
-                    let mutable privateUse = 0
-                    let mutable control = 0
-                    let mutable replacement = 0
-
-                    for ch in safe do
-                        if ch = '\uFFFD' then
-                            replacement <- replacement + 1
-                        elif isPrivateUseChar ch then
-                            privateUse <- privateUse + 1
-                        elif Char.IsControl ch && ch <> '\r' && ch <> '\n' && ch <> '\t' then
-                            control <- control + 1
-
-                    let headU16 =
-                        [ 0 .. maxHead - 1 ]
-                        |> List.map (fun i -> (int safe.[i]).ToString("X4"))
-                        |> String.concat " "
-
-                    Diagnostics.emit
-                        $"JVCourseFile {label}: len={safe.Length} jp={japaneseCount safe} privateUse={privateUse} control={control} repl={replacement} score={garbledScore safe} headU16={headU16}"
-
-                let callBuffered () =
-                    let args: obj[] =
-                        [| key
-                           outStringBuffer 512 // filepath
-                           outStringBuffer 16384 |] // explanation (can be long)
-
-                    let code = invokeWithByRef "JVCourseFile" args [ 1; 2 ]
-
-                    match ensureSuccess "JVCourseFile" code with
-                    | Ok() ->
-                        let filepath =
-                            match args.[1] with
-                            | :? string as s -> s
-                            | _ -> ""
-
-                        let explanation =
-                            match args.[2] with
-                            | :? string as s -> s
-                            | _ -> ""
-
-                        Ok(
-                            Text.decodeShiftJisBstrBytesIfNeeded filepath,
-                            Text.decodeShiftJisBstrBytesIfNeeded explanation
-                        )
-                    | Error e -> Error e
-
-                let callAllocate () =
-                    // Use empty placeholders for ByRef string out-parameters and let COM allocate BSTRs.
-                    let args: obj[] = [| key; ""; "" |]
-                    let code = invokeWithByRef "JVCourseFile" args [ 1; 2 ]
-
-                    match ensureSuccess "JVCourseFile" code with
-                    | Ok() ->
-                        let filepath =
-                            match args.[1] with
-                            | :? string as s -> s
-                            | _ -> ""
-
-                        let explanation =
-                            match args.[2] with
-                            | :? string as s -> s
-                            | _ -> ""
-
-                        Ok(
-                            Text.decodeShiftJisBstrBytesIfNeeded filepath,
-                            Text.decodeShiftJisBstrBytesIfNeeded explanation
-                        )
-                    | Error e -> Error e
-
-                let mode =
-                    match Environment.GetEnvironmentVariable("XANTHOS_COM_COURSEFILE_OUT_MODE") with
-                    | null
-                    | "" -> "auto"
-                    | v -> v.Trim().ToLowerInvariant()
-
-                match mode with
-                | "allocate" -> callAllocate ()
-                | "buffer"
-                | "buffered" -> callBuffered ()
-                | _ ->
-                    match callBuffered () with
-                    | Ok(p1, e1) as ok1 ->
-                        if Text.looksGarbledJvText e1 then
-                            Diagnostics.emit
-                                $"JVCourseFile explanation looks garbled (buffered). Retrying with allocate mode. score={garbledScore e1}"
-
-                            match callAllocate () with
-                            | Ok(p2, e2) as ok2 ->
-                                let s1 = garbledScore e1
-                                let s2 = garbledScore e2
-
-                                emitTextSummary "buffered/explanation" e1
-                                emitTextSummary "allocate/explanation" e2
-
-                                if s2 > s1 then
-                                    Diagnostics.emit $"JVCourseFile chose allocate mode (score {s2} > {s1})."
-                                    ok2
-                                else
-                                    Diagnostics.emit $"JVCourseFile kept buffered mode (score {s1} >= {s2})."
-                                    ok1
-                            | Error _ -> ok1
-                        else
-                            ok1
-                    | Error e1 ->
-                        Diagnostics.emit $"JVCourseFile buffered call failed: {e1}. Retrying with allocate mode."
-
-                        match callAllocate () with
-                        | Ok _ as ok -> ok
-                        | Error _ -> Error e1)
-
-        member _.CourseFile2(key, filepath) =
-            protect "JVCourseFile2" (fun () ->
-                // JVCourseFile2: key (in), filepath (in) - saves course diagram to specified path
-                let code = invokeCode "JVCourseFile2" [| key; filepath |]
-                ensureSuccess "JVCourseFile2" code)
-
-        member _.SilksFile(pattern, outputPath) =
-            protect "JVFukuFile" (fun () ->
-                // JVFukuFile returns:
-                //   0: Success - image file created
-                //  -1: Success - No Image (正常終了、No Image画像を出力)
-                //  <-1: Error codes
-                let code = invokeCode "JVFukuFile" [| pattern; outputPath |]
-
-                if code = 0 then
-                    Diagnostics.emit $"OK JVFukuFile code={code} (image created)"
-                    Ok(Some outputPath)
-                elif code = -1 then
-                    Diagnostics.emit $"OK JVFukuFile code={code} (No Image)"
-                    Ok None
+            run (Xanthos.SdkOperations.courseFile key)
+            |> Result.bind (fun image ->
+                if image.State = Xanthos.ImageState.Available then
+                    Ok(image.Value.Filepath, image.Value.Explanation)
                 else
-                    match ensureSuccess "JVFukuFile" code with
-                    | Ok() -> Ok None // Should not happen, but handle gracefully
-                    | Error e -> Error e)
+                    Error(InvalidInput "No matching data exists"))
+
+        member _.CourseFile2(key, path) =
+            run (Xanthos.SdkOperations.courseFile2 key path)
+            |> Result.bind (fun image ->
+                if image.State = Xanthos.ImageState.Available then
+                    Ok()
+                else
+                    Error(InvalidInput "No matching data exists"))
+
+        member _.SilksFile(pattern, path) =
+            run (Xanthos.SdkOperations.silksFile pattern path)
+            |> Result.map (fun image ->
+                if image.State = Xanthos.ImageState.Available then
+                    Some image.Value
+                else
+                    None)
 
         member _.SilksBinary pattern =
-            protect "JVFuku" (fun () ->
-                // JVFuku returns:
-                //   0: Success - image data returned in buffer
-                //  -1: Success - No Image (No Image画像が出力された場合)
-                //  <-1: Error codes
-                // JVFuku: pattern (in), buff (out ByRef as Byte Array)
-                // Per JV-Link spec: Long JVFuku ( String 型 pattern, Byte Array 型 buff )
-                // Pass empty byte array placeholder - COM will allocate the actual array
-                let mutable bytesHolder: obj = box (Array.zeroCreate<byte> 0)
-                let args: obj[] = [| pattern; bytesHolder |]
-                let code = invokeWithByRef "JVFuku" args [ 1 ]
-
-                if code = 0 then
-                    Diagnostics.emit $"OK JVFuku code={code}"
-
-                    // Extract resulting SAFEARRAY<Byte> from ByRef parameter
-                    let bytes =
-                        match args.[1] with
-                        | :? (byte[]) as direct -> direct
-                        | :? Array as a when a.GetType().GetElementType() = typeof<byte> ->
-                            let tmp = Array.zeroCreate<byte> a.Length
-
-                            for i in 0 .. a.Length - 1 do
-                                match a.GetValue i with
-                                | :? byte as b -> tmp.[i] <- b
-                                | _ -> ()
-
-                            tmp
-                        | _ -> Array.empty
-
-                    Ok(Some bytes)
-                elif code = -1 then
-                    Diagnostics.emit $"OK JVFuku code={code} (No Image)"
-                    Ok None
+            run (Xanthos.SdkOperations.silksBinary pattern)
+            |> Result.map (fun image ->
+                if image.State = Xanthos.ImageState.Available then
+                    Some image.Value
                 else
-                    match ensureSuccess "JVFuku" code with
-                    | Ok() -> Ok None // Should not happen, but handle gracefully
-                    | Error e -> Error e)
+                    None)
 
         member _.MovieCheck key =
-            protect "JVMVCheck" (fun () ->
-                let code = invokeCode "JVMVCheck" [| key |]
-
-                if code = 1 then
-                    Ok MovieAvailability.Available
-                elif code = 0 then
-                    Ok MovieAvailability.Unavailable
-                elif code = -1 then
-                    Ok MovieAvailability.NotFound
-                elif code < -1 then
-                    match ensureSuccess "JVMVCheck" code with
-                    | Ok() -> Ok MovieAvailability.Unavailable
-                    | Error e -> Error e
-                else
-                    Ok MovieAvailability.Unavailable)
+            run (Xanthos.SdkOperations.movieCheck key) |> Result.bind videoAvailability
 
         member _.MovieCheckWithType(movieType, key) =
-            protect "JVMVCheckWithType" (fun () ->
-                let code = invokeCode "JVMVCheckWithType" [| movieType; key |]
-
-                if code = 1 then
-                    Ok MovieAvailability.Available
-                elif code = 0 then
-                    Ok MovieAvailability.Unavailable
-                elif code = -1 then
-                    Ok MovieAvailability.NotFound
-                elif code < -1 then
-                    match ensureSuccess "JVMVCheckWithType" code with
-                    | Ok() -> Ok MovieAvailability.Unavailable
-                    | Error e -> Error e
-                else
-                    Ok MovieAvailability.Unavailable)
+            run (Xanthos.SdkOperations.movieCheckWithType movieType key)
+            |> Result.bind videoAvailability
 
         member _.MoviePlay key =
-            protect "JVMVPlay" (fun () -> ensureSuccess "JVMVPlay" (invokeCode "JVMVPlay" [| key |]))
+            run (Xanthos.SdkOperations.moviePlay key)
 
         member _.MoviePlayWithType(movieType, key) =
-            protect "JVMVPlayWithType" (fun () ->
-                ensureSuccess "JVMVPlayWithType" (invokeCode "JVMVPlayWithType" [| movieType; key |]))
+            run (Xanthos.SdkOperations.moviePlayWithType movieType key)
 
-        member _.MovieOpen(movietype, searchKey) =
-            protect "JVMVOpen" (fun () -> ensureSuccess "JVMVOpen" (invokeCode "JVMVOpen" [| movietype; searchKey |]))
+        member _.MovieOpen(movieType, key) =
+            run (Xanthos.SdkOperations.movieOpen movieType key)
+            |> Result.bind (function
+                | Xanthos.VideoOpenOutcome.Opened -> Ok()
+                | Xanthos.VideoOpenOutcome.NoData ->
+                    Error(InvalidState "No movie data; use JvLink.movieOpen to distinguish NoData."))
 
         member _.MovieRead() =
-            protect "JVMVRead" (fun () ->
-                // JVMVRead: buff (out ByRef), size (in)
-                let size = 4096
-                let args: obj[] = [| ""; size |]
-                let code = invokeWithByRef "JVMVRead" args [ 0 ]
-
-                if code = 0 then
-                    Ok MovieEnd
-                elif code < 0 then
-                    match interpretCode "JVMVRead" code with
-                    | Ok() -> Ok MovieEnd
-                    | Error e -> Error e
-                else
-                    let line =
-                        match args.[0] with
-                        | :? string as s -> s
-                        | _ -> ""
-
-                    let workoutDate, regId =
-                        if String.IsNullOrWhiteSpace line || line.Length < 18 then
-                            None, None
-                        else
-                            let dateStr = line.Substring(0, 8)
-                            let idStr = line.Substring(8).Trim()
-
-                            let dt =
-                                match
-                                    DateTime.TryParseExact(
-                                        dateStr,
-                                        "yyyyMMdd",
-                                        Globalization.CultureInfo.InvariantCulture,
-                                        Globalization.DateTimeStyles.None
-                                    )
-                                with
-                                | true, d -> Some d
-                                | _ -> None
-
-                            dt, if idStr = "" then None else Some idStr
-
-                    Ok(
-                        MovieRecord
-                            { RawKey = line
-                              WorkoutDate = workoutDate
-                              RegistrationId = regId }
-                    ))
-
-        member _.SaveFlag
-            with get () = getPropertyInt "m_saveflag" <> 0
-            and set value = setPropertyInt "m_saveflag" (if value then 1 else 0) |> ignore
-
-        member _.SavePath = getPropertyString "m_savepath"
-
-        member _.ServiceKey = getPropertyString "m_servicekey"
+            run Xanthos.SdkOperations.movieRead
+            |> Result.bind (function
+                | Xanthos.VideoReadOutcome.EndOfStream _ -> Ok MovieEnd
+                | Xanthos.VideoReadOutcome.Record(text, _, _) -> Ok(MovieRecord(WorkoutVideoListing.parse text))
+                | Xanthos.VideoReadOutcome.DownloadPending _ ->
+                    Error(InvalidState "Movie download pending; use JvLink.movieRead to distinguish DownloadPending."))
 
         member _.TryGetSaveFlag() =
-            tryGetPropertyInt "m_saveflag" |> Result.map (fun v -> v <> 0)
+            run Xanthos.SdkOperations.getSaveFlag |> Result.map ((<>) 0)
 
-        member _.TryGetSavePath() = tryGetPropertyString "m_savepath"
-        member _.TryGetServiceKey() = tryGetPropertyString "m_servicekey"
-        member _.TryGetJVLinkVersion() = tryGetPropertyString "m_JVLinkVersion"
+        member _.TryGetSavePath() = run Xanthos.SdkOperations.getSavePath
+        member _.TryGetServiceKey() = run Xanthos.SdkOperations.getServiceKey
+        member _.TryGetJVLinkVersion() = run Xanthos.SdkOperations.getVersion
 
         member _.TryGetTotalReadFileSize() =
-            tryGetPropertyInt64 "m_TotalReadFilesize"
+            run Xanthos.SdkOperations.getTotalReadFileSize
+            |> Result.map (fun size -> int64 size.RawKilobytes)
 
         member _.TryGetCurrentReadFileSize() =
-            tryGetPropertyInt64 "m_CurrentReadFilesize"
+            run Xanthos.SdkOperations.getCurrentReadFileSize |> Result.map int64
 
-        member _.TryGetCurrentFileTimestamp() =
-            tryGetPropertyString "m_CurrentFileTimestamp"
-            |> Result.map (fun timestamp ->
-                if String.IsNullOrWhiteSpace timestamp || timestamp = "00000000000000" then
-                    None
-                else
-                    match
-                        DateTime.TryParseExact(
-                            timestamp,
-                            "yyyyMMddHHmmss",
-                            Globalization.CultureInfo.InvariantCulture,
-                            Globalization.DateTimeStyles.None
-                        )
-                    with
-                    | true, dt -> Some dt
-                    | false, _ -> None)
+        member _.TryGetCurrentFileTimestamp() = timestamp ()
 
         member _.TryGetParentWindowHandle() =
-            // NOTE: ParentHWnd is write-only in COM mode; reading fails.
-            Error(InvalidState "ParentHWnd cannot be read in COM mode (property is write-only).")
+            Error(InvalidState "ParentHWnd is write-only.")
 
-        member _.TryGetPayoffDialogSuppressed() = tryGetPropertyBool "m_payflag"
+        member _.TryGetPayoffDialogSuppressed() =
+            run Xanthos.SdkOperations.getPayFlag |> Result.map ((<>) 0)
 
-        member _.JVLinkVersion = getPropertyString "m_JVLinkVersion"
-        member _.TotalReadFileSize = getPropertyInt64 "m_TotalReadFilesize"
-        member _.CurrentReadFileSize = getPropertyInt64 "m_CurrentReadFilesize"
+        member _.SaveFlag
+            with get () = (this :> IJvLinkClient).TryGetSaveFlag() |> Result.defaultValue false
+            and set value = run (Xanthos.SdkOperations.setSaveFlag value) |> ignore
 
-        member _.CurrentFileTimestamp =
-            let timestamp = getPropertyString "m_CurrentFileTimestamp"
+        member _.SavePath = (this :> IJvLinkClient).TryGetSavePath() |> Result.defaultValue ""
 
-            if String.IsNullOrWhiteSpace timestamp || timestamp = "00000000000000" then
-                None
-            else
-                match
-                    DateTime.TryParseExact(
-                        timestamp,
-                        "yyyyMMddHHmmss",
-                        Globalization.CultureInfo.InvariantCulture,
-                        Globalization.DateTimeStyles.None
-                    )
-                with
-                | true, dt -> Some dt
-                | false, _ -> None
+        member _.ServiceKey =
+            (this :> IJvLinkClient).TryGetServiceKey() |> Result.defaultValue ""
+
+        member _.JVLinkVersion =
+            (this :> IJvLinkClient).TryGetJVLinkVersion() |> Result.defaultValue ""
+
+        member _.TotalReadFileSize =
+            (this :> IJvLinkClient).TryGetTotalReadFileSize() |> Result.defaultValue 0L
+
+        member _.CurrentReadFileSize =
+            (this :> IJvLinkClient).TryGetCurrentReadFileSize() |> Result.defaultValue 0L
+
+        member _.CurrentFileTimestamp = timestamp () |> Result.defaultValue None
 
         member _.ParentWindowHandle
-            with get () =
-                // NOTE: ParentHWnd is write-only in COM mode; return a safe default.
-                IntPtr.Zero
-            and set value = setPropertyInt "ParentHWnd" (int value) |> ignore
+            with get () = IntPtr.Zero
+            and set value = run (Xanthos.SdkOperations.setParentWindowHandle value) |> ignore
 
         member _.PayoffDialogSuppressed
-            with get () = getPropertyInt "m_payflag" <> 0
-            and set _ =
-                // NOTE: In COM mode, the m_payflag property is effectively read-only (write fails).
-                // Keep the setter as a no-op to avoid spurious COM errors when consumers use property syntax.
-                Diagnostics.emit "WARN m_payflag is read-only in COM mode; ignoring PayoffDialogSuppressed set."
-                ()
+            with get () =
+                (this :> IJvLinkClient).TryGetPayoffDialogSuppressed()
+                |> Result.defaultValue false
+            and set _ = Diagnostics.emit "m_payflag is read-only; use JVSetUIProperties."
 
-    /// <summary>
-    /// Releases COM resources and disconnects event subscriptions.
-    /// Call this method when the client is no longer needed to prevent RCW leaks.
-    /// </summary>
-    member private this.Dispose(disposing: bool) =
-        if not disposed then
-            let releaseResources () =
+    /// Runs only on the owning STA, including deferred cleanup after a timed-out call.
+    member private _.ReleaseResources() =
+        let close api : Result<int, Xanthos.JvError> =
+            Diagnostics.emit $"DISPOSE {api} begin"
+
+            match jvType.InvokeMember(api, BindingFlags.InvokeMethod, null, comObj, [||]) with
+            | :? int as code ->
+                Diagnostics.emit $"DISPOSE {api} code={code}"
+                Ok code
+            | _ ->
+                Error
+                    { Api = api
+                      Code = None
+                      Kind = Xanthos.JvErrorKind.Invocation
+                      Outputs = Map.empty
+                      Message = "Expected a 32-bit SDK return code during cleanup." }
+
+        let detach () =
+            eventSink.ClearCallback()
+            eventSubscription |> Option.iter eventConnector.Disconnect
+            eventSubscription <- None
+
+        let release () =
+            if not (isNull comObj) then
+                Diagnostics.emit "DISPOSE FinalReleaseComObject begin"
+                activation.Release comObj
+                Diagnostics.emit $"COM object released for ProgID '{progId}'."
+
+        lifetime.Cleanup(close, detach, release)
+
+    member private this.Cleanup() =
+        if System.Threading.Interlocked.CompareExchange(&disposeState, 1, 0) <> 0 then
+            Ok()
+        else
+            let mutable result = Ok()
+
+            let remember error =
+                if Result.isOk result then
+                    result <- Error error
+
+            try
                 try
-                    dispatcher.Invoke(
-                        "JVLink.Dispose",
-                        fun () ->
-                            // Disconnect event subscription if active
-                            match eventSubscription with
-                            | Some sub ->
-                                try
-                                    ComEventConnection.disconnect sub
-                                with _ ->
-                                    ()
-
-                                eventSubscription <- None
-                            | None -> ()
-
-                            // Clear event callback
-                            eventSink.ClearCallback()
-
-                            // Call JVClose to end any active session
-                            try
-                                ignore (invokeCode "JVClose" [||])
-                            with _ ->
-                                ()
-
-                            // Release COM object on the STA thread
-                            if not (isNull comObj) then
-                                try
-                                    Marshal.FinalReleaseComObject(comObj) |> ignore
-                                    Diagnostics.emit $"COM object released for ProgID '{progId}'."
-                                with ex ->
-                                    Diagnostics.emit $"Failed to release COM object: {ex.Message}"
-                    )
-                    |> ignore
+                    if legacySession.IsValueCreated then
+                        legacySession.Value.ReleaseDelivery()
                 with ex ->
-                    // Swallow errors during shutdown to avoid crashing finalizer paths.
-                    Diagnostics.emit $"STA dispatcher disposal failed: {ex.GetType().Name} {ex.Message}"
+                    remember (nativeError "eventDelivery.shutdown" ex)
 
-            releaseResources ()
-            (dispatcher :> IDisposable).Dispose()
-            disposed <- true
+                try
+                    match dispatcher.Invoke("JVLink.Dispose", this.ReleaseResources) with
+                    | Error error -> remember error
+                    | Ok() -> ()
+                with ex ->
+                    remember (nativeError "dispose" ex)
+
+                try
+                    Diagnostics.emit "DISPOSE STA shutdown begin"
+                    (dispatcher :> IDisposable).Dispose()
+                    Diagnostics.emit "DISPOSE STA shutdown complete"
+                with ex ->
+                    remember (nativeError "STA.shutdown" ex)
+            finally
+                System.Threading.Volatile.Write(&disposeState, 2)
+                GC.SuppressFinalize(this)
+
+            result
+
+    member private this.Abandon(timeout: TimeSpan) =
+        if System.Threading.Interlocked.CompareExchange(&disposeState, 1, 0) = 0 then
+            let cleanup () =
+                try
+                    // The native call has returned before the STA reaches this callback.
+                    if legacySession.IsValueCreated then
+                        legacySession.Value.ReleaseDelivery()
+                finally
+                    try
+                        match this.ReleaseResources() with
+                        | Error error -> Xanthos.CleanupFailure.report error
+                        | Ok() -> ()
+                    finally
+                        System.Threading.Volatile.Write(&disposeState, 2)
+
+            let completed = (dispatcher :?> IComShutdown).Shutdown(timeout, cleanup)
+
+            if not completed then
+                Diagnostics.emit
+                    "STA shutdown deferred: native work is still running; cleanup remains on its original STA."
+
+            GC.SuppressFinalize(this)
+
+    interface Xanthos.INativeCleanup with
+        member this.Cleanup() = this.Cleanup()
+
+    interface Xanthos.INativeExecutionContext with
+        member _.IsCurrentThread = nativeThreadId = Environment.CurrentManagedThreadId
+
+    interface IComAbandonable with
+        member this.Abandon() = this.Abandon(TimeSpan.FromSeconds 5.)
 
     interface IDisposable with
         member this.Dispose() =
-            this.Dispose(true)
-            GC.SuppressFinalize(this)
+            match this.Cleanup() with
+            | Ok() -> ()
+            | Error error -> Xanthos.CleanupFailure.report error
+
+    interface INativeWatchEventSource with
+        member _.WatchNativeEvent callback =
+            // JvLinkService already owns a bounded, observable delivery queue.
+            // Do not insert the functional subscription queue before it.
+            legacySession.Value.Run("JVWatchEvent", fun native -> native.Watch callback)
+            |> legacy
 
     interface IComDispatchProvider with
         member _.Dispatcher = dispatcher
 
-    override this.Finalize() = this.Dispose(false)
+    interface Xanthos.INativeJvLink with
+        member _.Invoke(name, args, indices) =
+            nativeInvoke name BindingFlags.InvokeMethod args indices
+
+        member _.Get name =
+            nativeInvoke name BindingFlags.GetProperty [||] []
+
+        member _.Put(name, value) =
+            nativeInvoke name BindingFlags.SetProperty [| value |] [] |> Result.map ignore
+
+        member _.Watch callback =
+            try
+                invokeOnSta "JVWatchEvent" (fun () ->
+                    if eventSubscription.IsSome then
+                        Error
+                            { Api = "JVWatchEvent"
+                              Code = None
+                              Kind = Xanthos.JvErrorKind.Busy
+                              Outputs = Map.empty
+                              Message = "A watch subscription is already active." }
+                    else
+                        eventSink.SetNativeCallback callback
+
+                        match eventConnector.Connect comObj eventSink with
+                        | Error error ->
+                            eventSink.ClearCallback()
+                            Error error
+                        | Ok subscription ->
+                            match nativeInvoke "JVWatchEvent" BindingFlags.InvokeMethod [||] [] with
+                            | Ok(:? int as code) when code = 0 ->
+                                eventSubscription <- Some subscription
+                                Ok()
+                            | result ->
+                                eventConnector.Disconnect subscription
+                                eventSink.ClearCallback()
+
+                                match result with
+                                | Error error -> Error error
+                                | Ok value ->
+                                    Error
+                                        { Api = "JVWatchEvent"
+                                          Code =
+                                            (match value with
+                                             | :? int as code -> Some code
+                                             | _ -> None)
+                                          Kind = Xanthos.JvErrorKind.Sdk
+                                          Outputs = Map.empty
+                                          Message = "SDK watch registration failed." })
+            with ex ->
+                Error(nativeError "JVWatchEvent" ex)
+
+        member _.StopWatch() =
+            try
+                invokeOnSta "JVWatchEventClose" (fun () ->
+                    let closeResult =
+                        if lifetime.Watching then
+                            nativeInvoke "JVWatchEventClose" BindingFlags.InvokeMethod [||] []
+                        else
+                            Ok(box 0)
+
+                    match closeResult with
+                    | Ok(:? int as code) when code = 0 ->
+                        eventSink.ClearCallback()
+                        eventSubscription |> Option.iter eventConnector.Disconnect
+                        eventSubscription <- None
+                        Ok()
+                    | Error error -> Error error
+                    | Ok value ->
+                        Error
+                            { Api = "JVWatchEventClose"
+                              Code =
+                                (match value with
+                                 | :? int as code -> Some code
+                                 | _ -> None)
+                              Kind = Xanthos.JvErrorKind.Sdk
+                              Outputs = Map.empty
+                              Message = "SDK watch shutdown failed." })
+            with ex ->
+                Error(nativeError "JVWatchEventClose" ex)
+
+    override this.Finalize() =
+        // Finalization must never terminate the process, including shutdown failures.
+        try
+            this.Abandon(TimeSpan.Zero)
+        with _ ->
+            ()
 #else
 module ComJvLinkClient =
     let notAvailable () =

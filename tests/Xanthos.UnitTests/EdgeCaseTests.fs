@@ -4,17 +4,17 @@ open System
 open Xunit
 open Xanthos.Core
 open Xanthos.Core.Text
-open Xanthos.Core.Records
-open Xanthos.Core.Records.RecordParser
-open Xanthos.Core.Records.CodeTables
-open Xanthos.Core.Records.TK
-open Xanthos.Core.Records.RA
-open Xanthos.Core.Records.SE
-open Xanthos.Core.Records.HR
-open Xanthos.Core.Records.O1
-open Xanthos.Core.Records.H1
-open Xanthos.Core.Records.WF
-open Xanthos.Core.Records.UM
+open Xanthos.Legacy.Records
+open Xanthos.Legacy.Records.RecordParser
+open Xanthos.Legacy.Records.CodeTables
+open Xanthos.Legacy.Records.TK
+open Xanthos.Legacy.Records.RA
+open Xanthos.Legacy.Records.SE
+open Xanthos.Legacy.Records.HR
+open Xanthos.Legacy.Records.O1
+open Xanthos.Legacy.Records.H1
+open Xanthos.Legacy.Records.WF
+open Xanthos.Legacy.Records.UM
 
 // ============================================================================
 // Core Function Error Handling Tests
@@ -375,7 +375,7 @@ let ``O2 parser returns error when record is too short`` () =
     let data = Array.create 20 32uy // Need at least 30 bytes
     Array.Copy(encodeShiftJis "O2", 0, data, 0, 2)
 
-    match Xanthos.Core.Records.O2.parse data with
+    match Xanthos.Legacy.Records.O2.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
     | Ok _ -> failwith "Should have returned error"
     | Error _ -> failwith "Wrong error type"
@@ -385,7 +385,7 @@ let ``O3 parser returns error when record is too short`` () =
     let data = Array.create 15 32uy // Need at least 26 bytes
     Array.Copy(encodeShiftJis "O3", 0, data, 0, 2)
 
-    match Xanthos.Core.Records.O3.parse data with
+    match Xanthos.Legacy.Records.O3.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
     | Ok _ -> failwith "Should have returned error"
     | Error _ -> failwith "Wrong error type"
@@ -395,7 +395,7 @@ let ``O4 parser returns error when record is too short`` () =
     let data = Array.create 15 32uy // Need at least 28 bytes
     Array.Copy(encodeShiftJis "O4", 0, data, 0, 2)
 
-    match Xanthos.Core.Records.O4.parse data with
+    match Xanthos.Legacy.Records.O4.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
     | Ok _ -> failwith "Should have returned error"
     | Error _ -> failwith "Wrong error type"
@@ -405,7 +405,7 @@ let ``O5 parser returns error when record is too short`` () =
     let data = Array.create 15 32uy // Need at least 28 bytes
     Array.Copy(encodeShiftJis "O5", 0, data, 0, 2)
 
-    match Xanthos.Core.Records.O5.parse data with
+    match Xanthos.Legacy.Records.O5.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
     | Ok _ -> failwith "Should have returned error"
     | Error _ -> failwith "Wrong error type"
@@ -415,7 +415,7 @@ let ``O6 parser returns error when record is too short`` () =
     let data = Array.create 15 32uy // Need at least 28 bytes
     Array.Copy(encodeShiftJis "O6", 0, data, 0, 2)
 
-    match Xanthos.Core.Records.O6.parse data with
+    match Xanthos.Legacy.Records.O6.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
     | Ok _ -> failwith "Should have returned error"
     | Error _ -> failwith "Wrong error type"
@@ -429,7 +429,7 @@ let ``H5 parser returns error when record is too short`` () =
     let data = Array.create 15 32uy // Need at least 41 bytes
     Array.Copy(encodeShiftJis "H5", 0, data, 0, 2)
 
-    match Xanthos.Core.Records.H5.parse data with
+    match Xanthos.Legacy.Records.H5.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
     | Ok _ -> failwith "Should have returned error"
     | Error _ -> failwith "Wrong error type"
@@ -439,7 +439,7 @@ let ``H6 parser returns error when record is too short`` () =
     let data = Array.create 15 32uy // Need at least 33 bytes
     Array.Copy(encodeShiftJis "H6", 0, data, 0, 2)
 
-    match Xanthos.Core.Records.H6.parse data with
+    match Xanthos.Legacy.Records.H6.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
     | Ok _ -> failwith "Should have returned error"
     | Error _ -> failwith "Wrong error type"
@@ -453,7 +453,7 @@ let ``JC parser returns error when record is too short`` () =
     let data = Array.create 10 32uy // Need at least 24 bytes
     Array.Copy(encodeShiftJis "JC", 0, data, 0, 2)
 
-    match Xanthos.Core.Records.JC.parse data with
+    match Xanthos.Legacy.Records.JC.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
     | Ok _ -> failwith "Should have returned error"
     | Error _ -> failwith "Wrong error type"
@@ -463,7 +463,7 @@ let ``TC parser returns error when record is too short`` () =
     let data = Array.create 10 32uy // Need at least 28 bytes
     Array.Copy(encodeShiftJis "TC", 0, data, 0, 2)
 
-    match Xanthos.Core.Records.TC.parse data with
+    match Xanthos.Legacy.Records.TC.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
     | Ok _ -> failwith "Should have returned error"
     | Error _ -> failwith "Wrong error type"
@@ -473,7 +473,7 @@ let ``CC parser returns error when record is too short`` () =
     let data = Array.create 10 32uy // Need at least 21 bytes
     Array.Copy(encodeShiftJis "CC", 0, data, 0, 2)
 
-    match Xanthos.Core.Records.CC.parse data with
+    match Xanthos.Legacy.Records.CC.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
     | Ok _ -> failwith "Should have returned error"
     | Error _ -> failwith "Wrong error type"
@@ -483,7 +483,7 @@ let ``WE parser returns error when record is too short`` () =
     let data = Array.create 10 32uy // Need at least 20 bytes
     Array.Copy(encodeShiftJis "WE", 0, data, 0, 2)
 
-    match Xanthos.Core.Records.WE.parse data with
+    match Xanthos.Legacy.Records.WE.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
     | Ok _ -> failwith "Should have returned error"
     | Error _ -> failwith "Wrong error type"
@@ -493,7 +493,7 @@ let ``AV parser returns error when record is too short`` () =
     let data = Array.create 10 32uy // Need at least 20 bytes
     Array.Copy(encodeShiftJis "AV", 0, data, 0, 2)
 
-    match Xanthos.Core.Records.AV.parse data with
+    match Xanthos.Legacy.Records.AV.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
     | Ok _ -> failwith "Should have returned error"
     | Error _ -> failwith "Wrong error type"
@@ -507,7 +507,7 @@ let ``KS parser returns error when record is too short`` () =
     let data = Array.create 50 32uy // Need at least 112 bytes
     Array.Copy(encodeShiftJis "KS", 0, data, 0, 2)
 
-    match Xanthos.Core.Records.KS.parse data with
+    match Xanthos.Legacy.Records.KS.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
     | Ok _ -> failwith "Should have returned error"
     | Error _ -> failwith "Wrong error type"
@@ -517,7 +517,7 @@ let ``CH parser returns error when record is too short`` () =
     let data = Array.create 50 32uy // Need at least 80 bytes
     Array.Copy(encodeShiftJis "CH", 0, data, 0, 2)
 
-    match Xanthos.Core.Records.CH.parse data with
+    match Xanthos.Legacy.Records.CH.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
     | Ok _ -> failwith "Should have returned error"
     | Error _ -> failwith "Wrong error type"
@@ -527,7 +527,7 @@ let ``BR parser returns error when record is too short`` () =
     let data = Array.create 30 32uy // Need at least 61 bytes
     Array.Copy(encodeShiftJis "BR", 0, data, 0, 2)
 
-    match Xanthos.Core.Records.BR.parse data with
+    match Xanthos.Legacy.Records.BR.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
     | Ok _ -> failwith "Should have returned error"
     | Error _ -> failwith "Wrong error type"
@@ -537,7 +537,7 @@ let ``BN parser returns error when record is too short`` () =
     let data = Array.create 30 32uy // Need at least 62 bytes
     Array.Copy(encodeShiftJis "BN", 0, data, 0, 2)
 
-    match Xanthos.Core.Records.BN.parse data with
+    match Xanthos.Legacy.Records.BN.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
     | Ok _ -> failwith "Should have returned error"
     | Error _ -> failwith "Wrong error type"
@@ -547,7 +547,7 @@ let ``RC parser returns error when record is too short`` () =
     let data = Array.create 50 32uy // Need at least 77 bytes
     Array.Copy(encodeShiftJis "RC", 0, data, 0, 2)
 
-    match Xanthos.Core.Records.RC.parse data with
+    match Xanthos.Legacy.Records.RC.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
     | Ok _ -> failwith "Should have returned error"
     | Error _ -> failwith "Wrong error type"
@@ -566,7 +566,7 @@ let ``O2 parser handles maximum place odds value`` () =
     Array.Copy(encodeShiftJis "9999", 0, data, 20, 4) // Maximum min odds 999.9
     Array.Copy(encodeShiftJis "9999", 0, data, 24, 4) // Maximum max odds 999.9
 
-    match Xanthos.Core.Records.O2.parse data with
+    match Xanthos.Legacy.Records.O2.parse data with
     | Ok record ->
         Assert.Equal(Some 999.9M, record.OddsMin)
         Assert.Equal(Some 999.9M, record.OddsMax)
@@ -582,7 +582,7 @@ let ``O4 parser handles zero odds value`` () =
     Array.Copy(encodeShiftJis "07", 0, data, 20, 2)
     Array.Copy(encodeShiftJis "0000", 0, data, 22, 4) // Zero odds
 
-    match Xanthos.Core.Records.O4.parse data with
+    match Xanthos.Legacy.Records.O4.parse data with
     | Ok record -> Assert.Equal(Some 0.0M, record.Odds)
     | Error _ -> failwith "Should handle zero odds"
 
@@ -599,7 +599,7 @@ let ``KS parser handles empty optional fields`` () =
     Array.Copy(encodeShiftJis jockeyCode, 0, data, 2, 5)
     Array.Copy(encodeShiftJis jockeyName, 0, data, 7, 10) // JockeyName required
 
-    match Xanthos.Core.Records.KS.parse data with
+    match Xanthos.Legacy.Records.KS.parse data with
     | Ok record ->
         Assert.Equal(jockeyCode, record.JockeyCode)
         Assert.Equal(jockeyName, record.JockeyName)
@@ -619,7 +619,7 @@ let ``CH parser handles empty optional fields`` () =
     Array.Copy(encodeShiftJis trainerCode, 0, data, 2, 5)
     Array.Copy(encodeShiftJis trainerName, 0, data, 7, 11) // TrainerName required
 
-    match Xanthos.Core.Records.CH.parse data with
+    match Xanthos.Legacy.Records.CH.parse data with
     | Ok record ->
         Assert.Equal(trainerCode, record.TrainerCode)
         Assert.Equal(trainerName, record.TrainerName)
@@ -642,7 +642,7 @@ let ``RC parser handles empty optional fields returning None`` () =
     Array.Copy(encodeShiftJis "TestRace", 0, data, 6, 8)
     // Leave Grade (offset 76), RaceCondition (offset 77), Distance (offset 79), TrackSurface (offset 83) as spaces
 
-    match Xanthos.Core.Records.RC.parse data with
+    match Xanthos.Legacy.Records.RC.parse data with
     | Ok record ->
         Assert.Equal("1234", record.RaceCode)
         Assert.Equal(None, record.Grade) // Empty code should be None
@@ -663,7 +663,7 @@ let ``RC parser handles all optional fields with valid values`` () =
     Array.Copy(encodeShiftJis "1800", 0, data, 79, 4) // Distance
     Array.Copy(encodeShiftJis "2", 0, data, 83, 1) // TrackSurface: Dirt
 
-    match Xanthos.Core.Records.RC.parse data with
+    match Xanthos.Legacy.Records.RC.parse data with
     | Ok record ->
         Assert.Equal("5678", record.RaceCode)
         Assert.True(record.RaceNameShort.IsSome)
@@ -682,7 +682,7 @@ let ``RC parser handles unknown code values`` () =
     Array.Copy(encodeShiftJis "99", 0, data, 77, 2) // Unknown race condition
     Array.Copy(encodeShiftJis "9", 0, data, 83, 1) // Unknown track surface
 
-    match Xanthos.Core.Records.RC.parse data with
+    match Xanthos.Legacy.Records.RC.parse data with
     | Ok record ->
         // Unknown codes should still parse (as None or Unknown variant)
         Assert.Equal("9999", record.RaceCode)
@@ -696,7 +696,7 @@ let ``BR parser handles empty optional fields returning None`` () =
     Array.Copy(encodeShiftJis "TestHorse", 0, data, 12, 9)
     // Leave HairColor (offset 48), BirthYear (offset 49) as spaces
 
-    match Xanthos.Core.Records.BR.parse data with
+    match Xanthos.Legacy.Records.BR.parse data with
     | Ok record ->
         Assert.Equal("2020123456", record.HorseId)
         Assert.Equal(None, record.HairColor)
@@ -717,7 +717,7 @@ let ``BR parser handles all optional fields with valid values`` () =
     Array.Copy(encodeShiftJis "MotherHorse", 0, data, 89, 11) // MotherName
     Array.Copy(encodeShiftJis "GrandFather", 0, data, 125, 11) // MotherFatherName
 
-    match Xanthos.Core.Records.BR.parse data with
+    match Xanthos.Legacy.Records.BR.parse data with
     | Ok record ->
         Assert.Equal("2021654321", record.HorseId)
         Assert.Equal(Some HairColorCode.Chestnut, record.HairColor)
@@ -735,7 +735,7 @@ let ``BN parser handles empty optional fields returning None`` () =
     Array.Copy(encodeShiftJis "TestBreed", 0, data, 12, 9)
     // Leave Sex (offset 48), HairColor (offset 49), BirthYear (offset 50) as spaces
 
-    match Xanthos.Core.Records.BN.parse data with
+    match Xanthos.Legacy.Records.BN.parse data with
     | Ok record ->
         Assert.Equal("2020111111", record.HorseId)
         Assert.Equal(None, record.Sex)
@@ -754,7 +754,7 @@ let ``BN parser handles all optional fields with valid values`` () =
     Array.Copy(encodeShiftJis "2018", 0, data, 50, 4) // BirthYear
     Array.Copy(encodeShiftJis "Father", 0, data, 54, 6)
 
-    match Xanthos.Core.Records.BN.parse data with
+    match Xanthos.Legacy.Records.BN.parse data with
     | Ok record ->
         Assert.Equal("2021222222", record.HorseId)
         Assert.Equal(Some SexCode.Female, record.Sex)
@@ -769,7 +769,7 @@ let ``AV parser handles empty optional fields`` () =
     Array.Copy(encodeShiftJis "2024050512345601", 0, data, 2, 16)
     // Leave OldTrackCondition (offset 18), NewTrackCondition (offset 19), UpdateTime (offset 20) as spaces
 
-    match Xanthos.Core.Records.AV.parse data with
+    match Xanthos.Legacy.Records.AV.parse data with
     | Ok record ->
         Assert.Equal("2024050512345601", record.RaceKey)
         Assert.Equal(None, record.OldTrackCondition)
@@ -786,7 +786,7 @@ let ``AV parser handles all fields with valid values`` () =
     Array.Copy(encodeShiftJis "2", 0, data, 19, 1) // NewTrackCondition: Yielding
     Array.Copy(encodeShiftJis "202405051200", 0, data, 20, 12) // UpdateTime
 
-    match Xanthos.Core.Records.AV.parse data with
+    match Xanthos.Legacy.Records.AV.parse data with
     | Ok record ->
         Assert.Equal("2024050512345602", record.RaceKey)
         Assert.Equal(Some TrackConditionCode.Good, record.OldTrackCondition)
@@ -801,7 +801,7 @@ let ``WE parser handles empty optional fields`` () =
     Array.Copy(encodeShiftJis "2024050512345603", 0, data, 2, 16)
     // Leave OldWeather, NewWeather, UpdateTime as spaces
 
-    match Xanthos.Core.Records.WE.parse data with
+    match Xanthos.Legacy.Records.WE.parse data with
     | Ok record ->
         Assert.Equal("2024050512345603", record.RaceKey)
         Assert.Equal(None, record.OldWeather)
@@ -818,7 +818,7 @@ let ``WE parser handles all fields with valid values`` () =
     Array.Copy(encodeShiftJis "2", 0, data, 19, 1) // NewWeather
     Array.Copy(encodeShiftJis "202405051430", 0, data, 20, 12) // UpdateTime
 
-    match Xanthos.Core.Records.WE.parse data with
+    match Xanthos.Legacy.Records.WE.parse data with
     | Ok record ->
         Assert.Equal("2024050512345604", record.RaceKey)
         Assert.True(record.OldWeather.IsSome)
@@ -833,7 +833,7 @@ let ``TC parser handles empty optional fields`` () =
     Array.Copy(encodeShiftJis "2024050512345678", 0, data, 2, 16)
     // Leave other fields as spaces
 
-    match Xanthos.Core.Records.TC.parse data with
+    match Xanthos.Legacy.Records.TC.parse data with
     | Ok record ->
         Assert.Equal("2024050512345678", record.RaceKey)
         Assert.Equal(None, record.HorseNumber)
@@ -847,7 +847,7 @@ let ``JC parser handles empty optional fields`` () =
     Array.Copy(encodeShiftJis "2024050512345678", 0, data, 2, 16)
     // Leave other fields as spaces
 
-    match Xanthos.Core.Records.JC.parse data with
+    match Xanthos.Legacy.Records.JC.parse data with
     | Ok record ->
         Assert.Equal("2024050512345678", record.RaceKey)
         Assert.Equal(None, record.HorseNumber)
@@ -861,7 +861,7 @@ let ``CC parser handles empty optional fields`` () =
     Array.Copy(encodeShiftJis "2024050512345678", 0, data, 2, 16)
     // Leave other fields as spaces
 
-    match Xanthos.Core.Records.CC.parse data with
+    match Xanthos.Legacy.Records.CC.parse data with
     | Ok record ->
         Assert.Equal("2024050512345678", record.RaceKey)
         Assert.Equal(None, record.OldTrackSurface)
@@ -880,7 +880,7 @@ let ``O2 parser handles empty odds fields`` () =
     Array.Copy(encodeShiftJis "01", 0, data, 18, 2)
     // Leave odds fields as spaces
 
-    match Xanthos.Core.Records.O2.parse data with
+    match Xanthos.Legacy.Records.O2.parse data with
     | Ok record ->
         Assert.Equal("2024050512345678", record.RaceKey)
         Assert.Equal(None, record.OddsMin)
@@ -896,7 +896,7 @@ let ``O3 parser handles empty odds fields`` () =
     Array.Copy(encodeShiftJis "2", 0, data, 19, 1) // BracketNumber2
     // Leave Odds (offset 20) as spaces
 
-    match Xanthos.Core.Records.O3.parse data with
+    match Xanthos.Legacy.Records.O3.parse data with
     | Ok record ->
         Assert.Equal("2024050512345678", record.RaceKey)
         Assert.Equal(None, record.Odds)
@@ -911,7 +911,7 @@ let ``O4 parser handles empty odds fields`` () =
     Array.Copy(encodeShiftJis "02", 0, data, 20, 2)
     // Leave odds as spaces
 
-    match Xanthos.Core.Records.O4.parse data with
+    match Xanthos.Legacy.Records.O4.parse data with
     | Ok record ->
         Assert.Equal("2024050512345678", record.RaceKey)
         Assert.Equal(None, record.Odds)
@@ -926,7 +926,7 @@ let ``O5 parser handles empty odds fields`` () =
     Array.Copy(encodeShiftJis "02", 0, data, 20, 2)
     // Leave odds as spaces
 
-    match Xanthos.Core.Records.O5.parse data with
+    match Xanthos.Legacy.Records.O5.parse data with
     | Ok record ->
         Assert.Equal("2024050512345678", record.RaceKey)
         Assert.Equal(None, record.OddsMin)
@@ -941,7 +941,7 @@ let ``O6 parser handles empty odds fields`` () =
     Array.Copy(encodeShiftJis "01", 0, data, 18, 2)
     // Leave popularity and odds as spaces
 
-    match Xanthos.Core.Records.O6.parse data with
+    match Xanthos.Legacy.Records.O6.parse data with
     | Ok record ->
         Assert.Equal("2024050512345678", record.RaceKey)
         Assert.Equal(None, record.Popularity)
@@ -954,7 +954,7 @@ let ``H5 parser handles empty optional fields`` () =
     Array.Copy(encodeShiftJis "2024050512345678", 0, data, 2, 16)
     // Leave optional fields as spaces
 
-    match Xanthos.Core.Records.H5.parse data with
+    match Xanthos.Legacy.Records.H5.parse data with
     | Ok record ->
         Assert.Equal("2024050512345678", record.RaceKey)
         Assert.Equal(None, record.Payoff)
@@ -968,7 +968,7 @@ let ``H6 parser handles empty optional fields`` () =
     Array.Copy(encodeShiftJis "2024050512345678", 0, data, 2, 16)
     // Leave optional fields as spaces
 
-    match Xanthos.Core.Records.H6.parse data with
+    match Xanthos.Legacy.Records.H6.parse data with
     | Ok record ->
         Assert.Equal("2024050512345678", record.RaceKey)
         Assert.Equal(None, record.Payoff)
@@ -982,7 +982,7 @@ let ``HR parser handles empty optional fields`` () =
     Array.Copy(encodeShiftJis "2024050512345678", 0, data, 2, 16)
     // Leave optional fields as spaces
 
-    match Xanthos.Core.Records.HR.parse data with
+    match Xanthos.Legacy.Records.HR.parse data with
     | Ok record ->
         Assert.Equal("2024050512345678", record.RaceKey)
         Assert.Equal(None, record.BetType)
@@ -998,7 +998,7 @@ let ``HR parser handles all optional fields with values`` () =
     Array.Copy(encodeShiftJis "05", 0, data, 19, 2) // HorseNumber1
     Array.Copy(encodeShiftJis "000012345", 0, data, 25, 9) // Payoff
 
-    match Xanthos.Core.Records.HR.parse data with
+    match Xanthos.Legacy.Records.HR.parse data with
     | Ok record ->
         Assert.Equal("2024050512345679", record.RaceKey)
         Assert.Equal(Some 1, record.BetType)

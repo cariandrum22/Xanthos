@@ -17,7 +17,10 @@ type ExecutionContext =
     { Globals: GlobalSettings
       Config: JvLinkConfig
       Activation: ClientActivation
-      Logger: TraceLogger }
+      Logger: TraceLogger
+      WriteLine: string -> unit }
+
+let private write (ctx: ExecutionContext) format = Printf.kprintf ctx.WriteLine format
 
 let private modeString activation =
     match activation.Mode with
@@ -72,11 +75,11 @@ let private printEvidence ctx (service: JvLinkService) =
         | Ok v -> v
         | Error _ -> "unknown"
 
-    printfn "EVIDENCE:MODE=%s" modeText
-    printfn "EVIDENCE:VERSION=%s" version
+    write ctx "EVIDENCE:MODE=%s" modeText
+    write ctx "EVIDENCE:VERSION=%s" version
     version
 
-let createExecutionContext globals =
+let createExecutionContextWithWriter writer globals =
     result {
         // Pass UseJvGets from global settings; when None, env var controls it
         let! config = JvLinkConfig.create globals.Sid globals.SavePath globals.ServiceKey globals.UseJvGets
@@ -91,39 +94,24 @@ let createExecutionContext globals =
             | StubPreference.ForcedByPlatform ->
                 { Mode = Stub "platform limitation"
                   FallbackCom = false }
-            | StubPreference.PreferCom ->
-                if OperatingSystem.IsWindows() then
-                    // Probe COM availability to determine mode
-                    match ComClientFactory.tryCreate None with
-                    | Ok probeClient ->
-                        // Dispose the probe client immediately - actual clients are created per-service
-                        match box probeClient with
-                        | :? IDisposable as d -> d.Dispose()
-                        | _ -> ()
+            | StubPreference.PreferCom -> { Mode = Com; FallbackCom = false }
 
-                        { Mode = Com; FallbackCom = false }
-                    | Error fault ->
-                        // COM activation failed, fall back to stub - include error details for diagnostics
-                        let details =
-                            match fault.Details with
-                            | null
-                            | "" -> "unknown reason"
-                            | d -> d
-
-                        { Mode = Stub $"COM activation failed: {details}"
-                          FallbackCom = true }
-                else
-                    { Mode = Stub "non-Windows fallback"
-                      FallbackCom = false }
-
-        let logger = TraceLogger.ofConsole ()
+        let logger =
+            { Info = fun message -> writer $"[INFO ] {message}"
+              Warn = fun message -> writer $"[WARN ] {message}"
+              Error = fun message -> writer $"[ERROR] {message}"
+              Debug = fun message -> writer $"[DEBUG] {message}" }
 
         return
             { Globals = globals
               Config = config
               Activation = activation
-              Logger = logger }
+              Logger = logger
+              WriteLine = writer }
     }
+
+let createExecutionContext globals =
+    createExecutionContextWithWriter Console.WriteLine globals
 
 let describeMode activation =
     match activation.Mode with
@@ -136,9 +124,12 @@ let configureDiagnostics enabled (logger: TraceLogger) =
     else
         Diagnostics.clear ()
 
-let reportError label err =
-    printfn "%s: %s" label (describeError err)
+let reportErrorWithWriter writer label err =
+    Printf.kprintf writer "%s: %s" label (describeError err)
     2
+
+let reportError label err =
+    reportErrorWithWriter Console.WriteLine label err
 
 /// Executes a function with a service, handling client creation failures.
 /// Returns exit code 2 if client creation fails.
@@ -146,18 +137,23 @@ let private withService ctx (f: JvLinkService -> int) : int =
     match tryCreateService ctx with
     | Ok service ->
         use service = service
-        f service
+
+        match service.Initialize() with
+        | Ok() ->
+            printEvidence ctx service |> ignore
+            f service
+        | Error err -> reportErrorWithWriter ctx.WriteLine "Initialization failed" err
     | Error msg ->
-        printfn "Client creation failed: %s" msg
+        write ctx "Client creation failed: %s" msg
         2
 
 let runVersion ctx =
     withService ctx (fun service ->
         if ctx.Globals.EnableDiagnostics && ctx.Activation.Mode = Com then
-            printfn "CALL JVInit"
+            write ctx "CALL JVInit"
 
         let version = printEvidence ctx service
-        printfn "JV-Link version: %s" version
+        write ctx "JV-Link version: %s" version
         0)
 
 let runDownload ctx args =
@@ -201,7 +197,7 @@ let runDownload ctx args =
                     else
                         fullText
 
-                printfn "Payload %d: %d bytes - %s" (idx + 1) payload.Data.Length preview)
+                write ctx "Payload %d: %d bytes - %s" (idx + 1) payload.Data.Length preview)
 
             match args.OutputDirectory with
             | Some dir ->
@@ -212,22 +208,22 @@ let runDownload ctx args =
                     let filename = Path.Combine(dir, $"payload_{idx + 1:D3}.bin")
                     File.WriteAllBytes(filename, payload.Data))
 
-                printfn "Persisted %d file(s) to %s" payloads.Length dir
+                write ctx "Persisted %d file(s) to %s" payloads.Length dir
             | None -> ()
 
-            printfn "Download completed (spec=%s option=%d)." args.Request.Spec args.Request.Option
+            write ctx "Download completed (spec=%s option=%d)." args.Request.Spec args.Request.Option
             0
-        | Error err -> reportError "Download failed" err)
+        | Error err -> reportErrorWithWriter ctx.WriteLine "Download failed" err)
 
 let runRealtime ctx args =
     withService ctx (fun service ->
         let _ = printEvidence ctx service
 
         if args.Continuous then
-            printfn "Starting continuous realtime streaming for %s (key=%s)..." args.Spec args.Key
-            printfn "Press Ctrl+C to stop streaming."
+            write ctx "Starting continuous realtime streaming for %s (key=%s)..." args.Spec args.Key
+            write ctx "Press Ctrl+C to stop streaming."
         else
-            printfn "Starting realtime streaming for %s (key=%s)..." args.Spec args.Key
+            write ctx "Starting realtime streaming for %s (key=%s)..." args.Spec args.Key
 
         let mutable count = 0
         let mutable lastError: XanthosError option = None
@@ -240,8 +236,8 @@ let runRealtime ctx args =
             // Create handler as a named delegate so we can remove it later
             let cancelHandler =
                 ConsoleCancelEventHandler(fun _ eventArgs ->
-                    printfn ""
-                    printfn "Cancellation requested..."
+                    write ctx ""
+                    write ctx "Cancellation requested..."
                     eventArgs.Cancel <- true // Prevent immediate termination
                     cancelled <- true
                     // Only cancel if CTS hasn't been disposed
@@ -272,10 +268,10 @@ let runRealtime ctx args =
                                 match enumerator.Current with
                                 | Ok payload ->
                                     count <- count + 1
-                                    printfn "Realtime payload %d: %d bytes" count payload.Data.Length
+                                    write ctx "Realtime payload %d: %d bytes" count payload.Data.Length
                                 | Error err ->
                                     lastError <- Some err
-                                    printfn "Stream error: %s" (describeError err)
+                                    write ctx "Stream error: %s" (describeError err)
                     finally
                         enumerator.DisposeAsync().AsTask().Wait()
                 }
@@ -287,7 +283,7 @@ let runRealtime ctx args =
                         match ex.InnerExceptions |> Seq.tryFind (fun e -> e :? OperationCanceledException) with
                         | Some _ ->
                             cancelled <- true
-                            printfn "Streaming cancelled by user."
+                            write ctx "Streaming cancelled by user."
                         | None -> reraise ()
             finally
                 // Always remove the handler to prevent accumulation and ObjectDisposedException
@@ -298,10 +294,10 @@ let runRealtime ctx args =
                 match result with
                 | Ok payload ->
                     count <- count + 1
-                    printfn "Realtime payload %d: %d bytes" count payload.Data.Length
+                    write ctx "Realtime payload %d: %d bytes" count payload.Data.Length
                 | Error err ->
                     lastError <- Some err
-                    printfn "Stream error: %s" (describeError err)
+                    write ctx "Stream error: %s" (describeError err)
 
         // Only show completion message if not cancelled
         if cancelled then
@@ -309,10 +305,10 @@ let runRealtime ctx args =
         else
             match lastError with
             | Some err ->
-                printfn "Realtime stream ended with error for %s (key=%s)." args.Spec args.Key
-                reportError "Realtime streaming failed" err
+                write ctx "Realtime stream ended with error for %s (key=%s)." args.Spec args.Key
+                reportErrorWithWriter ctx.WriteLine "Realtime streaming failed" err
             | None ->
-                printfn "Realtime stream completed for %s (key=%s). Total payloads: %d" args.Spec args.Key count
+                write ctx "Realtime stream completed for %s (key=%s). Total payloads: %d" args.Spec args.Key count
                 0)
 
 let runSetSaveFlag ctx value =
@@ -321,17 +317,17 @@ let runSetSaveFlag ctx value =
 
         match service.SetSaveDownloadsEnabled value with
         | Ok() ->
-            printfn "Save flag set to %b." value
+            write ctx "Save flag set to %b." value
             0
-        | Error err -> reportError "Failed to set save flag" err)
+        | Error err -> reportErrorWithWriter ctx.WriteLine "Failed to set save flag" err)
 
 let runGetSaveFlag ctx =
     withService ctx (fun service ->
         match service.GetSaveDownloadsEnabled() with
         | Ok value ->
-            printfn "Save flag: %b" value
+            write ctx "Save flag: %b" value
             0
-        | Error err -> reportError "Failed to get save flag" err)
+        | Error err -> reportErrorWithWriter ctx.WriteLine "Failed to get save flag" err)
 
 let runSetSavePath ctx path =
     withService ctx (fun service ->
@@ -339,17 +335,17 @@ let runSetSavePath ctx path =
 
         match service.SetSavePath path with
         | Ok() ->
-            printfn "Save path updated to %s" path
+            write ctx "Save path updated to %s" path
             0
-        | Error err -> reportError "Failed to set save path" err)
+        | Error err -> reportErrorWithWriter ctx.WriteLine "Failed to set save path" err)
 
 let runGetSavePath ctx =
     withService ctx (fun service ->
         match service.GetSavePath() with
         | Ok path ->
-            printfn "Save path: %s" path
+            write ctx "Save path: %s" path
             0
-        | Error err -> reportError "Failed to get save path" err)
+        | Error err -> reportErrorWithWriter ctx.WriteLine "Failed to get save path" err)
 
 let runSetServiceKey ctx key =
     withService ctx (fun service ->
@@ -357,17 +353,24 @@ let runSetServiceKey ctx key =
 
         match service.SetServiceKey key with
         | Ok() ->
-            printfn "Service key updated."
+            write ctx "Service key updated."
             0
-        | Error err -> reportError "Failed to set service key" err)
+        | Error err -> reportErrorWithWriter ctx.WriteLine "Failed to set service key" err)
 
 let runGetServiceKey ctx =
     withService ctx (fun service ->
         match service.GetServiceKey() with
         | Ok key ->
-            printfn "Service key: %s" key
+            write
+                ctx
+                "Service key: %s"
+                (if String.IsNullOrWhiteSpace key then
+                     "not configured"
+                 else
+                     "registered")
+
             0
-        | Error err -> reportError "Failed to get service key" err)
+        | Error err -> reportErrorWithWriter ctx.WriteLine "Failed to get service key" err)
 
 let runSetPayoffDialog ctx value =
     withService ctx (fun service ->
@@ -375,17 +378,17 @@ let runSetPayoffDialog ctx value =
 
         match service.SetPayoffDialogSuppressed value with
         | Ok() ->
-            printfn "Payoff dialog suppression set to %b." value
+            write ctx "Payoff dialog suppression set to %b." value
             0
-        | Error err -> reportError "Failed to set payoff dialog" err)
+        | Error err -> reportErrorWithWriter ctx.WriteLine "Failed to set payoff dialog" err)
 
 let runGetPayoffDialog ctx =
     withService ctx (fun service ->
         match service.GetPayoffDialogSuppressed() with
         | Ok value ->
-            printfn "Payoff dialog suppressed: %b" value
+            write ctx "Payoff dialog suppressed: %b" value
             0
-        | Error err -> reportError "Failed to get payoff dialog" err)
+        | Error err -> reportErrorWithWriter ctx.WriteLine "Failed to get payoff dialog" err)
 
 let runSetParentHwnd ctx hwnd =
     withService ctx (fun service ->
@@ -393,17 +396,17 @@ let runSetParentHwnd ctx hwnd =
 
         match service.SetParentWindowHandle hwnd with
         | Ok() ->
-            printfn "Parent HWND set to %A." hwnd
+            write ctx "Parent HWND set to %A." hwnd
             0
-        | Error err -> reportError "Failed to set parent HWND" err)
+        | Error err -> reportErrorWithWriter ctx.WriteLine "Failed to set parent HWND" err)
 
 let runGetParentHwnd ctx =
     withService ctx (fun service ->
         match service.GetParentWindowHandle() with
         | Ok hwnd ->
-            printfn "Parent HWND: %A" hwnd
+            write ctx "Parent HWND: %A" hwnd
             0
-        | Error err -> reportError "Failed to get parent HWND" err)
+        | Error err -> reportErrorWithWriter ctx.WriteLine "Failed to get parent HWND" err)
 
 let runCourseFile ctx key =
     withService ctx (fun service ->
@@ -412,11 +415,11 @@ let runCourseFile ctx key =
         match service.GetCourseDiagram key with
         | Ok diagram ->
             match diagram.Explanation with
-            | Some explanation -> printfn "Course file [%s]: Path=%s Explanation=%s" key diagram.FilePath explanation
-            | None -> printfn "Course file [%s]: Path=%s" key diagram.FilePath
+            | Some explanation -> write ctx "Course file [%s]: Path=%s Explanation=%s" key diagram.FilePath explanation
+            | None -> write ctx "Course file [%s]: Path=%s" key diagram.FilePath
 
             0
-        | Error err -> reportError "Failed to get course file" err)
+        | Error err -> reportErrorWithWriter ctx.WriteLine "Failed to get course file" err)
 
 let runCourseFile2 ctx (args: CourseFile2Args) =
     withService ctx (fun service ->
@@ -424,9 +427,9 @@ let runCourseFile2 ctx (args: CourseFile2Args) =
 
         match service.GetCourseDiagramBasic(args.Key, args.OutputPath) with
         | Ok diagram ->
-            printfn "Course file (v2) [%s]: Path=%s" args.Key diagram.FilePath
+            write ctx "Course file (v2) [%s]: Path=%s" args.Key diagram.FilePath
             0
-        | Error err -> reportError "Failed to get course file (v2)" err)
+        | Error err -> reportErrorWithWriter ctx.WriteLine "Failed to get course file (v2)" err)
 
 let runSilksFile ctx args =
     withService ctx (fun service ->
@@ -435,9 +438,9 @@ let runSilksFile ctx args =
         match service.GenerateSilksFile(args.Pattern, args.OutputPath) with
         | Ok silks ->
             let path = silks.FilePath |> Option.defaultValue args.OutputPath
-            printfn "Silks image written to %s" path
+            write ctx "Silks image written to %s" path
             0
-        | Error err -> reportError "Failed to generate silks file" err)
+        | Error err -> reportErrorWithWriter ctx.WriteLine "Failed to generate silks file" err)
 
 let runSilksBinary ctx pattern =
     withService ctx (fun service ->
@@ -446,9 +449,9 @@ let runSilksBinary ctx pattern =
         match service.GetSilksBinary pattern with
         | Ok silks ->
             let size = silks.Data |> Option.map (fun d -> d.Length) |> Option.defaultValue 0
-            printfn "Generated %d bytes of silks data for %s" size pattern
+            write ctx "Generated %d bytes of silks data for %s" size pattern
             0
-        | Error err -> reportError "Failed to get silks binary" err)
+        | Error err -> reportErrorWithWriter ctx.WriteLine "Failed to get silks binary" err)
 
 let runMovieCheck ctx key =
     withService ctx (fun service ->
@@ -456,9 +459,9 @@ let runMovieCheck ctx key =
 
         match service.CheckMovieAvailability key with
         | Ok availability ->
-            printfn "Movie availability for %s: %A" key availability
+            write ctx "Movie availability for %s: %A" key availability
             0
-        | Error err -> reportError "Failed to check movie availability" err)
+        | Error err -> reportErrorWithWriter ctx.WriteLine "Failed to check movie availability" err)
 
 let runMovieCheckWithType ctx args =
     withService ctx (fun service ->
@@ -468,9 +471,9 @@ let runMovieCheckWithType ctx args =
 
         match service.CheckMovieAvailability(movieType, args.MovieKey) with
         | Ok availability ->
-            printfn "Movie availability for type=%s key=%s: %A" args.MovieTypeCode args.MovieKey availability
+            write ctx "Movie availability for type=%s key=%s: %A" args.MovieTypeCode args.MovieKey availability
             0
-        | Error err -> reportError "Failed to check movie availability with type" err)
+        | Error err -> reportErrorWithWriter ctx.WriteLine "Failed to check movie availability with type" err)
 
 let runMoviePlay ctx key =
     withService ctx (fun service ->
@@ -478,9 +481,9 @@ let runMoviePlay ctx key =
 
         match service.PlayMovie key with
         | Ok() ->
-            printfn "JVMVPlay succeeded for key=%s" key
+            write ctx "JVMVPlay succeeded for key=%s" key
             0
-        | Error err -> reportError "Failed to play movie" err)
+        | Error err -> reportErrorWithWriter ctx.WriteLine "Failed to play movie" err)
 
 let runMoviePlayWithType ctx args =
     withService ctx (fun service ->
@@ -490,9 +493,9 @@ let runMoviePlayWithType ctx args =
 
         match service.PlayMovie(movieType, args.MovieKey) with
         | Ok() ->
-            printfn "JVMVPlayWithType succeeded for type=%s key=%s" args.MovieTypeCode args.MovieKey
+            write ctx "JVMVPlayWithType succeeded for type=%s key=%s" args.MovieTypeCode args.MovieKey
             0
-        | Error err -> reportError "Failed to play movie with type" err)
+        | Error err -> reportErrorWithWriter ctx.WriteLine "Failed to play movie with type" err)
 
 let runMovieOpen ctx args =
     withService ctx (fun service ->
@@ -502,14 +505,14 @@ let runMovieOpen ctx args =
 
         match service.FetchWorkoutVideos(movieType, args.MovieSearchKey) with
         | Ok listings ->
-            printfn "JVMVOpen succeeded for type=%s search=%s." args.MovieOpenType args.MovieSearchKey
-            printfn "Found %d workout video listing(s)." listings.Length
+            write ctx "JVMVOpen succeeded for type=%s search=%s." args.MovieOpenType args.MovieSearchKey
+            write ctx "Found %d workout video listing(s)." listings.Length
 
             for listing in listings do
-                printfn "  Workout: %s" listing.RawKey
+                write ctx "  Workout: %s" listing.RawKey
 
             0
-        | Error err -> reportError "Failed to open movie" err)
+        | Error err -> reportErrorWithWriter ctx.WriteLine "Failed to open movie" err)
 
 let runStatus ctx =
     withService ctx (fun service ->
@@ -517,9 +520,9 @@ let runStatus ctx =
 
         match service.GetStatus() with
         | Ok count ->
-            printfn "Status: Completed %d file(s)." count
+            write ctx "Status: Completed %d file(s)." count
             0
-        | Error err -> reportError "Failed to get status" err)
+        | Error err -> reportErrorWithWriter ctx.WriteLine "Failed to get status" err)
 
 let runSkip ctx =
     withService ctx (fun service ->
@@ -527,9 +530,9 @@ let runSkip ctx =
 
         match service.SkipCurrentFile() with
         | Ok() ->
-            printfn "JVSkip succeeded."
+            write ctx "JVSkip succeeded."
             0
-        | Error err -> reportError "Failed to skip" err)
+        | Error err -> reportErrorWithWriter ctx.WriteLine "Failed to skip" err)
 
 let runCancel ctx =
     withService ctx (fun service ->
@@ -537,9 +540,9 @@ let runCancel ctx =
 
         match service.CancelDownload() with
         | Ok() ->
-            printfn "JVCancel succeeded."
+            write ctx "JVCancel succeeded."
             0
-        | Error err -> reportError "Failed to cancel" err)
+        | Error err -> reportErrorWithWriter ctx.WriteLine "Failed to cancel" err)
 
 let runDeleteFile ctx name =
     withService ctx (fun service ->
@@ -547,9 +550,9 @@ let runDeleteFile ctx name =
 
         match service.DeleteFile name with
         | Ok() ->
-            printfn "JVFiledelete succeeded for %s." name
+            write ctx "JVFiledelete succeeded for %s." name
             0
-        | Error err -> reportError "Failed to delete file" err)
+        | Error err -> reportErrorWithWriter ctx.WriteLine "Failed to delete file" err)
 
 let runTotalReadSize ctx =
     withService ctx (fun service ->
@@ -557,9 +560,9 @@ let runTotalReadSize ctx =
 
         match service.GetTotalReadFileSizeBytes() with
         | Ok size ->
-            printfn "Total read file size: %d bytes" size
+            write ctx "Total read file size: %d bytes" size
             0
-        | Error err -> reportError "Failed to get total read file size" err)
+        | Error err -> reportErrorWithWriter ctx.WriteLine "Failed to get total read file size" err)
 
 let runCurrentReadSize ctx =
     withService ctx (fun service ->
@@ -567,9 +570,9 @@ let runCurrentReadSize ctx =
 
         match service.GetCurrentReadFileSize() with
         | Ok size ->
-            printfn "Current file size: %d bytes" size
+            write ctx "Current file size: %d bytes" size
             0
-        | Error err -> reportError "Failed to get current read file size" err)
+        | Error err -> reportErrorWithWriter ctx.WriteLine "Failed to get current read file size" err)
 
 let runCurrentFileTimestamp ctx =
     withService ctx (fun service ->
@@ -578,11 +581,11 @@ let runCurrentFileTimestamp ctx =
         match service.GetCurrentFileTimestamp() with
         | Ok timestamp ->
             match timestamp with
-            | Some ts -> printfn "Current file timestamp: %s" (ts.ToString("o"))
-            | None -> printfn "Current file timestamp: (none)"
+            | Some ts -> write ctx "Current file timestamp: %s" (ts.ToString("o"))
+            | None -> write ctx "Current file timestamp: (none)"
 
             0
-        | Error err -> reportError "Failed to get current file timestamp" err)
+        | Error err -> reportErrorWithWriter ctx.WriteLine "Failed to get current file timestamp" err)
 
 /// Creates a separate service instance for realtime fetching.
 /// This is necessary because JvLinkService sessions cannot be shared -
@@ -593,7 +596,7 @@ let private fetchRealtimeWithSeparateSession (ctx: ExecutionContext) (req: Watch
     | Ok client ->
         // JvLinkService takes ownership of the client - disposing the service disposes the client
         use realtimeService = new JvLinkService(client, ctx.Config)
-        printfn "Opening realtime session for %s (key=%s)..." req.Dataspec req.Key
+        write ctx "Opening realtime session for %s (key=%s)..." req.Dataspec req.Key
 
         let payloads = ResizeArray<_>()
         let mutable errorOccurred = false
@@ -602,16 +605,16 @@ let private fetchRealtimeWithSeparateSession (ctx: ExecutionContext) (req: Watch
             match result with
             | Ok payload -> payloads.Add(payload)
             | Error err ->
-                printfn "Realtime fetch error: %s" (describeError err)
+                write ctx "Realtime fetch error: %s" (describeError err)
                 errorOccurred <- true
 
         if not errorOccurred then
-            printfn "Received %d realtime payload(s)." payloads.Count
+            write ctx "Received %d realtime payload(s)." payloads.Count
 
             for p in payloads do
-                printfn "  Payload: %d bytes" p.Data.Length
+                write ctx "  Payload: %d bytes" p.Data.Length
     // Service and client are automatically disposed when leaving scope
-    | Error msg -> printfn "Skipping realtime fetch: %s" msg
+    | Error msg -> write ctx "Skipping realtime fetch: %s" msg
 
 let runWatchEvents ctx args =
     withService ctx (fun watchService ->
@@ -624,37 +627,37 @@ let runWatchEvents ctx args =
                 | Some d -> $"{d.TotalSeconds} seconds"
                 | None -> "indefinite"
 
-            printfn "Watch events started successfully (%s)." durationText
+            write ctx "Watch events started successfully (%s)." durationText
 
             if args.OpenAfterRealtime then
-                printfn "Will open realtime session on event trigger (using separate service)."
+                write ctx "Will open realtime session on event trigger (using separate service)."
             // Subscribe to events and print them
             use subscription =
                 watchService.WatchEvents.Subscribe(fun result ->
                     match result with
                     | Ok ev ->
-                        printfn "Event received: %A" ev.Event
+                        write ctx "Event received: %A" ev.Event
                         // If --open-after is specified, open a realtime session for this event
                         // IMPORTANT: Use a separate service instance to avoid session interference
                         if args.OpenAfterRealtime then
                             match WatchEvent.toRealtimeRequest ev with
                             | Some req -> fetchRealtimeWithSeparateSession ctx req
-                            | None -> printfn "No realtime dataspec for event type %A" ev.Event
-                    | Error err -> printfn "Event error: %s" (describeError err))
+                            | None -> write ctx "No realtime dataspec for event type %A" ev.Event
+                    | Error err -> write ctx "Event error: %s" (describeError err))
             // Wait for specified duration or until cancelled
             match args.Duration with
             | Some d ->
                 Thread.Sleep(int d.TotalMilliseconds)
-                printfn "Watch duration elapsed."
+                write ctx "Watch duration elapsed."
             | None ->
-                printfn "Press Ctrl+C to stop watching..."
+                write ctx "Press Ctrl+C to stop watching..."
                 Thread.Sleep(Timeout.Infinite)
 
             watchService.StopWatchEvents() |> ignore
-            printfn "Watch events stopped."
+            write ctx "Watch events stopped."
             0
         | Error err ->
-            printfn "Failed to start watch events: %s" (describeError err)
+            write ctx "Failed to start watch events: %s" (describeError err)
             2)
 
 let runSetUiProperties ctx =
@@ -663,9 +666,9 @@ let runSetUiProperties ctx =
 
         match service.ShowConfigurationDialog() with
         | Ok() ->
-            printfn "JVSetUIProperties succeeded."
+            write ctx "JVSetUIProperties succeeded."
             0
-        | Error err -> reportError "Failed to show configuration dialog" err)
+        | Error err -> reportErrorWithWriter ctx.WriteLine "Failed to show configuration dialog" err)
 
 /// All known record types for coverage tracking
 let private knownRecordTypes =
@@ -720,15 +723,15 @@ let runCaptureFixtures ctx args =
     // Fixture capture requires real COM - refuse if using stub
     match ctx.Activation.Mode with
     | Stub reason ->
-        printfn "ERROR: capture-fixtures requires real COM connection."
-        printfn "Cannot capture fixtures: %s" reason
-        printfn "Run this command on Windows with JV-Link installed."
+        write ctx "ERROR: capture-fixtures requires real COM connection."
+        write ctx "Cannot capture fixtures: %s" reason
+        write ctx "Run this command on Windows with JV-Link installed."
         2
     | Com ->
         // Force JVGets when explicitly requested, regardless of env var defaults.
         let ctxForFixtures =
             if args.UseJvGets then
-                printfn "Using JVGets mode (--use-jvgets)"
+                write ctx "Using JVGets mode (--use-jvgets)"
 
                 { ctx with
                     Config =
@@ -739,22 +742,22 @@ let runCaptureFixtures ctx args =
 
         match tryCreateService ctxForFixtures with
         | Error msg ->
-            printfn "ERROR: COM client creation failed: %s" msg
+            write ctx "ERROR: COM client creation failed: %s" msg
             2
         | Ok service ->
 
             use service = service
             let _ = printEvidence ctx service
-            printfn "Starting fixture capture..."
-            printfn "Output directory: %s" args.FixturesOutputDir
-            printfn "Specs: %s" (String.concat ", " args.Specs)
-            printfn "From time: %s" (args.FromTime.ToString("yyyy-MM-dd HH:mm:ss"))
+            write ctx "Starting fixture capture..."
+            write ctx "Output directory: %s" args.FixturesOutputDir
+            write ctx "Specs: %s" (String.concat ", " args.Specs)
+            write ctx "From time: %s" (args.FromTime.ToString("yyyy-MM-dd HH:mm:ss"))
 
             match args.ToTime with
-            | Some toTime -> printfn "To time: %s" (toTime.ToString("yyyy-MM-dd HH:mm:ss"))
-            | None -> printfn "To time: (no limit)"
+            | Some toTime -> write ctx "To time: %s" (toTime.ToString("yyyy-MM-dd HH:mm:ss"))
+            | None -> write ctx "To time: (no limit)"
 
-            printfn "Max records per type: %d" args.MaxRecordsPerType
+            write ctx "Max records per type: %d" args.MaxRecordsPerType
 
             // Create base output directory
             Directory.CreateDirectory(args.FixturesOutputDir) |> ignore
@@ -776,8 +779,8 @@ let runCaptureFixtures ctx args =
                     )
 
             for spec in args.Specs do
-                printfn ""
-                printfn "Processing spec: %s" spec
+                write ctx ""
+                write ctx "Processing spec: %s" spec
                 let specDir = Path.Combine(args.FixturesOutputDir, spec.Replace("/", "_"))
 
                 let request = Validation.createOpenRequest spec args.FromTime 1
@@ -809,7 +812,8 @@ let runCaptureFixtures ctx args =
                 | Ok payloads ->
                     let filteredPayloads = filterByToTime payloads
 
-                    printfn
+                    write
+                        ctx
                         "  Fetched %d payload(s) (after filter: %d, read cap: %d)"
                         payloads.Length
                         filteredPayloads.Length
@@ -842,7 +846,8 @@ let runCaptureFixtures ctx args =
 
                             let statusIcon = if typeParseErrors = 0 then "✓" else "⚠"
 
-                            printfn
+                            write
+                                ctx
                                 "    %s %s: %d record(s) (capturing %d, parse errors: %d)"
                                 statusIcon
                                 recordType
@@ -879,22 +884,22 @@ let runCaptureFixtures ctx args =
                                 File.WriteAllText(metaFilename, meta, ConsoleEncoding.utf8NoBom)
                                 totalCaptured <- totalCaptured + 1)
                     else
-                        printfn "  No records to capture for this spec."
+                        write ctx "  No records to capture for this spec."
 
                 | Error err ->
-                    printfn "  ERROR: %s" (describeError err)
+                    write ctx "  ERROR: %s" (describeError err)
                     totalErrors <- totalErrors + 1
 
             // Print comprehensive summary
-            printfn ""
-            printfn "=========================================="
-            printfn "  CAPTURE SUMMARY"
-            printfn "=========================================="
-            printfn ""
-            printfn "Records captured: %d" totalCaptured
-            printfn "Parse errors: %d" parseErrors
-            printfn "Spec fetch errors: %d" totalErrors
-            printfn ""
+            write ctx ""
+            write ctx "=========================================="
+            write ctx "  CAPTURE SUMMARY"
+            write ctx "=========================================="
+            write ctx ""
+            write ctx "Records captured: %d" totalCaptured
+            write ctx "Parse errors: %d" parseErrors
+            write ctx "Spec fetch errors: %d" totalErrors
+            write ctx ""
 
             // Coverage analysis
             let capturedSet = capturedTypes |> Set.ofSeq
@@ -903,26 +908,27 @@ let runCaptureFixtures ctx args =
             let missing = Set.difference knownSet capturedSet
             let extra = Set.difference capturedSet knownSet
 
-            printfn "COVERAGE ANALYSIS"
-            printfn "-----------------"
+            write ctx "COVERAGE ANALYSIS"
+            write ctx "-----------------"
 
-            printfn
+            write
+                ctx
                 "Record types captured: %d/%d (%.1f%%)"
                 covered
                 knownRecordTypes.Length
                 (float covered / float knownRecordTypes.Length * 100.0)
 
-            printfn ""
+            write ctx ""
 
             if not (Set.isEmpty missing) then
                 let missingStr = missing |> Set.toList |> String.concat ", "
-                printfn "Missing record types (%d): %s" missing.Count missingStr
-                printfn ""
+                write ctx "Missing record types (%d): %s" missing.Count missingStr
+                write ctx ""
 
             if not (Set.isEmpty extra) then
                 let extraStr = extra |> Set.toList |> String.concat ", "
-                printfn "Unknown record types captured (%d): %s" extra.Count extraStr
-                printfn ""
+                write ctx "Unknown record types captured (%d): %s" extra.Count extraStr
+                write ctx ""
 
             // Group captured by category for better overview
             let categoryMap =
@@ -933,8 +939,8 @@ let runCaptureFixtures ctx args =
                   "Analysis Data", [ "CK"; "HC"; "HS"; "HY"; "YS"; "BT"; "CS"; "DM"; "TM"; "WF"; "WC" ]
                   "Real-time Data", [ "WH"; "WE"; "AV"; "JC"; "TC"; "CC"; "JG" ] ]
 
-            printfn "COVERAGE BY CATEGORY"
-            printfn "--------------------"
+            write ctx "COVERAGE BY CATEGORY"
+            write ctx "--------------------"
 
             for (category, types) in categoryMap do
                 let capturedInCategory = types |> List.filter (fun t -> capturedSet.Contains t)
@@ -946,12 +952,12 @@ let runCaptureFixtures ctx args =
                     else
                         " "
 
-                printfn "%s %-15s: %d/%d (%.0f%%)" status category capturedInCategory.Length types.Length pct
+                write ctx "%s %-15s: %d/%d (%.0f%%)" status category capturedInCategory.Length types.Length pct
 
-            printfn ""
+            write ctx ""
 
             if parseErrors > 0 then
-                printfn "WARNING: %d record(s) failed to parse. Check metadata files for details." parseErrors
+                write ctx "WARNING: %d record(s) failed to parse. Check metadata files for details." parseErrors
                 1
             elif totalErrors > 0 then
                 1

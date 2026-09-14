@@ -4,7 +4,7 @@ open System
 open Xunit
 open Xanthos.Core
 open Xanthos.Core.Text
-open Xanthos.Core.Records
+open Xanthos.Legacy.Records
 
 // ============================================================================
 // RaceKey Consistency Tests

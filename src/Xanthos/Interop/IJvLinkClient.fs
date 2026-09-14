@@ -205,3 +205,8 @@ type IJvLinkClient =
     /// The getter returns false if COM property access fails. Use <see cref="TryGetPayoffDialogSuppressed"/> for explicit error handling.
     /// </remarks>
     abstract member PayoffDialogSuppressed: bool with get, set
+
+/// Optional typed notification source. Keeps native event origin even when keys are identical.
+/// Legacy string-only clients remain supported by JvLinkService.
+type INativeWatchEventSource =
+    abstract WatchNativeEvent: (Xanthos.JvEvent -> unit) -> Result<unit, ComError>

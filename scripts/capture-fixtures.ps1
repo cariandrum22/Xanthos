@@ -25,7 +25,7 @@
     Maximum number of records per record type (default: 10).
 
 .PARAMETER OutputDir
-    Output directory for fixtures (default: tests/fixtures).
+    Output directory for fixtures (default: .artifacts/fixtures).
 
 .PARAMETER SkipBuild
     Skip the build step if the exe already exists.
@@ -71,10 +71,11 @@ $ErrorActionPreference = "Stop"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot = Split-Path -Parent $ScriptDir
 $CliProject = Join-Path $RepoRoot "samples\Xanthos.Cli"
-$ExePath = Join-Path $CliProject "bin\Release\net10.0-windows\Xanthos.Cli.exe"
+$PublishDir = Join-Path $RepoRoot ".artifacts\capture-cli-x64"
+$ExePath = Join-Path $PublishDir "Xanthos.Cli.exe"
 
 if ([string]::IsNullOrEmpty($OutputDir)) {
-    $OutputDir = Join-Path $RepoRoot "tests\fixtures"
+    $OutputDir = Join-Path $RepoRoot ".artifacts\fixtures"
 }
 
 Write-Host "=== Xanthos Fixture Capture ===" -ForegroundColor Cyan
@@ -94,6 +95,7 @@ Write-Host "Max Records: $MaxRecords"
 Write-Host ""
 
 # Check JV-Link COM registration
+if ([IntPtr]::Size -ne 8) { throw 'Run fixture capture from x64 PowerShell.' }
 $jvLinkKey = "Registry::HKEY_CLASSES_ROOT\JVDTLab.JVLink"
 if (-not (Test-Path $jvLinkKey)) {
     Write-Host "ERROR: JV-Link COM not registered. Install JV-Link first." -ForegroundColor Red
@@ -104,10 +106,10 @@ Write-Host "JV-Link COM: Detected" -ForegroundColor Green
 # Build if needed
 if (-not $SkipBuild) {
     Write-Host ""
-    Write-Host "Building CLI (Release, net10.0-windows, x86)..." -ForegroundColor Yellow
+    Write-Host "Building CLI (Release, net10.0-windows, win-x64)..." -ForegroundColor Yellow
     Push-Location $RepoRoot
     try {
-        dotnet build $CliProject -c Release -f net10.0-windows --verbosity quiet
+        dotnet publish $CliProject -c Release -f net10.0-windows -r win-x64 --self-contained false -o $PublishDir --verbosity quiet
         if ($LASTEXITCODE -ne 0) {
             Write-Host "ERROR: Build failed." -ForegroundColor Red
             exit 1
@@ -137,7 +139,7 @@ Write-Host ""
 Write-Host "Capturing fixtures..." -ForegroundColor Yellow
 
 # Build command arguments
-$cliArgs = @()
+$cliArgs = @("--com")
 
 # Only add --sid if explicitly provided
 if (-not [string]::IsNullOrEmpty($Sid)) {

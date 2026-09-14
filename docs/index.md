@@ -22,39 +22,26 @@ functional programming style.
 
 ## Quick Start
 
+Target `net10.0-windows` and run x64 with JV-Link 5.0 x64 installed and registered. The portable `net10.0` target supports record parsing and deterministic tests.
+
 ```fsharp
-open System
-open Xanthos.Runtime
-open Xanthos.Interop
+open Xanthos
 
-// Create configuration
-let config =
-    { Sid = "YOUR_SID"
-      SavePath = Some @"C:\JVData"
-      ServiceKey = None
-      UseJvGets = None }
-
-let request =
-    { Spec = "RACE"
-      FromTime = DateTime.Today.AddDays(-7.0)
-      Option = 1 }
-
-// IMPORTANT: JvLinkService takes ownership of the client and MUST be disposed.
-// Use the 'use' keyword to ensure proper cleanup of COM resources.
-use service = new JvLinkService(new ComJvLinkClient(), config)
-
-// Fetch data
-match service.FetchPayloads(request) with
-| Ok payloads -> printfn "Fetched %d payloads" payloads.Length
-| Error err -> printfn "Error: %A" err
-
-// Service and client are automatically disposed when leaving scope
+JvLink.withSession ConnectionOptions.Default (fun session ->
+    JvLink.init "UNKNOWN" session
+    |> Result.bind (fun () -> session |> JvLink.getVersion))
+|> function
+    | Ok version -> printfn "JV-Link %s" version
+    | Error error -> eprintfn "%s: %s" error.Api error.Message
 ```
 
-> **Note:** For testing without JV-Link installed, use `JvLinkStub()` instead of `ComJvLinkClient()`.
+`JvLink` functions are curried with Session last; the owner releases COM and its STA on success, errors and consumer exceptions. `Records` provides the 38 official record parsers. The CLI selects real COM with `--com` and a deterministic backend with `--stub`.
+
+See the [functional API contract](functional-api.md), [CLI guide](functional-cli.md), [event delivery](functional-events.md) and [record migration](record-migration.md).
 
 ## Documentation
 
+- [SDK known limitations](sdk-known-limitations.md) - Native communication errors and caller responsibilities
 - [API Reference](reference/xanthos-api.html) - Auto-generated from XML documentation
 - [Architecture](https://github.com/cariandrum22/Xanthos/tree/main/design/architecture) - Design documents
 

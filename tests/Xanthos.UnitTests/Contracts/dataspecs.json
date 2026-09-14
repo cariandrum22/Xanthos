@@ -1,0 +1,557 @@
+{
+  "source": "JV-Data仕様書_4.9.0.1.xlsx#データ種別一覧!C14:F154; JVOpen PDF p21",
+  "definitions": [
+    {
+      "id": "TOKU",
+      "normal": [
+        "TK"
+      ],
+      "realtime": [],
+      "setup": [
+        "TK"
+      ],
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "id": "RACE",
+      "normal": [
+        "RA",
+        "SE",
+        "HR",
+        "H1",
+        "H6",
+        "O1",
+        "O2",
+        "O3",
+        "O4",
+        "O5",
+        "O6",
+        "WF",
+        "JG"
+      ],
+      "realtime": [],
+      "setup": [
+        "RA",
+        "SE",
+        "HR",
+        "H1",
+        "H6",
+        "O1",
+        "O2",
+        "O3",
+        "O4",
+        "O5",
+        "O6",
+        "WF",
+        "JG"
+      ],
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "id": "DIFF",
+      "normal": [
+        "UM",
+        "KS",
+        "CH",
+        "BR",
+        "BN",
+        "RC",
+        "RA",
+        "SE"
+      ],
+      "realtime": [],
+      "setup": [
+        "UM",
+        "KS",
+        "CH",
+        "BR",
+        "BN",
+        "RC"
+      ],
+      "options": [
+        1,
+        3,
+        4
+      ]
+    },
+    {
+      "id": "DIFN",
+      "normal": [
+        "UM",
+        "KS",
+        "CH",
+        "BR",
+        "BN",
+        "RC",
+        "RA",
+        "SE"
+      ],
+      "realtime": [],
+      "setup": [
+        "UM",
+        "KS",
+        "CH",
+        "BR",
+        "BN",
+        "RC"
+      ],
+      "options": [
+        1,
+        3,
+        4
+      ]
+    },
+    {
+      "id": "BLOD",
+      "normal": [
+        "HN",
+        "SK",
+        "BT"
+      ],
+      "realtime": [],
+      "setup": [
+        "HN",
+        "SK",
+        "BT"
+      ],
+      "options": [
+        1,
+        3,
+        4
+      ]
+    },
+    {
+      "id": "BLDN",
+      "normal": [
+        "HN",
+        "SK",
+        "BT"
+      ],
+      "realtime": [],
+      "setup": [
+        "HN",
+        "SK",
+        "BT"
+      ],
+      "options": [
+        1,
+        3,
+        4
+      ]
+    },
+    {
+      "id": "MING",
+      "normal": [
+        "DM",
+        "TM"
+      ],
+      "realtime": [],
+      "setup": [
+        "DM",
+        "TM"
+      ],
+      "options": [
+        1,
+        3,
+        4
+      ]
+    },
+    {
+      "id": "SNAP",
+      "normal": [
+        "CK"
+      ],
+      "realtime": [],
+      "setup": [
+        "CK"
+      ],
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "id": "SNPN",
+      "normal": [
+        "CK"
+      ],
+      "realtime": [],
+      "setup": [
+        "CK"
+      ],
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "id": "SLOP",
+      "normal": [
+        "HC"
+      ],
+      "realtime": [],
+      "setup": [
+        "HC"
+      ],
+      "options": [
+        1,
+        3,
+        4
+      ]
+    },
+    {
+      "id": "YSCH",
+      "normal": [
+        "YS"
+      ],
+      "realtime": [],
+      "setup": [
+        "YS"
+      ],
+      "options": [
+        1,
+        3,
+        4
+      ]
+    },
+    {
+      "id": "HOSE",
+      "normal": [
+        "HS"
+      ],
+      "realtime": [],
+      "setup": [
+        "HS"
+      ],
+      "options": [
+        1,
+        3,
+        4
+      ]
+    },
+    {
+      "id": "HOSN",
+      "normal": [
+        "HS"
+      ],
+      "realtime": [],
+      "setup": [
+        "HS"
+      ],
+      "options": [
+        1,
+        3,
+        4
+      ]
+    },
+    {
+      "id": "HOYU",
+      "normal": [
+        "HY"
+      ],
+      "realtime": [],
+      "setup": [
+        "HY"
+      ],
+      "options": [
+        1,
+        3,
+        4
+      ]
+    },
+    {
+      "id": "COMM",
+      "normal": [
+        "CS"
+      ],
+      "realtime": [],
+      "setup": [
+        "CS"
+      ],
+      "options": [
+        1,
+        3,
+        4
+      ]
+    },
+    {
+      "id": "WOOD",
+      "normal": [
+        "WC"
+      ],
+      "realtime": [],
+      "setup": [
+        "WC"
+      ],
+      "options": [
+        1,
+        3,
+        4
+      ]
+    },
+    {
+      "id": "TCOV",
+      "normal": [
+        "UM",
+        "CH",
+        "BR",
+        "BN",
+        "RC",
+        "RA",
+        "SE"
+      ],
+      "realtime": [],
+      "setup": [],
+      "options": [
+        2
+      ]
+    },
+    {
+      "id": "TCVN",
+      "normal": [
+        "UM",
+        "CH",
+        "BR",
+        "BN",
+        "RC",
+        "RA",
+        "SE"
+      ],
+      "realtime": [],
+      "setup": [],
+      "options": [
+        2
+      ]
+    },
+    {
+      "id": "RCOV",
+      "normal": [
+        "UM",
+        "KS",
+        "CH",
+        "BR",
+        "BN",
+        "RC",
+        "RA",
+        "SE"
+      ],
+      "realtime": [],
+      "setup": [],
+      "options": [
+        2
+      ]
+    },
+    {
+      "id": "RCVN",
+      "normal": [
+        "UM",
+        "KS",
+        "CH",
+        "BR",
+        "BN",
+        "RC",
+        "RA",
+        "SE"
+      ],
+      "realtime": [],
+      "setup": [],
+      "options": [
+        2
+      ]
+    },
+    {
+      "id": "0B12",
+      "normal": [],
+      "realtime": [
+        "RA",
+        "SE",
+        "HR"
+      ],
+      "setup": [],
+      "options": []
+    },
+    {
+      "id": "0B15",
+      "normal": [],
+      "realtime": [
+        "RA",
+        "SE",
+        "HR"
+      ],
+      "setup": [],
+      "options": []
+    },
+    {
+      "id": "0B30",
+      "normal": [],
+      "realtime": [
+        "O1",
+        "O2",
+        "O3",
+        "O4",
+        "O5",
+        "O6"
+      ],
+      "setup": [],
+      "options": []
+    },
+    {
+      "id": "0B31",
+      "normal": [],
+      "realtime": [
+        "O1"
+      ],
+      "setup": [],
+      "options": []
+    },
+    {
+      "id": "0B32",
+      "normal": [],
+      "realtime": [
+        "O2"
+      ],
+      "setup": [],
+      "options": []
+    },
+    {
+      "id": "0B33",
+      "normal": [],
+      "realtime": [
+        "O3"
+      ],
+      "setup": [],
+      "options": []
+    },
+    {
+      "id": "0B34",
+      "normal": [],
+      "realtime": [
+        "O4"
+      ],
+      "setup": [],
+      "options": []
+    },
+    {
+      "id": "0B35",
+      "normal": [],
+      "realtime": [
+        "O5"
+      ],
+      "setup": [],
+      "options": []
+    },
+    {
+      "id": "0B36",
+      "normal": [],
+      "realtime": [
+        "O6"
+      ],
+      "setup": [],
+      "options": []
+    },
+    {
+      "id": "0B20",
+      "normal": [],
+      "realtime": [
+        "H1",
+        "H6"
+      ],
+      "setup": [],
+      "options": []
+    },
+    {
+      "id": "0B11",
+      "normal": [],
+      "realtime": [
+        "WH"
+      ],
+      "setup": [],
+      "options": []
+    },
+    {
+      "id": "0B14",
+      "normal": [],
+      "realtime": [
+        "WE",
+        "AV",
+        "JC",
+        "TC",
+        "CC"
+      ],
+      "setup": [],
+      "options": []
+    },
+    {
+      "id": "0B16",
+      "normal": [],
+      "realtime": [
+        "WE",
+        "AV",
+        "JC",
+        "TC",
+        "CC"
+      ],
+      "setup": [],
+      "options": []
+    },
+    {
+      "id": "0B13",
+      "normal": [],
+      "realtime": [
+        "DM"
+      ],
+      "setup": [],
+      "options": []
+    },
+    {
+      "id": "0B17",
+      "normal": [],
+      "realtime": [
+        "TM"
+      ],
+      "setup": [],
+      "options": []
+    },
+    {
+      "id": "0B41",
+      "normal": [],
+      "realtime": [
+        "O1"
+      ],
+      "setup": [],
+      "options": []
+    },
+    {
+      "id": "0B42",
+      "normal": [],
+      "realtime": [
+        "O2"
+      ],
+      "setup": [],
+      "options": []
+    },
+    {
+      "id": "0B51",
+      "normal": [],
+      "realtime": [
+        "WF"
+      ],
+      "setup": [],
+      "options": []
+    }
+  ]
+}

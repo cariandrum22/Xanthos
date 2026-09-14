@@ -15,6 +15,8 @@ Global Options:
   --service-key <key>     Service key for JV-Init (or XANTHOS_JVLINK_SERVICE_KEY).
   --save-path <path>      Directory for persisted files (or XANTHOS_JVLINK_SAVE_PATH).
   --stub                  Force stub mode (default on non-Windows).
+  --com                   Require COM; activation failure exits with an error.
+  --non-interactive       Reject commands that can require a JRA-VAN dialog.
   --diag                  Enable COM diagnostics output.
   --use-jvgets            Force JVGets (default) regardless of env vars.
   --no-jvgets             Force JVRead (equivalent to XANTHOS_USE_JVREAD=1).
@@ -39,6 +41,11 @@ Commands:
       --continuous          Keep polling until Ctrl+C (default: exit on stream end).
 
   Session Control:
+    session-check         Verify open/status/read/skip/cancel/close/reopen in one session.
+      --spec <dataspec>     Data specification (required).
+      --from <timestamp>    Publication start time (required).
+      --option <1-4>        JVOpen option (default: 1).
+      --max-records <n>     Records before skip/cancel (default: 1).
     status                Display current session status.
     skip                  Skip current file in session.
     cancel                Cancel current session.
@@ -109,7 +116,8 @@ Commands:
       --from <timestamp>    Start time YYYYMMDDHHmmss (default: 30 days ago).
       --to <timestamp>      End time YYYYMMDDHHmmss (optional).
       --max-records <n>     Max records per type (default: 10).
-      --use-jvgets          Force JVGets (default).
+      --use-jvgets          Force JVGets; overrides the global read-method option.
+      --no-jvgets           Force JVRead (capture default when no option is supplied).
 
 """
 
@@ -117,9 +125,14 @@ let private printHelp () =
     printfn "%s" (usage.Trim())
     0
 
-let private runCommand ctx command =
+let private runCommand (ctx: ExecutionContext) command =
+    let printfn format = Printf.kprintf ctx.WriteLine format
+
     match command with
     | Download args -> runDownload ctx args
+    | SessionCheck _ ->
+        printfn "session-check requires explicit COM mode."
+        2
     | Realtime args -> runRealtime ctx args
     | Status -> runStatus ctx
     | Skip -> runSkip ctx
@@ -153,11 +166,28 @@ let private runCommand ctx command =
     | CaptureFixtures args -> runCaptureFixtures ctx args
     | Help -> printHelp ()
 
-[<STAThread>]
-[<EntryPoint>]
-let main argv =
+let private mayShowSdkDialog =
+    function
+    | Download _
+    | SessionCheck _
+    | Realtime _
+    | SetUiProperties
+    | MoviePlay _
+    | MoviePlayWithType _
+    | CaptureFixtures _ -> true
+    | _ -> false
+
+let internal runWith (dependencies: FunctionalExecution.Dependencies) argv =
+    let printfn format =
+        Printf.kprintf dependencies.WriteLine format
+
+    let printHelp () =
+        printfn "%s" (usage.Trim())
+        0
     // Ensure all CLI output (stdout/stderr) is UTF-8 to avoid mojibake in logs and test harnesses.
     Xanthos.Runtime.ConsoleEncoding.configureUtf8 ()
+    printfn "EVIDENCE:ARCH=%O" System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture
+    printfn "EVIDENCE:POINTER_SIZE=%d" IntPtr.Size
 
     match parseInput argv with
     | Error msg ->
@@ -167,8 +197,8 @@ let main argv =
         match parsed.Command with
         | Help -> printHelp ()
         | _ ->
-            match createExecutionContext parsed.Globals with
-            | Error err -> reportError "Configuration error" err
+            match createExecutionContextWithWriter dependencies.WriteLine parsed.Globals with
+            | Error err -> reportErrorWithWriter dependencies.WriteLine "Configuration error" err
             | Ok ctx ->
                 configureDiagnostics ctx.Globals.EnableDiagnostics ctx.Logger
 
@@ -176,4 +206,24 @@ let main argv =
                     printfn "[diag] Client mode = %s" (describeMode ctx.Activation)
                 // Each command creates its own service with a fresh client.
                 // The service owns the client and disposes it when done.
-                runCommand ctx parsed.Command
+                let noDesktop = parsed.Globals.NonInteractive || not dependencies.HasDesktop
+
+                if ctx.Activation.Mode = Com && mayShowSdkDialog parsed.Command && noDesktop then
+                    printfn
+                        "JRA-VAN may require confirmation. Run this command on your signed-in desktop and complete initial setup there."
+
+                    2
+                else
+                    if ctx.Activation.Mode = Com && mayShowSdkDialog parsed.Command then
+                        printfn
+                            "If a JRA-VAN dialog appears, choose on your desktop. Waiting has no time limit; refusal ends this request."
+
+                    if ctx.Activation.Mode = Com then
+                        FunctionalExecution.runWith dependencies ctx parsed.Command
+                    else
+                        runCommand ctx parsed.Command
+
+[<STAThread>]
+[<EntryPoint>]
+let main argv =
+    runWith (FunctionalExecution.productionDependencies ()) argv

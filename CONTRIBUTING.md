@@ -7,7 +7,7 @@ This document explains how to contribute to the project.
 
 ### Prerequisites
 
-- .NET 10 SDK (preview)
+- .NET 10 SDK
 - Git
 
 ### Using Nix (Recommended)
@@ -152,7 +152,7 @@ dotnet fantomas .
 Check code quality with FSharpLint:
 
 ```bash
-dotnet fsharplint lint src tests
+dotnet fsharplint lint Xanthos.sln
 ```
 
 ### Naming Conventions
@@ -164,8 +164,9 @@ dotnet fsharplint lint src tests
 
 ### Error Handling
 
-- COM errors: `Result<'T, ComError>`
-- Business logic errors: `Result<'T, XanthosError>`
+- Functional SDK operations: `Result<'T, JvError>`; inspect `JvErrorKind`, `Api`, the native `Code` and `Outputs` without discarding unknown SDK codes.
+- Record parsing: `Result<'T, RecordParseError>` with the record, field and original byte position.
+- Legacy COM/service operations retain `ComError` / `XanthosError`; runtime parsing failures use `XanthosError.RecordError`.
 - Catch exceptions at boundaries and convert to Result
 
 ## Testing
@@ -177,14 +178,16 @@ dotnet fsharplint lint src tests
 | Unit | Pure F# unit tests | CI (any OS) |
 | Property | FsCheck property-based tests | CI (any OS) |
 | Fixtures | Fixture-based parser tests | CI (if fixtures exist) |
-| E2E (Stub) | CLI tests with mock COM | CI (any OS) |
+| Functional scenarios | Production CLI/F# functions with controlled native calls | CI (any OS) |
+| WindowsManaged | WINDOWS assembly, STA and ABI without JV-Link | CI (Windows x64) |
+| E2E (Stub) | Legacy CLI smoke | CI (any OS) |
 | E2E (COM) | CLI tests with real COM | Windows only |
 
 ### Running Tests
 
 ```bash
-# All tests (CI-compatible)
-dotnet test
+# Required managed tests (PowerShell 7)
+pwsh scripts/run-test-profile.ps1 -Profile Fast -RunId local-fast-01
 
 # Unit tests only
 dotnet test tests/Xanthos.UnitTests
@@ -193,12 +196,12 @@ dotnet test tests/Xanthos.UnitTests
 dotnet test tests/Xanthos.Cli.E2E
 
 # E2E tests (COM mode - Windows only)
-XANTHOS_E2E_MODE=COM XANTHOS_SID=YOUR_SID dotnet test tests/Xanthos.Cli.E2E
+pwsh scripts/run-test-profile.ps1 -Profile Com -RunId local-com-01 -FromTime 20260905000000
 ```
 
 ### Writing Tests
 
-- Use `JvLinkStub` for unit tests
+- Use pure inputs or a controlled native boundary for functional tests; keep legacy Stub smoke explicitly classified
 - Add corresponding tests for new features
 - E2E tests verify CLI command behavior
 - See [tests/README.md](tests/README.md) for detailed guidelines
@@ -206,6 +209,14 @@ XANTHOS_E2E_MODE=COM XANTHOS_SID=YOUR_SID dotnet test tests/Xanthos.Cli.E2E
 ### Manual COM Verification
 
 Some functionality requires testing with real JV-Link COM on Windows.
+Use `net10.0-windows`, an x64 process and JV-Link 5.0 x64 with its key already
+registered. Run `scripts/run-com-verification.ps1 -FromTime YYYYMMDDHHmmss`
+from the signed-in desktop, choosing an available RACE publication interval.
+Keep captures and machine-specific evidence under ignored `.artifacts/`.
+Separate Contract/explicit Stub tests from actual COM results; deferred image,
+playback or live-notification checks remain unverified. See the
+[COM test guide](tests/Xanthos.ComTests/README.md) and
+[public functional contract](docs/functional-api.md).
 See [tests/README.md - Manual COM Verification](tests/README.md#manual-com-verification)
 for:
 
@@ -216,7 +227,7 @@ for:
 ### Test Coverage
 
 ```bash
-dotnet test --collect:"XPlat Code Coverage"
+pwsh scripts/run-test-profile.ps1 -Profile Coverage -RunId local-coverage-01
 ```
 
 ## Pull Requests
@@ -328,7 +339,10 @@ This project follows [Semantic Versioning](https://semver.org/):
 - **MINOR**: Backward-compatible new features
 - **PATCH**: Backward-compatible bug fixes
 
-Versions are centrally managed in `Directory.Build.props`.
+Versions are centrally managed by `VersionPrefix` in `Directory.Build.props`.
+During the 0.x development series, increment MINOR for API additions or incompatible
+changes and PATCH for compatible fixes. Document incompatible changes explicitly;
+1.0.0 will establish the stable public API contract.
 
 ### Pre-Release Checklist
 
@@ -339,6 +353,11 @@ Before tagging a release, complete the following:
    [verification checklist](tests/README.md#verification-checklist) on Windows
 3. **CHANGELOG**: Finalize `[Unreleased]` section with release version
 4. **Version**: Update version in `Directory.Build.props`
+
+Release tags (`vX.Y.Z`) and manual workflow version inputs must match the source
+version. The release workflow packs both target frameworks from that version;
+it does not override the version while publishing. Merge the reviewed release
+preparation into `develop`, then merge `develop` into `main` before tagging.
 
 ### Release Verification Evidence
 

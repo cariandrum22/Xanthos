@@ -4,12 +4,13 @@ open System
 open FsCheck
 open FsCheck.FSharp
 open FsCheck.Xunit
+open Xanthos.Testing
 open Xanthos.Core
 open Xanthos.Core.Text
-open Xanthos.Core.Records
-open Xanthos.Core.Records.RecordParser
-open Xanthos.Core.Records.CodeTables
-open Xanthos.Core.Records.FieldDefinitions
+open Xanthos.Legacy.Records
+open Xanthos.Legacy.Records.RecordParser
+open Xanthos.Legacy.Records.CodeTables
+open Xanthos.Legacy.Records.FieldDefinitions
 
 // ============================================================================
 // Custom Generators
@@ -50,16 +51,18 @@ let byteArrayGen size =
 // Property-Based Tests for RecordParser Core Functions
 // ============================================================================
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``extractBytes returns correct length`` (data: byte[]) (offset: int) (length: int) =
-    let offset = abs offset % max 1 data.Length
-    let length = abs length % max 1 (data.Length - offset)
+    let offset = Convert.ToInt32(abs (int64 offset) % int64 (max 1 data.Length))
+
+    let length =
+        Convert.ToInt32(abs (int64 length) % int64 (max 1 (data.Length - offset + 1)))
 
     match extractBytes data offset length with
-    | Ok bytes -> bytes.Length = length
-    | Error _ -> true // Error cases are acceptable
+    | Ok bytes -> bytes = data[offset .. offset + length - 1] && bytes.Length = length
+    | Error error -> failwithf "Valid bounded slice was rejected: %A" error
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``extractBytes with valid parameters succeeds`` () =
     let data = [| 1uy; 2uy; 3uy; 4uy; 5uy; 6uy; 7uy; 8uy |]
 
@@ -69,9 +72,9 @@ let ``extractBytes with valid parameters succeeds`` () =
             | Ok bytes -> bytes.Length = length && bytes.[0] = data.[offset]
             | Error _ -> false))
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``parseInt handles numeric strings correctly`` (n: int) =
-    let n = abs n % 1000000
+    let n = Convert.ToInt32(abs (int64 n) % 1000000L)
     let str = sprintf "%07d" n
     let bytes = encodeShiftJis str
 
@@ -79,24 +82,34 @@ let ``parseInt handles numeric strings correctly`` (n: int) =
     | Some value -> value = n
     | None -> false
 
-[<Property>]
-let ``parseInt returns None for non-numeric strings`` (str: string) =
-    if isNull str then
-        true // Skip null strings
-    else
-        let nonNumeric =
-            str
-            |> Seq.filter (fun c -> not (Char.IsDigit c))
-            |> Seq.truncate 10
-            |> String.Concat
+[<ReplayProperty(EndSize = 100)>]
+let ``parseInt returns None for non-numeric strings`` (n: uint32) =
+    // Every generated example exercises all categories, including separators that
+    // would become accepted if AllowThousands / Float styles were enabled.
+    let digits = string (n % 100000u + 1u)
 
-        if String.IsNullOrWhiteSpace(nonNumeric) || String.length nonNumeric = 0 then
-            true // Skip empty strings
-        else
-            let bytes = encodeShiftJis nonNumeric
-            parseInt bytes = None
+    let invalidInputs =
+        [ "+"
+          "-"
+          "++"
+          "--"
+          "+-"
+          "."
+          ","
+          "あ"
+          "１２３"
+          "1,234"
+          "1.0"
+          "1e2"
+          "X" + digits
+          digits + "X"
+          digits + "あ" + digits
+          digits + "+" + digits
+          digits + " " + digits ]
 
-[<Property>]
+    invalidInputs |> List.forall (fun text -> parseInt (encodeShiftJis text) = None)
+
+[<ReplayProperty(EndSize = 100)>]
 let ``parseDecimal with precision maintains correctness`` () =
     Prop.forAll (Arb.fromGen (Gen.choose (1, 9999))) (fun n ->
         Prop.forAll (Arb.fromGen (Gen.choose (0, 3))) (fun precision ->
@@ -110,7 +123,7 @@ let ``parseDecimal with precision maintains correctness`` () =
                 value = expected
             | None -> false))
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``parseDate with valid format succeeds`` () =
     Prop.forAll (Arb.fromGen (Gen.choose (2000, 2030))) (fun year ->
         Prop.forAll (Arb.fromGen (Gen.choose (1, 12))) (fun month ->
@@ -122,7 +135,7 @@ let ``parseDate with valid format succeeds`` () =
                 | Some date -> date.Year = year && date.Month = month && date.Day = day
                 | None -> false)))
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``getRecordType extracts first 2 bytes`` () =
     let asciiChars = [ 'A' .. 'Z' ] @ [ '0' .. '9' ]
     let charGen = Gen.elements asciiChars
@@ -147,7 +160,7 @@ let ``getRecordType extracts first 2 bytes`` () =
 // Property-Based Tests for CodeTables
 // ============================================================================
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``parseCode SexCode accepts valid codes`` () =
     let validCodes = [ "1"; "2"; "3" ]
 
@@ -157,7 +170,7 @@ let ``parseCode SexCode accepts valid codes`` () =
         | Some _ -> true
         | None -> false)
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``parseCode SexCode rejects invalid codes`` (code: string) =
     match parseCode<SexCode> code with
     | Some parsed ->
@@ -169,20 +182,20 @@ let ``parseCode SexCode rejects invalid codes`` (code: string) =
         | true, n -> not (Enum.IsDefined(typeof<SexCode>, n))
         | false, _ -> true
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``parseCode RacecourseCode accepts valid numeric codes`` () =
     Prop.forAll (Arb.fromGen (Gen.choose (1, 60))) (fun code ->
         let codeStr = sprintf "%02d" code
-        // Some codes are valid, some are not - both outcomes are acceptable
+
         match parseCode<RacecourseCode> codeStr with
-        | Some _ -> true
-        | None -> true)
+        | Some parsed -> Convert.ToInt32(parsed) = code && Enum.IsDefined(typeof<RacecourseCode>, code)
+        | None -> not (Enum.IsDefined(typeof<RacecourseCode>, code)))
 
 // ============================================================================
 // Property-Based Tests for Record Parsing Invariants
 // ============================================================================
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``parseFields with insufficient data returns error`` () =
     Prop.forAll (Arb.fromGen (Gen.choose (0, 50))) (fun size ->
         let data = Array.create size 32uy
@@ -194,10 +207,10 @@ let ``parseFields with insufficient data returns error`` () =
 
         match parseFields data fieldSpecs with
         | Ok _ -> size >= 55 // Should succeed only if data is large enough
-        | Error _ -> size < 55 // Should fail if data is too small
-    )
+        | Error(RecordTooShort(expected, actual)) -> actual = size && expected > size
+        | Error _ -> false)
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``encodeShiftJis and decodeShiftJis are inverse for ASCII`` (str: string) =
     if isNull str then
         true // Skip null strings
@@ -215,9 +228,9 @@ let ``encodeShiftJis and decodeShiftJis are inverse for ASCII`` (str: string) =
         else
             let encoded = encodeShiftJis asciiOnly
             let decoded = decodeShiftJis encoded
-            decoded.Trim() = asciiOnly.Trim() || decoded.Contains(asciiOnly)
+            decoded = asciiOnly
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``parseFields extracts fields at correct offsets`` () =
     let data = Array.create 100 32uy // Fill with spaces
     let testValue = "TEST12"
@@ -229,7 +242,7 @@ let ``parseFields extracts fields at correct offsets`` () =
     match parseFields data fieldSpecs with
     | Ok fields ->
         match Map.tryFind "TestField" fields with
-        | Some(TextValue value) -> value.Trim().StartsWith("TEST")
+        | Some(TextValue value) -> value.Trim() = "TEST12"
         | _ -> false
     | Error _ -> false
 
@@ -237,7 +250,7 @@ let ``parseFields extracts fields at correct offsets`` () =
 // Property-Based Tests for Specific Record Types
 // ============================================================================
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``TK record with valid race key can be created`` () =
     Prop.forAll (Arb.fromGen raceKeyGen) (fun raceKey ->
         Prop.forAll (Arb.fromGen horseIdGen) (fun horseId ->
@@ -249,13 +262,11 @@ let ``TK record with valid race key can be created`` () =
             Array.Copy(horseIdBytes, 0, data, 18, min 10 horseIdBytes.Length) // HorseId required
             Array.Copy(encodeShiftJis "TestHorse", 0, data, 28, 9) // HorseName required
 
-            match Xanthos.Core.Records.TK.parse data with
-            | Ok record ->
-                record.RaceKey.Trim() = raceKey
-                || record.RaceKey.Contains(raceKey.Substring(0, 10))
+            match Xanthos.Legacy.Records.TK.parse data with
+            | Ok record -> record.RaceKey.Trim() = raceKey
             | Error _ -> false))
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``O1 record with valid odds values can be created`` () =
     Prop.forAll (Arb.fromGen (Gen.choose (10, 9999))) (fun oddsValue ->
         Prop.forAll (Arb.fromGen raceKeyGen) (fun raceKey ->
@@ -265,11 +276,13 @@ let ``O1 record with valid odds values can be created`` () =
             Array.Copy(encodeShiftJis "03", 0, data, 18, 2)
             Array.Copy(encodeShiftJis (sprintf "%04d" oddsValue), 0, data, 20, 4)
 
-            match Xanthos.Core.Records.O1.parse data with
-            | Ok record -> record.RaceKey.Trim().Length > 0 && record.Odds.IsSome
+            match Xanthos.Legacy.Records.O1.parse data with
+            | Ok record ->
+                record.RaceKey.Trim() = raceKey
+                && record.Odds = Some(Convert.ToDecimal(oddsValue) / 10M)
             | Error _ -> false))
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``HR record parsing is deterministic`` () =
     let data = Array.create 90 32uy
     Array.Copy(encodeShiftJis "HR", 0, data, 0, 2)
@@ -278,8 +291,8 @@ let ``HR record parsing is deterministic`` () =
     Array.Copy(encodeShiftJis "05", 0, data, 19, 2)
     Array.Copy(encodeShiftJis "000001000", 0, data, 25, 9)
 
-    let result1 = Xanthos.Core.Records.HR.parse data
-    let result2 = Xanthos.Core.Records.HR.parse data
+    let result1 = Xanthos.Legacy.Records.HR.parse data
+    let result2 = Xanthos.Legacy.Records.HR.parse data
 
     match (result1, result2) with
     | (Ok r1, Ok r2) ->
@@ -287,7 +300,7 @@ let ``HR record parsing is deterministic`` () =
         && r1.BetType = r2.BetType
         && r1.HorseNumber1 = r2.HorseNumber1
         && r1.Payoff = r2.Payoff
-    | (Error _, Error _) -> true
+    | (Error _, Error _) -> false
     | _ -> false
 
 // ============================================================================
@@ -328,14 +341,14 @@ let validDateTimeStringGen =
         return sprintf "%04d%02d%02d%02d%02d%02d" year month day hour minute second
     }
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``normalizeDataspec preserves valid specs`` () =
     Prop.forAll (Arb.fromGen validDataspecGen) (fun spec ->
         match Validation.normalizeDataspec spec with
         | Ok normalized -> normalized.Length = spec.Length && normalized = spec.ToUpperInvariant()
         | Error _ -> false)
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``normalizeDataspec converts to uppercase`` () =
     Prop.forAll (Arb.fromGen validDataspecGen) (fun spec ->
         let lowercase = spec.ToLowerInvariant()
@@ -344,19 +357,24 @@ let ``normalizeDataspec converts to uppercase`` () =
         | Ok normalized -> normalized = spec.ToUpperInvariant()
         | Error _ -> false)
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``normalizeDataspec rejects non-multiple-of-4 lengths`` () =
-    Prop.forAll (Arb.fromGen (Gen.choose (1, 20))) (fun length ->
-        if length % 4 = 0 then
-            true // Skip valid lengths
-        else
+    Prop.forAll
+        (Arb.fromGen (
+            Gen.elements
+                [ for length in 1..20 do
+                      if length % 4 <> 0 then
+                          length ]
+        ))
+        (fun length ->
             let str = String.replicate length "A"
 
             match Validation.normalizeDataspec str with
-            | Error _ -> true
+            | Error(ValidationError message) -> message.Contains("multiple of 4", StringComparison.OrdinalIgnoreCase)
+            | Error _ -> false
             | Ok _ -> false)
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``normalizeDataspec trims whitespace`` () =
     Prop.forAll (Arb.fromGen validDataspecGen) (fun spec ->
         let withSpaces = "  " + spec + "  "
@@ -365,13 +383,13 @@ let ``normalizeDataspec trims whitespace`` () =
         | Ok normalized -> normalized = spec.ToUpperInvariant()
         | Error _ -> false)
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``parseOpenOption returns 1 for None`` () =
     match Validation.parseOpenOption None with
     | Ok value -> value = 1
     | Error _ -> false
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``parseOpenOption accepts valid options 1-4`` () =
     Prop.forAll (Arb.fromGen validOptionGen) (fun optStr ->
         match Validation.parseOpenOption (Some optStr) with
@@ -380,21 +398,23 @@ let ``parseOpenOption accepts valid options 1-4`` () =
             value = expected && value >= 1 && value <= 4
         | Error _ -> false)
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``parseOpenOption rejects invalid options`` () =
     Prop.forAll (Arb.fromGen (Gen.choose (5, 100))) (fun n ->
         match Validation.parseOpenOption (Some(string n)) with
-        | Error _ -> true
+        | Error(ValidationError message) -> message.Contains("between 1 and 4", StringComparison.OrdinalIgnoreCase)
+        | Error _ -> false
         | Ok _ -> false)
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``parseOpenOption rejects zero and negative`` () =
     Prop.forAll (Arb.fromGen (Gen.choose (-100, 0))) (fun n ->
         match Validation.parseOpenOption (Some(string n)) with
-        | Error _ -> true
+        | Error(ValidationError message) -> message.Contains("between 1 and 4", StringComparison.OrdinalIgnoreCase)
+        | Error _ -> false
         | Ok _ -> false)
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``parseFromTime parses yyyyMMdd format`` () =
     Prop.forAll (Arb.fromGen validDateStringGen) (fun dateStr ->
         match Validation.parseFromTime (Some dateStr) with
@@ -405,7 +425,7 @@ let ``parseFromTime parses yyyyMMdd format`` () =
             date.Year = year && date.Month = month && date.Day = day
         | Error _ -> false)
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``parseFromTime parses yyyyMMddHHmmss format`` () =
     Prop.forAll (Arb.fromGen validDateTimeStringGen) (fun dateStr ->
         match Validation.parseFromTime (Some dateStr) with
@@ -425,13 +445,14 @@ let ``parseFromTime parses yyyyMMddHHmmss format`` () =
             && date.Second = second
         | Error _ -> false)
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``parseFromTime rejects None`` () =
     match Validation.parseFromTime None with
-    | Error _ -> true
+    | Error(ValidationError message) -> message.Contains("fromTime", StringComparison.OrdinalIgnoreCase)
+    | Error _ -> false
     | Ok _ -> false
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``buildOpenRequest succeeds with valid inputs`` () =
     Prop.forAll (Arb.fromGen validDataspecGen) (fun spec ->
         Prop.forAll (Arb.fromGen validDateStringGen) (fun dateStr ->
@@ -445,18 +466,19 @@ let ``buildOpenRequest succeeds with valid inputs`` () =
                         && request.Option <= 4
                     | Error _ -> false)))
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``buildOpenRequest fails when any validation fails`` () =
     // Invalid spec (3 chars)
     match Validation.buildOpenRequest "ABC" (Some "20240101") None with
-    | Error _ -> true
+    | Error(ValidationError message) -> message.Contains("Dataspec", StringComparison.OrdinalIgnoreCase)
+    | Error _ -> false
     | Ok _ -> false
 
 // ============================================================================
 // Property-Based Tests for MovieType
 // ============================================================================
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``MovieType toCode and fromCode are inverses for known types`` () =
     let knownTypes =
         [ MovieType.RaceVideo
@@ -473,7 +495,7 @@ let ``MovieType toCode and fromCode are inverses for known types`` () =
         let roundTripped = MovieType.fromCode code
         roundTripped = movieType)
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``MovieType fromCode and toCode are inverses for known codes`` () =
     let knownCodes = [ "00"; "01"; "02"; "03"; "11"; "12"; "13" ]
 
@@ -483,7 +505,7 @@ let ``MovieType fromCode and toCode are inverses for known codes`` () =
         let roundTripped = MovieType.toCode movieType
         roundTripped = code)
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``MovieType CustomMovieType preserves code`` () =
     Prop.forAll (Arb.fromGen (Gen.elements [ "04"; "05"; "10"; "14"; "20"; "99" ])) (fun code ->
         let movieType = MovieType.fromCode code
@@ -493,7 +515,7 @@ let ``MovieType CustomMovieType preserves code`` () =
         | _ -> false // Should be CustomMovieType for unknown codes
     )
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``MovieType toCode for CustomMovieType returns the code`` () =
     Prop.forAll (Arb.fromGen asciiAlphaNumStringGen) (fun code ->
         if String.IsNullOrEmpty code then
@@ -503,7 +525,7 @@ let ``MovieType toCode for CustomMovieType returns the code`` () =
             let movieType = CustomMovieType truncated
             MovieType.toCode movieType = truncated)
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``MovieType isWorkoutType is true for workout types`` () =
     let workoutTypes =
         [ MovieType.WorkoutWeekAll
@@ -512,7 +534,7 @@ let ``MovieType isWorkoutType is true for workout types`` () =
 
     workoutTypes |> List.forall MovieType.isWorkoutType
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``MovieType isWorkoutType is false for non-workout types`` () =
     let nonWorkoutTypes =
         [ MovieType.RaceVideo
@@ -522,7 +544,7 @@ let ``MovieType isWorkoutType is false for non-workout types`` () =
 
     nonWorkoutTypes |> List.forall (fun t -> not (MovieType.isWorkoutType t))
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``MovieType isWorkoutType for CustomMovieType depends on code prefix`` () =
     // Codes starting with "1" are workout types
     let workoutCodes = [ "14"; "15"; "19" ]
@@ -542,7 +564,7 @@ let ``MovieType isWorkoutType for CustomMovieType depends on code prefix`` () =
 // Property-Based Tests for WatchEvent
 // ============================================================================
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``WatchEvent dataspecForEvent returns Some for known events`` () =
     let knownEvents =
         [ WatchEventType.PayoffConfirmed
@@ -559,14 +581,14 @@ let ``WatchEvent dataspecForEvent returns Some for known events`` () =
         | Some _ -> true
         | None -> false)
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``WatchEvent dataspecForEvent returns None for UnknownEvent`` () =
     Prop.forAll (Arb.fromGen asciiAlphaNumStringGen) (fun code ->
         match WatchEvent.dataspecForEvent (WatchEventType.UnknownEvent code) with
         | None -> true
         | Some _ -> false)
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``WatchEvent toRealtimeRequest preserves RawKey`` () =
     Prop.forAll (Arb.fromGen asciiAlphaNumStringGen) (fun rawKey ->
         if String.IsNullOrEmpty rawKey then
@@ -591,27 +613,29 @@ let ``WatchEvent toRealtimeRequest preserves RawKey`` () =
 // Property-Based Tests for Domain Type Invariants
 // ============================================================================
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``RaceId create rejects empty or whitespace`` () =
     let invalidInputs = [ ""; "   "; "\t"; "\n"; "  \t  " ]
 
     invalidInputs
     |> List.forall (fun input ->
         match RaceId.create input with
-        | Error _ -> true
+        | Error(ValidationError message) -> message.Contains("empty", StringComparison.OrdinalIgnoreCase)
+        | Error _ -> false
         | Ok _ -> false)
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``RunnerId create rejects empty or whitespace`` () =
     let invalidInputs = [ ""; "   "; "\t"; "\n"; "  \t  " ]
 
     invalidInputs
     |> List.forall (fun input ->
         match RunnerId.create input with
-        | Error _ -> true
+        | Error(ValidationError message) -> message.Contains("empty", StringComparison.OrdinalIgnoreCase)
+        | Error _ -> false
         | Ok _ -> false)
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``RaceId unsafe and value are inverses`` () =
     Prop.forAll (Arb.fromGen asciiAlphaNumStringGen) (fun str ->
         if String.IsNullOrEmpty str then
@@ -620,7 +644,7 @@ let ``RaceId unsafe and value are inverses`` () =
             let id = RaceId.unsafe str
             RaceId.value id = str)
 
-[<Property>]
+[<ReplayProperty(EndSize = 100)>]
 let ``RunnerId unsafe and value are inverses`` () =
     Prop.forAll (Arb.fromGen asciiAlphaNumStringGen) (fun str ->
         if String.IsNullOrEmpty str then

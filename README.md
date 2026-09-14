@@ -17,7 +17,7 @@ converting COM exceptions and error codes into idiomatic `Result<'T, Error>` wor
 
 - **Type-safe API**: Discriminated unions and records model JV-Link data structures
 - **Error handling**: COM errors mapped to F# Result types
-- **Streaming support**: AsyncSeq-based streaming for large data sets
+- **Streaming support**: `seq` and `IAsyncEnumerable` streams for large data sets
 - **Cross-platform development**: Core logic runs on any .NET platform
   (COM interop requires Windows)
 - **Stub mode**: Deterministic `JvLinkStub` enables full testability in CI
@@ -29,14 +29,10 @@ converting COM exceptions and error codes into idiomatic `Result<'T, Error>` wor
 > **Requirements**: .NET 10 SDK. COM interop functionality is only available on
 > Windows.
 >
-> **Important (Windows COM mode):**
-> JV-Link COM server is a 32-bit (x86) component and only works in 32-bit
-> processes.
-> When using `ComJvLinkClient`, your application must target **x86** or use
-> **AnyCPU with "Prefer 32-bit" enabled**.
-> Running in a 64-bit process will result in `REGDB_E_CLASSNOTREG` errors.
-> The `ComClientFactory.tryCreate` function performs an early check
-> and returns a clear error message if called from a 64-bit process.
+> Target `net10.0-windows` and run an **x64 process** with JV-Link 5.0 x64 installed
+> and its service key registered. COM registration and key setup are specific to
+> the installed architecture; an x86 registration does not satisfy x64 activation.
+> The portable `net10.0` target supports parsing and deterministic tests.
 
 ```bash
 dotnet add package Xanthos
@@ -54,38 +50,23 @@ dotnet build src/Xanthos/Xanthos.fsproj
 ## Quick Start
 
 ```fsharp
-open System
-open Xanthos.Runtime
-open Xanthos.Interop
+open Xanthos
 
-// Create configuration
-let config =
-    { Sid = "YOUR_SID"
-      SavePath = Some @"C:\JVData"
-      ServiceKey = None
-      UseJvGets = None }
+let version =
+    JvLink.withSession ConnectionOptions.Default (fun session ->
+        JvLink.init "UNKNOWN" session
+        |> Result.bind (fun () -> session |> JvLink.getVersion))
 
-let request =
-    { Spec = "RACE"
-      FromTime = DateTime.Today.AddDays(-7.0)
-      Option = 1 }
-
-// IMPORTANT: JvLinkService takes ownership of the client and MUST be disposed.
-// Use the 'use' keyword to ensure proper cleanup of COM resources.
-use service = new JvLinkService(new ComJvLinkClient(), config)
-
-// Fetch data
-match service.FetchPayloads(request) with
-| Ok payloads -> printfn "Fetched %d payloads" payloads.Length
-| Error err -> printfn "Error: %A" err
-
-// Service and client are automatically disposed when leaving scope
+match version with
+| Ok text -> printfn "JV-Link %s" text
+| Error error -> eprintfn "%s: %s (code=%A)" error.Api error.Message error.Code
 ```
 
-> **Resource Management:** `JvLinkService` implements `IDisposable` and takes
-> ownership of the `IJvLinkClient` passed to its constructor.
-> Always use the `use` keyword or explicitly call `Dispose()` to release COM
-> resources and avoid STA thread leaks.
+Public SDK operations are curried functions with `Session` last. `withSession`
+releases its COM instance and STA after success, an error result, or a consumer
+exception. See the [functional API contract](https://github.com/cariandrum22/Xanthos/blob/develop/docs/functional-api.md),
+[compiled examples](https://github.com/cariandrum22/Xanthos/blob/develop/samples/Xanthos.Functional/Examples.fs), and
+[record migration guide](https://github.com/cariandrum22/Xanthos/blob/develop/docs/record-migration.md).
 
 ## Architecture
 
@@ -95,7 +76,7 @@ Xanthos follows a three-layer architecture:
 2. **Interop** (`Xanthos.Interop`) - COM interface implementations and test stubs
 3. **Runtime** (`Xanthos.Runtime`) - High-level service orchestration
 
-See [design/architecture/README.md](design/architecture/README.md) for detailed
+See [design/architecture/README.md](https://github.com/cariandrum22/Xanthos/blob/develop/design/architecture/README.md) for detailed
 documentation.
 
 ## CLI Commands (E2E Coverage)
@@ -107,6 +88,7 @@ All commands support global options:
 | ------- | ----------- |
 | `version` | Show JV-Link version and evidence markers |
 | `download` | Bulk dataspec download & preview (optional persistence) |
+| `session-check` | Real COM open/status/read/skip/cancel/close/reopen in one Session |
 | `realtime` | Stream realtime payloads until end/cancel |
 | `status` | Report completed file count |
 | `skip` | Skip current file |
@@ -117,7 +99,7 @@ All commands support global options:
 | `set-save-path` | Set save path |
 | `get-save-path` | Show save path |
 | `set-service-key` | Set service key |
-| `get-service-key` | Show service key |
+| `get-service-key` | Report whether a service key is registered |
 | `set-payoff-dialog` | Set payoff dialog suppression (COM: use `set-ui-properties`) |
 | `get-payoff-dialog` | Show payoff dialog suppression |
 | `set-parent-hwnd` | Set parent window handle (UI) |
@@ -197,6 +179,11 @@ nix develop
 
 This provides .NET SDK, Mono, and development tools with telemetry disabled.
 
+The SDK is pinned to `global.json` for local development and CI. The Nix shell
+uses official SDK archives pinned by SHA-512 in `.config/dotnet-sdk-sources.json`
+while nixpkgs catches up. When upgrading the SDK, update both files using
+Microsoft's .NET release metadata, then verify `nix develop --command dotnet --version`.
+
 ### Manual Setup
 
 This project requires the .NET 10 SDK. Follow these steps to install:
@@ -235,7 +222,7 @@ Fantomas and FSharpLint are provided via dotnet tools:
 ```bash
 dotnet tool restore
 dotnet fantomas .                    # format all F# sources
-dotnet fsharplint lint src tests     # run FSharpLint
+dotnet fsharplint lint Xanthos.sln     # run FSharpLint
 ```
 
 ## Documentation
@@ -274,8 +261,8 @@ Run manually with `pre-commit run --all-files`.
 ### Running Tests Locally
 
 ```bash
-# Run all tests
-dotnet test
+# Run the required managed profile (PowerShell 7)
+pwsh ./scripts/run-test-profile.ps1 -Profile Fast -RunId local-fast-01
 
 # Run unit tests only
 dotnet test tests/Xanthos.UnitTests
@@ -294,61 +281,52 @@ XANTHOS_E2E_MODE=STUB \
 
 | Project | Description | Platform |
 | ------- | ----------- | -------- |
-| `Xanthos.UnitTests` | Unit tests with JvLinkStub | All |
+| `Xanthos.UnitTests` | Unit, independent record contracts and generators | All |
 | `Xanthos.PropertyTests` | FsCheck property-based tests | All |
-| `Xanthos.Cli.E2E` | CLI end-to-end tests | All (Stub) / Windows (COM) |
+| `Xanthos.Cli.E2E` | Legacy Stub CLI smoke and harness checks | All |
+| `Xanthos.FunctionalScenarioTests` | Production CLI and F# functions with controlled native boundary | All |
+| `Xanthos.WindowsTests` | WINDOWS assembly, STA, locale and ABI without SDK | Windows x64 |
+| `Xanthos.ComTests` | Actual JV-Link CLI verification | Windows x64 with SDK |
 
 See `tests/README.md` for the naming conventions used across the unit-test suite
 (e.g., how `*ErrorTests` vs `*AbnormalTests` are scoped, and the preferred
 `Given/When/Then` style for test names).
 For CLI E2E test design and coverage details, see
-[design/tests/e2e-cli.md](design/tests/e2e-cli.md).
+[design/tests/e2e-cli.md](https://github.com/cariandrum22/Xanthos/blob/develop/design/tests/e2e-cli.md).
 
 ### CI/CD
 
 The project uses GitHub Actions for continuous integration:
 
 - **Build & Test**: Runs on Linux, macOS, and Windows
-- **E2E Tests**: Stub mode on all platforms; COM not required for CI
+- **Functional scenarios**: Production CLI with a controlled native boundary; legacy Stub smoke is separate
+- **WindowsManaged**: Windows x64 STA/ABI tests without JV-Link activation
 - **Code Quality**: Format checking with `dotnet fantomas --check .`
-- **Coverage**: Coverlet (cobertura & opencover) with ReportGenerator HTML summary
+- **Coverage**: VSTest Coverlet Cobertura, exact test-ID gates and separate OS/TFM artifacts
 
-See [`.github/workflows/ci.yml`](.github/workflows/ci.yml) for details.
+See [`.github/workflows/ci.yml`](https://github.com/cariandrum22/Xanthos/blob/develop/.github/workflows/ci.yml) for details.
 
 ### Windows COM Verification
 
-> **Note:** CI only validates stub mode. The actual COM layer cannot be tested in
-> GitHub Actions because JV-Link is a commercial product that requires local
-> installation. Before each release, manual verification on a Windows machine with
-> JV-Link installed is required.
+CI checks the managed Windows boundary without activating JV-Link. Actual SDK
+operations require the separate local COM profile with an installed SDK and
+registered subscription key before release.
 
 Before tagging the initial release (and for any later COM regression), run the bundled
 PowerShell workflow on a Windows machine with JV-Link installed:
 
 ```powershell
 pwsh scripts/run-com-verification.ps1 `
-    -ServiceKey "YOUR_SERVICE_KEY" `
-    -SavePath "C:\JVData" `
-    -Sid "YOUR_SID" `
-    -Dataspec "RACE" `
-    -FromTime "20240101000000" `
-    -RealtimeKey "2024010101010101"
+    -FromTime "20260905000000"
 ```
 
 Parameters:
 
-- `Sid` defaults to `UNKNOWN`; override with your actual SID.
-- `ServiceKey` is required (no default).
-  You can also set `XANTHOS_E2E_SERVICE_KEY`.
-- `SavePath`, `Dataspec`, `FromTime`, and `RealtimeKey` are optional overrides.
-- `WatchDurationSeconds` is an optional override.
-- `-SkipBuild`, `-SkipTests`, or `-SkipCli` can be supplied for partial runs.
+- `FromTime` is required: choose an available RACE publication interval (`yyyyMMddHHmmss`, JST). Update the example date for the data available to your installation.
+- `OutputDirectory` selects the ignored output directory.
+- `-SkipPublish -CliPath C:/absolute/path/Xanthos.Cli.exe` tests an existing x64 executable.
 
-The script performs `dotnet build`, `dotnet test` (with `XANTHOS_E2E_MODE=COM`),
-and a series of CLI commands (`version`, `status`, `download`, `watch-events`,
-optional `realtime`).
-Review the console output and CLI logs to confirm COM execution succeeded before
-shipping.
+The script reuses the registered x64 key, publishes the Windows CLI and verifies all 15 required/negative COM tests without skips or stub fallback. Run it on the signed-in Windows desktop. See [COM verification](https://github.com/cariandrum22/Xanthos/blob/develop/tests/Xanthos.ComTests/README.md) and [functional CLI](https://github.com/cariandrum22/Xanthos/blob/develop/docs/functional-cli.md) for stateful acquisition, consent and separate playback/live-notification checks.
 
 ## Updating Error Catalog
 
@@ -376,14 +354,14 @@ script.
 Ensure the JV-Link COM registration exists before running the COM-backed samples:
 
 ```powershell
-pwsh scripts/check_jvlink.ps1
+pwsh scripts/check-jvlink.ps1
 ```
 
 The script resolves the default ProgID and exits non-zero if missing.
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT License - see [LICENSE](https://github.com/cariandrum22/Xanthos/blob/develop/LICENSE) for details.
 
 ## Contributing
 

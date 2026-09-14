@@ -9,7 +9,6 @@
     <PackageId>Xanthos</PackageId>
     <AssemblyName>Xanthos</AssemblyName>
     <RootNamespace>Xanthos</RootNamespace>
-    <Version>0.2.0</Version>
     <Authors>cariandrum22</Authors>
     <Description>F# wrapper library for the JRA-VAN JV-Link COM API. Provides type-safe access to Japanese horse racing data.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -18,7 +17,7 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>fsharp;jra-van;jv-link;horse-racing;com-interop;xanthos</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <Copyright>Copyright (c) 2025 cariandrum22</Copyright>
+    <Copyright>Copyright (c) 2025-2026 cariandrum22</Copyright>
   </PropertyGroup>
 
   <!-- Define WINDOWS constant for Windows target -->
@@ -28,6 +27,39 @@
 
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="SdkTypes.fs" />
+    <Compile Include="EventKeys.fs" />
+    <Compile Include="EventDelivery.fs" />
+    <Compile Include="EventRegistration.fs" />
+    <Compile Include="Session.fs" />
+    <Compile Include="OfficialCodeData.fs" />
+    <Compile Include="Codes.fs" />
+    <Compile Include="RecordBytes.fs" />
+    <Compile Include="RecordKinds.fs" />
+    <Compile Include="Data/Models.fs" />
+    <Compile Include="Data/Reader.fs" />
+    <Compile Include="Data/SpecialRegistration.fs" />
+    <Compile Include="Data/Race.fs" />
+    <Compile Include="Data/Runner.fs" />
+    <Compile Include="Data/Payoff.fs" />
+    <Compile Include="Data/Betting.fs" />
+    <Compile Include="Data/Votes.fs" />
+    <Compile Include="Data/Odds.fs" />
+    <Compile Include="Data/Changes.fs" />
+    <Compile Include="Data/Win5.fs" />
+    <Compile Include="Data/Ownership.fs" />
+    <Compile Include="Data/Horse.fs" />
+    <Compile Include="Data/RaceRecord.fs" />
+    <Compile Include="Data/People.fs" />
+    <Compile Include="Data/Breeding.fs" />
+    <Compile Include="Data/Exclusion.fs" />
+    <Compile Include="Data/Training.fs" />
+    <Compile Include="Data/HorseWeight.fs" />
+    <Compile Include="Data/ReferenceData.fs" />
+    <Compile Include="Data/Mining.fs" />
+    <Compile Include="Data/RaceFrequency.fs" />
+    <Compile Include="Records.fs" />
+    <Compile Include="DataSpecs.fs" />
     <Compile Include="Core\Errors.fs" />
     <Compile Include="Core\ErrorCatalog.fs" />
     <Compile Include="Core\ErrorCodes.fs" />
@@ -83,6 +115,8 @@
     <Compile Include="Interop\StaThreadDispatcher.fs" />
     <Compile Include="Interop\JvLinkStub.fs" />
     <Compile Include="Interop\ComEvents.fs" />
+    <Compile Include="Interop\NativeSessionLifetime.fs" />
+    <Compile Include="SdkOperations.fs" />
     <Compile Include="Interop\ComJvLinkClient.fs" />
     <Compile Include="Interop\ComClientFactory.fs" />
     <Compile Include="Runtime\Configuration.fs" />
@@ -96,6 +130,8 @@
     <Compile Include="Runtime\JvLinkService.Async.fs" />
     <Compile Include="Runtime\JvLinkService.Extensions.fs" />
     <Compile Include="Library.fs" />
+    <Compile Include="JvLink.fsi" />
+    <Compile Include="JvLink.fs" />
   </ItemGroup>
 
   <ItemGroup>

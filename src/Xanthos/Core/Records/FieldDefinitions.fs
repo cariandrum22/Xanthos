@@ -1,4 +1,4 @@
-namespace Xanthos.Core.Records
+namespace Xanthos.Legacy.Records
 
 /// <summary>
 /// Field definition DSL for parsing fixed-length JV-Data records.

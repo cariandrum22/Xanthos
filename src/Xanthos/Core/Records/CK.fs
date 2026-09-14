@@ -1,11 +1,11 @@
-namespace Xanthos.Core.Records
+namespace Xanthos.Legacy.Records
 
 open System
 open Xanthos.Core
 open Xanthos.Core.Text
-open Xanthos.Core.Records.FieldDefinitions
-open Xanthos.Core.Records.RecordParser
-open Xanthos.Core.Records.CodeTables
+open Xanthos.Legacy.Records.FieldDefinitions
+open Xanthos.Legacy.Records.RecordParser
+open Xanthos.Legacy.Records.CodeTables
 
 /// CK Record: 出走別着度数 (Race Results by Start)
 /// Record Length: 6870 bytes

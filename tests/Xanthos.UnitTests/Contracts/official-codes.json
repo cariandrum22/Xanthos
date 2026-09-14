@@ -1,0 +1,2708 @@
+{
+  "sourceSha256": "23bafd375f704acbdd696b5032ac1619f17d47e882587d6e7954b610527a8234",
+  "codes": [
+    {
+      "table": 2001,
+      "raw": "00",
+      "cell": "コード表!C10"
+    },
+    {
+      "table": 2001,
+      "raw": "01",
+      "cell": "コード表!C11"
+    },
+    {
+      "table": 2001,
+      "raw": "02",
+      "cell": "コード表!C12"
+    },
+    {
+      "table": 2001,
+      "raw": "03",
+      "cell": "コード表!C13"
+    },
+    {
+      "table": 2001,
+      "raw": "04",
+      "cell": "コード表!C14"
+    },
+    {
+      "table": 2001,
+      "raw": "05",
+      "cell": "コード表!C15"
+    },
+    {
+      "table": 2001,
+      "raw": "06",
+      "cell": "コード表!C16"
+    },
+    {
+      "table": 2001,
+      "raw": "07",
+      "cell": "コード表!C17"
+    },
+    {
+      "table": 2001,
+      "raw": "08",
+      "cell": "コード表!C18"
+    },
+    {
+      "table": 2001,
+      "raw": "09",
+      "cell": "コード表!C19"
+    },
+    {
+      "table": 2001,
+      "raw": "10",
+      "cell": "コード表!C20"
+    },
+    {
+      "table": 2001,
+      "raw": "30",
+      "cell": "コード表!C22"
+    },
+    {
+      "table": 2001,
+      "raw": "31",
+      "cell": "コード表!C23"
+    },
+    {
+      "table": 2001,
+      "raw": "32",
+      "cell": "コード表!C24"
+    },
+    {
+      "table": 2001,
+      "raw": "33",
+      "cell": "コード表!C25"
+    },
+    {
+      "table": 2001,
+      "raw": "34",
+      "cell": "コード表!C26"
+    },
+    {
+      "table": 2001,
+      "raw": "35",
+      "cell": "コード表!C27"
+    },
+    {
+      "table": 2001,
+      "raw": "36",
+      "cell": "コード表!C28"
+    },
+    {
+      "table": 2001,
+      "raw": "37",
+      "cell": "コード表!C29"
+    },
+    {
+      "table": 2001,
+      "raw": "38",
+      "cell": "コード表!C30"
+    },
+    {
+      "table": 2001,
+      "raw": "39",
+      "cell": "コード表!C31"
+    },
+    {
+      "table": 2001,
+      "raw": "40",
+      "cell": "コード表!C32"
+    },
+    {
+      "table": 2001,
+      "raw": "41",
+      "cell": "コード表!C33"
+    },
+    {
+      "table": 2001,
+      "raw": "42",
+      "cell": "コード表!C34"
+    },
+    {
+      "table": 2001,
+      "raw": "43",
+      "cell": "コード表!C35"
+    },
+    {
+      "table": 2001,
+      "raw": "44",
+      "cell": "コード表!C36"
+    },
+    {
+      "table": 2001,
+      "raw": "45",
+      "cell": "コード表!C37"
+    },
+    {
+      "table": 2001,
+      "raw": "46",
+      "cell": "コード表!C38"
+    },
+    {
+      "table": 2001,
+      "raw": "47",
+      "cell": "コード表!C39"
+    },
+    {
+      "table": 2001,
+      "raw": "48",
+      "cell": "コード表!C40"
+    },
+    {
+      "table": 2001,
+      "raw": "49",
+      "cell": "コード表!C41"
+    },
+    {
+      "table": 2001,
+      "raw": "50",
+      "cell": "コード表!C42"
+    },
+    {
+      "table": 2001,
+      "raw": "51",
+      "cell": "コード表!C43"
+    },
+    {
+      "table": 2001,
+      "raw": "52",
+      "cell": "コード表!C44"
+    },
+    {
+      "table": 2001,
+      "raw": "53",
+      "cell": "コード表!C45"
+    },
+    {
+      "table": 2001,
+      "raw": "54",
+      "cell": "コード表!C46"
+    },
+    {
+      "table": 2001,
+      "raw": "55",
+      "cell": "コード表!C47"
+    },
+    {
+      "table": 2001,
+      "raw": "56",
+      "cell": "コード表!C48"
+    },
+    {
+      "table": 2001,
+      "raw": "57",
+      "cell": "コード表!C49"
+    },
+    {
+      "table": 2001,
+      "raw": "58",
+      "cell": "コード表!C50"
+    },
+    {
+      "table": 2001,
+      "raw": "59",
+      "cell": "コード表!C51"
+    },
+    {
+      "table": 2001,
+      "raw": "60",
+      "cell": "コード表!C52"
+    },
+    {
+      "table": 2001,
+      "raw": "61",
+      "cell": "コード表!C53"
+    },
+    {
+      "table": 2001,
+      "raw": "A0",
+      "cell": "コード表!C55"
+    },
+    {
+      "table": 2001,
+      "raw": "A2",
+      "cell": "コード表!C56"
+    },
+    {
+      "table": 2001,
+      "raw": "A4",
+      "cell": "コード表!C57"
+    },
+    {
+      "table": 2001,
+      "raw": "A6",
+      "cell": "コード表!C58"
+    },
+    {
+      "table": 2001,
+      "raw": "A8",
+      "cell": "コード表!C59"
+    },
+    {
+      "table": 2001,
+      "raw": "B0",
+      "cell": "コード表!C60"
+    },
+    {
+      "table": 2001,
+      "raw": "B2",
+      "cell": "コード表!C61"
+    },
+    {
+      "table": 2001,
+      "raw": "B4",
+      "cell": "コード表!C62"
+    },
+    {
+      "table": 2001,
+      "raw": "B6",
+      "cell": "コード表!C63"
+    },
+    {
+      "table": 2001,
+      "raw": "B8",
+      "cell": "コード表!C64"
+    },
+    {
+      "table": 2001,
+      "raw": "C0",
+      "cell": "コード表!C65"
+    },
+    {
+      "table": 2001,
+      "raw": "C2",
+      "cell": "コード表!C66"
+    },
+    {
+      "table": 2001,
+      "raw": "C4",
+      "cell": "コード表!C67"
+    },
+    {
+      "table": 2001,
+      "raw": "C5",
+      "cell": "コード表!C68"
+    },
+    {
+      "table": 2001,
+      "raw": "C6",
+      "cell": "コード表!C69"
+    },
+    {
+      "table": 2001,
+      "raw": "C7",
+      "cell": "コード表!C70"
+    },
+    {
+      "table": 2001,
+      "raw": "C8",
+      "cell": "コード表!C71"
+    },
+    {
+      "table": 2001,
+      "raw": "D0",
+      "cell": "コード表!C72"
+    },
+    {
+      "table": 2001,
+      "raw": "D2",
+      "cell": "コード表!C73"
+    },
+    {
+      "table": 2001,
+      "raw": "D4",
+      "cell": "コード表!C74"
+    },
+    {
+      "table": 2001,
+      "raw": "D6",
+      "cell": "コード表!C75"
+    },
+    {
+      "table": 2001,
+      "raw": "D8",
+      "cell": "コード表!C76"
+    },
+    {
+      "table": 2001,
+      "raw": "E0",
+      "cell": "コード表!C77"
+    },
+    {
+      "table": 2001,
+      "raw": "E2",
+      "cell": "コード表!C78"
+    },
+    {
+      "table": 2001,
+      "raw": "E4",
+      "cell": "コード表!C79"
+    },
+    {
+      "table": 2001,
+      "raw": "E6",
+      "cell": "コード表!C80"
+    },
+    {
+      "table": 2001,
+      "raw": "E8",
+      "cell": "コード表!C81"
+    },
+    {
+      "table": 2001,
+      "raw": "F0",
+      "cell": "コード表!C82"
+    },
+    {
+      "table": 2001,
+      "raw": "F1",
+      "cell": "コード表!C83"
+    },
+    {
+      "table": 2001,
+      "raw": "F2",
+      "cell": "コード表!C84"
+    },
+    {
+      "table": 2001,
+      "raw": "F4",
+      "cell": "コード表!C85"
+    },
+    {
+      "table": 2001,
+      "raw": "F6",
+      "cell": "コード表!C86"
+    },
+    {
+      "table": 2001,
+      "raw": "F8",
+      "cell": "コード表!C87"
+    },
+    {
+      "table": 2001,
+      "raw": "G0",
+      "cell": "コード表!C88"
+    },
+    {
+      "table": 2001,
+      "raw": "G2",
+      "cell": "コード表!C89"
+    },
+    {
+      "table": 2001,
+      "raw": "G4",
+      "cell": "コード表!C90"
+    },
+    {
+      "table": 2001,
+      "raw": "G6",
+      "cell": "コード表!C91"
+    },
+    {
+      "table": 2001,
+      "raw": "G8",
+      "cell": "コード表!C92"
+    },
+    {
+      "table": 2001,
+      "raw": "H0",
+      "cell": "コード表!C93"
+    },
+    {
+      "table": 2001,
+      "raw": "H2",
+      "cell": "コード表!C94"
+    },
+    {
+      "table": 2001,
+      "raw": "H4",
+      "cell": "コード表!C95"
+    },
+    {
+      "table": 2001,
+      "raw": "H6",
+      "cell": "コード表!C96"
+    },
+    {
+      "table": 2001,
+      "raw": "H8",
+      "cell": "コード表!C97"
+    },
+    {
+      "table": 2001,
+      "raw": "I0",
+      "cell": "コード表!C98"
+    },
+    {
+      "table": 2001,
+      "raw": "I2",
+      "cell": "コード表!C99"
+    },
+    {
+      "table": 2001,
+      "raw": "I4",
+      "cell": "コード表!C100"
+    },
+    {
+      "table": 2001,
+      "raw": "I6",
+      "cell": "コード表!C101"
+    },
+    {
+      "table": 2001,
+      "raw": "I8",
+      "cell": "コード表!C102"
+    },
+    {
+      "table": 2001,
+      "raw": "J0",
+      "cell": "コード表!C103"
+    },
+    {
+      "table": 2001,
+      "raw": "J2",
+      "cell": "コード表!C104"
+    },
+    {
+      "table": 2001,
+      "raw": "J4",
+      "cell": "コード表!C105"
+    },
+    {
+      "table": 2001,
+      "raw": "J6",
+      "cell": "コード表!C106"
+    },
+    {
+      "table": 2001,
+      "raw": "J8",
+      "cell": "コード表!C107"
+    },
+    {
+      "table": 2001,
+      "raw": "K0",
+      "cell": "コード表!C108"
+    },
+    {
+      "table": 2001,
+      "raw": "K2",
+      "cell": "コード表!C109"
+    },
+    {
+      "table": 2001,
+      "raw": "K4",
+      "cell": "コード表!C110"
+    },
+    {
+      "table": 2001,
+      "raw": "K6",
+      "cell": "コード表!C111"
+    },
+    {
+      "table": 2001,
+      "raw": "K8",
+      "cell": "コード表!C112"
+    },
+    {
+      "table": 2001,
+      "raw": "L0",
+      "cell": "コード表!C113"
+    },
+    {
+      "table": 2001,
+      "raw": "L2",
+      "cell": "コード表!C114"
+    },
+    {
+      "table": 2001,
+      "raw": "L4",
+      "cell": "コード表!C115"
+    },
+    {
+      "table": 2001,
+      "raw": "L6",
+      "cell": "コード表!C116"
+    },
+    {
+      "table": 2001,
+      "raw": "L8",
+      "cell": "コード表!C117"
+    },
+    {
+      "table": 2001,
+      "raw": "M0",
+      "cell": "コード表!C118"
+    },
+    {
+      "table": 2001,
+      "raw": "M2",
+      "cell": "コード表!C119"
+    },
+    {
+      "table": 2001,
+      "raw": "M4",
+      "cell": "コード表!C120"
+    },
+    {
+      "table": 2001,
+      "raw": "M6",
+      "cell": "コード表!C121"
+    },
+    {
+      "table": 2001,
+      "raw": "M8",
+      "cell": "コード表!C122"
+    },
+    {
+      "table": 2001,
+      "raw": "N0",
+      "cell": "コード表!C123"
+    },
+    {
+      "table": 2001,
+      "raw": "N2",
+      "cell": "コード表!C124"
+    },
+    {
+      "table": 2001,
+      "raw": "N4",
+      "cell": "コード表!C125"
+    },
+    {
+      "table": 2001,
+      "raw": "N6",
+      "cell": "コード表!C126"
+    },
+    {
+      "table": 2002,
+      "raw": "0",
+      "cell": "コード表!C133"
+    },
+    {
+      "table": 2002,
+      "raw": "1",
+      "cell": "コード表!C134"
+    },
+    {
+      "table": 2002,
+      "raw": "2",
+      "cell": "コード表!C135"
+    },
+    {
+      "table": 2002,
+      "raw": "3",
+      "cell": "コード表!C136"
+    },
+    {
+      "table": 2002,
+      "raw": "4",
+      "cell": "コード表!C137"
+    },
+    {
+      "table": 2002,
+      "raw": "5",
+      "cell": "コード表!C138"
+    },
+    {
+      "table": 2002,
+      "raw": "6",
+      "cell": "コード表!C139"
+    },
+    {
+      "table": 2002,
+      "raw": "7",
+      "cell": "コード表!C140"
+    },
+    {
+      "table": 2002,
+      "raw": "8",
+      "cell": "コード表!C141"
+    },
+    {
+      "table": 2003,
+      "raw": "A",
+      "cell": "コード表!C147"
+    },
+    {
+      "table": 2003,
+      "raw": "B",
+      "cell": "コード表!C148"
+    },
+    {
+      "table": 2003,
+      "raw": "C",
+      "cell": "コード表!C149"
+    },
+    {
+      "table": 2003,
+      "raw": "D",
+      "cell": "コード表!C150"
+    },
+    {
+      "table": 2003,
+      "raw": "E",
+      "cell": "コード表!C151"
+    },
+    {
+      "table": 2003,
+      "raw": "F",
+      "cell": "コード表!C152"
+    },
+    {
+      "table": 2003,
+      "raw": "G",
+      "cell": "コード表!C153"
+    },
+    {
+      "table": 2003,
+      "raw": "H",
+      "cell": "コード表!C154"
+    },
+    {
+      "table": 2003,
+      "raw": "L",
+      "cell": "コード表!C155"
+    },
+    {
+      "table": 2003,
+      "raw": " ",
+      "cell": "コード表!C156"
+    },
+    {
+      "table": 2005,
+      "raw": "00",
+      "cell": "コード表!C163"
+    },
+    {
+      "table": 2005,
+      "raw": "11",
+      "cell": "コード表!C164"
+    },
+    {
+      "table": 2005,
+      "raw": "12",
+      "cell": "コード表!C165"
+    },
+    {
+      "table": 2005,
+      "raw": "13",
+      "cell": "コード表!C166"
+    },
+    {
+      "table": 2005,
+      "raw": "14",
+      "cell": "コード表!C167"
+    },
+    {
+      "table": 2005,
+      "raw": "18",
+      "cell": "コード表!C168"
+    },
+    {
+      "table": 2005,
+      "raw": "19",
+      "cell": "コード表!C169"
+    },
+    {
+      "table": 2005,
+      "raw": "21",
+      "cell": "コード表!C170"
+    },
+    {
+      "table": 2005,
+      "raw": "22",
+      "cell": "コード表!C171"
+    },
+    {
+      "table": 2005,
+      "raw": "23",
+      "cell": "コード表!C172"
+    },
+    {
+      "table": 2005,
+      "raw": "24",
+      "cell": "コード表!C173"
+    },
+    {
+      "table": 2006,
+      "raw": "000",
+      "cell": "コード表!C183"
+    },
+    {
+      "table": 2006,
+      "raw": "001",
+      "cell": "コード表!C184"
+    },
+    {
+      "table": 2006,
+      "raw": "002",
+      "cell": "コード表!C185"
+    },
+    {
+      "table": 2006,
+      "raw": "003",
+      "cell": "コード表!C186"
+    },
+    {
+      "table": 2006,
+      "raw": "004",
+      "cell": "コード表!C187"
+    },
+    {
+      "table": 2006,
+      "raw": "020",
+      "cell": "コード表!C188"
+    },
+    {
+      "table": 2006,
+      "raw": "021",
+      "cell": "コード表!C189"
+    },
+    {
+      "table": 2006,
+      "raw": "023",
+      "cell": "コード表!C190"
+    },
+    {
+      "table": 2006,
+      "raw": "024",
+      "cell": "コード表!C191"
+    },
+    {
+      "table": 2006,
+      "raw": "030",
+      "cell": "コード表!C192"
+    },
+    {
+      "table": 2006,
+      "raw": "031",
+      "cell": "コード表!C193"
+    },
+    {
+      "table": 2006,
+      "raw": "033",
+      "cell": "コード表!C194"
+    },
+    {
+      "table": 2006,
+      "raw": "034",
+      "cell": "コード表!C195"
+    },
+    {
+      "table": 2006,
+      "raw": "040",
+      "cell": "コード表!C196"
+    },
+    {
+      "table": 2006,
+      "raw": "041",
+      "cell": "コード表!C197"
+    },
+    {
+      "table": 2006,
+      "raw": "043",
+      "cell": "コード表!C198"
+    },
+    {
+      "table": 2006,
+      "raw": "044",
+      "cell": "コード表!C199"
+    },
+    {
+      "table": 2006,
+      "raw": "A00",
+      "cell": "コード表!C200"
+    },
+    {
+      "table": 2006,
+      "raw": "A01",
+      "cell": "コード表!C201"
+    },
+    {
+      "table": 2006,
+      "raw": "A02",
+      "cell": "コード表!C202"
+    },
+    {
+      "table": 2006,
+      "raw": "A03",
+      "cell": "コード表!C203"
+    },
+    {
+      "table": 2006,
+      "raw": "A04",
+      "cell": "コード表!C204"
+    },
+    {
+      "table": 2006,
+      "raw": "A10",
+      "cell": "コード表!C205"
+    },
+    {
+      "table": 2006,
+      "raw": "A11",
+      "cell": "コード表!C206"
+    },
+    {
+      "table": 2006,
+      "raw": "A13",
+      "cell": "コード表!C207"
+    },
+    {
+      "table": 2006,
+      "raw": "A14",
+      "cell": "コード表!C208"
+    },
+    {
+      "table": 2006,
+      "raw": "A20",
+      "cell": "コード表!C209"
+    },
+    {
+      "table": 2006,
+      "raw": "A21",
+      "cell": "コード表!C210"
+    },
+    {
+      "table": 2006,
+      "raw": "A23",
+      "cell": "コード表!C211"
+    },
+    {
+      "table": 2006,
+      "raw": "A24",
+      "cell": "コード表!C212"
+    },
+    {
+      "table": 2006,
+      "raw": "A30",
+      "cell": "コード表!C213"
+    },
+    {
+      "table": 2006,
+      "raw": "A31",
+      "cell": "コード表!C214"
+    },
+    {
+      "table": 2006,
+      "raw": "A33",
+      "cell": "コード表!C215"
+    },
+    {
+      "table": 2006,
+      "raw": "A34",
+      "cell": "コード表!C216"
+    },
+    {
+      "table": 2006,
+      "raw": "A40",
+      "cell": "コード表!C217"
+    },
+    {
+      "table": 2006,
+      "raw": "A41",
+      "cell": "コード表!C218"
+    },
+    {
+      "table": 2006,
+      "raw": "B00",
+      "cell": "コード表!C219"
+    },
+    {
+      "table": 2006,
+      "raw": "B01",
+      "cell": "コード表!C220"
+    },
+    {
+      "table": 2006,
+      "raw": "B03",
+      "cell": "コード表!C221"
+    },
+    {
+      "table": 2006,
+      "raw": "B04",
+      "cell": "コード表!C222"
+    },
+    {
+      "table": 2006,
+      "raw": "C00",
+      "cell": "コード表!C223"
+    },
+    {
+      "table": 2006,
+      "raw": "C01",
+      "cell": "コード表!C224"
+    },
+    {
+      "table": 2006,
+      "raw": "C03",
+      "cell": "コード表!C225"
+    },
+    {
+      "table": 2006,
+      "raw": "C04",
+      "cell": "コード表!C226"
+    },
+    {
+      "table": 2006,
+      "raw": "D00",
+      "cell": "コード表!C227"
+    },
+    {
+      "table": 2006,
+      "raw": "D01",
+      "cell": "コード表!C228"
+    },
+    {
+      "table": 2006,
+      "raw": "D03",
+      "cell": "コード表!C229"
+    },
+    {
+      "table": 2006,
+      "raw": "E00",
+      "cell": "コード表!C230"
+    },
+    {
+      "table": 2006,
+      "raw": "E01",
+      "cell": "コード表!C231"
+    },
+    {
+      "table": 2006,
+      "raw": "E03",
+      "cell": "コード表!C232"
+    },
+    {
+      "table": 2006,
+      "raw": "F00",
+      "cell": "コード表!C233"
+    },
+    {
+      "table": 2006,
+      "raw": "F01",
+      "cell": "コード表!C234"
+    },
+    {
+      "table": 2006,
+      "raw": "F03",
+      "cell": "コード表!C235"
+    },
+    {
+      "table": 2006,
+      "raw": "F04",
+      "cell": "コード表!C236"
+    },
+    {
+      "table": 2006,
+      "raw": "G00",
+      "cell": "コード表!C237"
+    },
+    {
+      "table": 2006,
+      "raw": "G01",
+      "cell": "コード表!C238"
+    },
+    {
+      "table": 2006,
+      "raw": "G03",
+      "cell": "コード表!C239"
+    },
+    {
+      "table": 2006,
+      "raw": "H00",
+      "cell": "コード表!C240"
+    },
+    {
+      "table": 2006,
+      "raw": "H01",
+      "cell": "コード表!C241"
+    },
+    {
+      "table": 2006,
+      "raw": "I00",
+      "cell": "コード表!C242"
+    },
+    {
+      "table": 2006,
+      "raw": "I01",
+      "cell": "コード表!C243"
+    },
+    {
+      "table": 2006,
+      "raw": "I03",
+      "cell": "コード表!C244"
+    },
+    {
+      "table": 2006,
+      "raw": "J00",
+      "cell": "コード表!C245"
+    },
+    {
+      "table": 2006,
+      "raw": "J01",
+      "cell": "コード表!C246"
+    },
+    {
+      "table": 2006,
+      "raw": "K00",
+      "cell": "コード表!C247"
+    },
+    {
+      "table": 2006,
+      "raw": "K01",
+      "cell": "コード表!C248"
+    },
+    {
+      "table": 2006,
+      "raw": "K03",
+      "cell": "コード表!C249"
+    },
+    {
+      "table": 2006,
+      "raw": "L00",
+      "cell": "コード表!C250"
+    },
+    {
+      "table": 2006,
+      "raw": "L01",
+      "cell": "コード表!C251"
+    },
+    {
+      "table": 2006,
+      "raw": "L03",
+      "cell": "コード表!C252"
+    },
+    {
+      "table": 2006,
+      "raw": "M00",
+      "cell": "コード表!C253"
+    },
+    {
+      "table": 2006,
+      "raw": "M01",
+      "cell": "コード表!C254"
+    },
+    {
+      "table": 2006,
+      "raw": "M03",
+      "cell": "コード表!C255"
+    },
+    {
+      "table": 2006,
+      "raw": "M04",
+      "cell": "コード表!C256"
+    },
+    {
+      "table": 2006,
+      "raw": "N00",
+      "cell": "コード表!C257"
+    },
+    {
+      "table": 2006,
+      "raw": "N01",
+      "cell": "コード表!C258"
+    },
+    {
+      "table": 2006,
+      "raw": "N03",
+      "cell": "コード表!C259"
+    },
+    {
+      "table": 2006,
+      "raw": "N04",
+      "cell": "コード表!C260"
+    },
+    {
+      "table": 2006,
+      "raw": "N20",
+      "cell": "コード表!C261"
+    },
+    {
+      "table": 2006,
+      "raw": "N21",
+      "cell": "コード表!C262"
+    },
+    {
+      "table": 2006,
+      "raw": "N23",
+      "cell": "コード表!C263"
+    },
+    {
+      "table": 2006,
+      "raw": "N24",
+      "cell": "コード表!C264"
+    },
+    {
+      "table": 2006,
+      "raw": "N30",
+      "cell": "コード表!C265"
+    },
+    {
+      "table": 2006,
+      "raw": "N31",
+      "cell": "コード表!C266"
+    },
+    {
+      "table": 2006,
+      "raw": "N40",
+      "cell": "コード表!C267"
+    },
+    {
+      "table": 2006,
+      "raw": "N41",
+      "cell": "コード表!C268"
+    },
+    {
+      "table": 2006,
+      "raw": "N44",
+      "cell": "コード表!C269"
+    },
+    {
+      "table": 2007,
+      "raw": "000",
+      "cell": "コード表!C306"
+    },
+    {
+      "table": 2007,
+      "raw": "001",
+      "cell": "コード表!C307"
+    },
+    {
+      "table": 2007,
+      "raw": "002",
+      "cell": "コード表!C308"
+    },
+    {
+      "table": 2007,
+      "raw": "003",
+      "cell": "コード表!C309"
+    },
+    {
+      "table": 2007,
+      "raw": "005",
+      "cell": "コード表!C311"
+    },
+    {
+      "table": 2007,
+      "raw": "010",
+      "cell": "コード表!C313"
+    },
+    {
+      "table": 2007,
+      "raw": "016",
+      "cell": "コード表!C315"
+    },
+    {
+      "table": 2007,
+      "raw": "099",
+      "cell": "コード表!C317"
+    },
+    {
+      "table": 2007,
+      "raw": "100",
+      "cell": "コード表!C318"
+    },
+    {
+      "table": 2007,
+      "raw": "701",
+      "cell": "コード表!C319"
+    },
+    {
+      "table": 2007,
+      "raw": "702",
+      "cell": "コード表!C320"
+    },
+    {
+      "table": 2007,
+      "raw": "703",
+      "cell": "コード表!C321"
+    },
+    {
+      "table": 2007,
+      "raw": "999",
+      "cell": "コード表!C322"
+    },
+    {
+      "table": 2008,
+      "raw": "0",
+      "cell": "コード表!C328"
+    },
+    {
+      "table": 2008,
+      "raw": "1",
+      "cell": "コード表!C329"
+    },
+    {
+      "table": 2008,
+      "raw": "2",
+      "cell": "コード表!C330"
+    },
+    {
+      "table": 2008,
+      "raw": "3",
+      "cell": "コード表!C331"
+    },
+    {
+      "table": 2008,
+      "raw": "4",
+      "cell": "コード表!C332"
+    },
+    {
+      "table": 2009,
+      "raw": "00",
+      "cell": "コード表!C338"
+    },
+    {
+      "table": 2009,
+      "raw": "10",
+      "cell": "コード表!C339"
+    },
+    {
+      "table": 2009,
+      "raw": "11",
+      "cell": "コード表!C340"
+    },
+    {
+      "table": 2009,
+      "raw": "12",
+      "cell": "コード表!C341"
+    },
+    {
+      "table": 2009,
+      "raw": "13",
+      "cell": "コード表!C342"
+    },
+    {
+      "table": 2009,
+      "raw": "14",
+      "cell": "コード表!C343"
+    },
+    {
+      "table": 2009,
+      "raw": "15",
+      "cell": "コード表!C344"
+    },
+    {
+      "table": 2009,
+      "raw": "16",
+      "cell": "コード表!C345"
+    },
+    {
+      "table": 2009,
+      "raw": "17",
+      "cell": "コード表!C346"
+    },
+    {
+      "table": 2009,
+      "raw": "18",
+      "cell": "コード表!C347"
+    },
+    {
+      "table": 2009,
+      "raw": "19",
+      "cell": "コード表!C348"
+    },
+    {
+      "table": 2009,
+      "raw": "20",
+      "cell": "コード表!C349"
+    },
+    {
+      "table": 2009,
+      "raw": "21",
+      "cell": "コード表!C350"
+    },
+    {
+      "table": 2009,
+      "raw": "22",
+      "cell": "コード表!C351"
+    },
+    {
+      "table": 2009,
+      "raw": "23",
+      "cell": "コード表!C352"
+    },
+    {
+      "table": 2009,
+      "raw": "24",
+      "cell": "コード表!C353"
+    },
+    {
+      "table": 2009,
+      "raw": "25",
+      "cell": "コード表!C354"
+    },
+    {
+      "table": 2009,
+      "raw": "26",
+      "cell": "コード表!C355"
+    },
+    {
+      "table": 2009,
+      "raw": "27",
+      "cell": "コード表!C356"
+    },
+    {
+      "table": 2009,
+      "raw": "28",
+      "cell": "コード表!C357"
+    },
+    {
+      "table": 2009,
+      "raw": "29",
+      "cell": "コード表!C358"
+    },
+    {
+      "table": 2009,
+      "raw": "51",
+      "cell": "コード表!C360"
+    },
+    {
+      "table": 2009,
+      "raw": "52",
+      "cell": "コード表!C361"
+    },
+    {
+      "table": 2009,
+      "raw": "53",
+      "cell": "コード表!C362"
+    },
+    {
+      "table": 2009,
+      "raw": "54",
+      "cell": "コード表!C363"
+    },
+    {
+      "table": 2009,
+      "raw": "55",
+      "cell": "コード表!C364"
+    },
+    {
+      "table": 2009,
+      "raw": "56",
+      "cell": "コード表!C365"
+    },
+    {
+      "table": 2009,
+      "raw": "57",
+      "cell": "コード表!C366"
+    },
+    {
+      "table": 2009,
+      "raw": "58",
+      "cell": "コード表!C367"
+    },
+    {
+      "table": 2009,
+      "raw": "59",
+      "cell": "コード表!C368"
+    },
+    {
+      "table": 2010,
+      "raw": "0",
+      "cell": "コード表!C374"
+    },
+    {
+      "table": 2010,
+      "raw": "1",
+      "cell": "コード表!C375"
+    },
+    {
+      "table": 2010,
+      "raw": "2",
+      "cell": "コード表!C376"
+    },
+    {
+      "table": 2010,
+      "raw": "3",
+      "cell": "コード表!C377"
+    },
+    {
+      "table": 2010,
+      "raw": "4",
+      "cell": "コード表!C378"
+    },
+    {
+      "table": 2011,
+      "raw": "0",
+      "cell": "コード表!C384"
+    },
+    {
+      "table": 2011,
+      "raw": "1",
+      "cell": "コード表!C385"
+    },
+    {
+      "table": 2011,
+      "raw": "2",
+      "cell": "コード表!C386"
+    },
+    {
+      "table": 2011,
+      "raw": "3",
+      "cell": "コード表!C387"
+    },
+    {
+      "table": 2011,
+      "raw": "4",
+      "cell": "コード表!C388"
+    },
+    {
+      "table": 2011,
+      "raw": "5",
+      "cell": "コード表!C389"
+    },
+    {
+      "table": 2011,
+      "raw": "6",
+      "cell": "コード表!C390"
+    },
+    {
+      "table": 2101,
+      "raw": "0",
+      "cell": "コード表!C396"
+    },
+    {
+      "table": 2101,
+      "raw": "1",
+      "cell": "コード表!C397"
+    },
+    {
+      "table": 2101,
+      "raw": "2",
+      "cell": "コード表!C398"
+    },
+    {
+      "table": 2101,
+      "raw": "3",
+      "cell": "コード表!C399"
+    },
+    {
+      "table": 2101,
+      "raw": "4",
+      "cell": "コード表!C400"
+    },
+    {
+      "table": 2101,
+      "raw": "5",
+      "cell": "コード表!C401"
+    },
+    {
+      "table": 2101,
+      "raw": "6",
+      "cell": "コード表!C402"
+    },
+    {
+      "table": 2101,
+      "raw": "7",
+      "cell": "コード表!C403"
+    },
+    {
+      "table": 2102,
+      "raw": "   ",
+      "cell": "コード表!C409"
+    },
+    {
+      "table": 2102,
+      "raw": " 12",
+      "cell": "コード表!C410"
+    },
+    {
+      "table": 2102,
+      "raw": " 34",
+      "cell": "コード表!C411"
+    },
+    {
+      "table": 2102,
+      "raw": "1  ",
+      "cell": "コード表!C412"
+    },
+    {
+      "table": 2102,
+      "raw": "112",
+      "cell": "コード表!C413"
+    },
+    {
+      "table": 2102,
+      "raw": "114",
+      "cell": "コード表!C414"
+    },
+    {
+      "table": 2102,
+      "raw": "134",
+      "cell": "コード表!C415"
+    },
+    {
+      "table": 2102,
+      "raw": "2  ",
+      "cell": "コード表!C416"
+    },
+    {
+      "table": 2102,
+      "raw": "212",
+      "cell": "コード表!C417"
+    },
+    {
+      "table": 2102,
+      "raw": "3  ",
+      "cell": "コード表!C418"
+    },
+    {
+      "table": 2102,
+      "raw": "312",
+      "cell": "コード表!C419"
+    },
+    {
+      "table": 2102,
+      "raw": "4  ",
+      "cell": "コード表!C420"
+    },
+    {
+      "table": 2102,
+      "raw": "5  ",
+      "cell": "コード表!C421"
+    },
+    {
+      "table": 2102,
+      "raw": "6  ",
+      "cell": "コード表!C422"
+    },
+    {
+      "table": 2102,
+      "raw": "7  ",
+      "cell": "コード表!C423"
+    },
+    {
+      "table": 2102,
+      "raw": "8  ",
+      "cell": "コード表!C424"
+    },
+    {
+      "table": 2102,
+      "raw": "9  ",
+      "cell": "コード表!C425"
+    },
+    {
+      "table": 2102,
+      "raw": "A  ",
+      "cell": "コード表!C426"
+    },
+    {
+      "table": 2102,
+      "raw": "D  ",
+      "cell": "コード表!C427"
+    },
+    {
+      "table": 2102,
+      "raw": "H  ",
+      "cell": "コード表!C428"
+    },
+    {
+      "table": 2102,
+      "raw": "K  ",
+      "cell": "コード表!C429"
+    },
+    {
+      "table": 2102,
+      "raw": "T  ",
+      "cell": "コード表!C430"
+    },
+    {
+      "table": 2102,
+      "raw": "Z  ",
+      "cell": "コード表!C431"
+    },
+    {
+      "table": 2102,
+      "raw": " 14",
+      "cell": "コード表!C433"
+    },
+    {
+      "table": 2102,
+      "raw": "214",
+      "cell": "コード表!C434"
+    },
+    {
+      "table": 2102,
+      "raw": "734",
+      "cell": "コード表!C435"
+    },
+    {
+      "table": 2201,
+      "raw": "0",
+      "cell": "コード表!C443"
+    },
+    {
+      "table": 2201,
+      "raw": "1",
+      "cell": "コード表!C444"
+    },
+    {
+      "table": 2201,
+      "raw": "2",
+      "cell": "コード表!C445"
+    },
+    {
+      "table": 2201,
+      "raw": "3",
+      "cell": "コード表!C446"
+    },
+    {
+      "table": 2201,
+      "raw": "4",
+      "cell": "コード表!C447"
+    },
+    {
+      "table": 2201,
+      "raw": "5",
+      "cell": "コード表!C448"
+    },
+    {
+      "table": 2201,
+      "raw": "6",
+      "cell": "コード表!C449"
+    },
+    {
+      "table": 2201,
+      "raw": "7",
+      "cell": "コード表!C450"
+    },
+    {
+      "table": 2201,
+      "raw": "8",
+      "cell": "コード表!C451"
+    },
+    {
+      "table": 2202,
+      "raw": "0",
+      "cell": "コード表!C457"
+    },
+    {
+      "table": 2202,
+      "raw": "1",
+      "cell": "コード表!C458"
+    },
+    {
+      "table": 2202,
+      "raw": "2",
+      "cell": "コード表!C459"
+    },
+    {
+      "table": 2202,
+      "raw": "3",
+      "cell": "コード表!C460"
+    },
+    {
+      "table": 2203,
+      "raw": "00",
+      "cell": "コード表!C466"
+    },
+    {
+      "table": 2203,
+      "raw": "01",
+      "cell": "コード表!C467"
+    },
+    {
+      "table": 2203,
+      "raw": "02",
+      "cell": "コード表!C468"
+    },
+    {
+      "table": 2203,
+      "raw": "03",
+      "cell": "コード表!C469"
+    },
+    {
+      "table": 2203,
+      "raw": "04",
+      "cell": "コード表!C470"
+    },
+    {
+      "table": 2203,
+      "raw": "05",
+      "cell": "コード表!C471"
+    },
+    {
+      "table": 2203,
+      "raw": "06",
+      "cell": "コード表!C472"
+    },
+    {
+      "table": 2203,
+      "raw": "07",
+      "cell": "コード表!C473"
+    },
+    {
+      "table": 2203,
+      "raw": "08",
+      "cell": "コード表!C474"
+    },
+    {
+      "table": 2203,
+      "raw": "09",
+      "cell": "コード表!C475"
+    },
+    {
+      "table": 2203,
+      "raw": "10",
+      "cell": "コード表!C476"
+    },
+    {
+      "table": 2203,
+      "raw": "11",
+      "cell": "コード表!C477"
+    },
+    {
+      "table": 2204,
+      "raw": "00",
+      "cell": "コード表!C483"
+    },
+    {
+      "table": 2204,
+      "raw": "01",
+      "cell": "コード表!C484"
+    },
+    {
+      "table": 2204,
+      "raw": "02",
+      "cell": "コード表!C485"
+    },
+    {
+      "table": 2204,
+      "raw": "03",
+      "cell": "コード表!C486"
+    },
+    {
+      "table": 2204,
+      "raw": "04",
+      "cell": "コード表!C487"
+    },
+    {
+      "table": 2204,
+      "raw": "05",
+      "cell": "コード表!C488"
+    },
+    {
+      "table": 2204,
+      "raw": "06",
+      "cell": "コード表!C489"
+    },
+    {
+      "table": 2204,
+      "raw": "07",
+      "cell": "コード表!C490"
+    },
+    {
+      "table": 2204,
+      "raw": "08",
+      "cell": "コード表!C491"
+    },
+    {
+      "table": 2204,
+      "raw": "09",
+      "cell": "コード表!C492"
+    },
+    {
+      "table": 2204,
+      "raw": "10",
+      "cell": "コード表!C493"
+    },
+    {
+      "table": 2204,
+      "raw": "11",
+      "cell": "コード表!C494"
+    },
+    {
+      "table": 2204,
+      "raw": "12",
+      "cell": "コード表!C495"
+    },
+    {
+      "table": 2204,
+      "raw": "15",
+      "cell": "コード表!C496"
+    },
+    {
+      "table": 2204,
+      "raw": "16",
+      "cell": "コード表!C497"
+    },
+    {
+      "table": 2204,
+      "raw": "17",
+      "cell": "コード表!C498"
+    },
+    {
+      "table": 2204,
+      "raw": "18",
+      "cell": "コード表!C499"
+    },
+    {
+      "table": 2204,
+      "raw": "19",
+      "cell": "コード表!C500"
+    },
+    {
+      "table": 2204,
+      "raw": "20",
+      "cell": "コード表!C501"
+    },
+    {
+      "table": 2204,
+      "raw": "21",
+      "cell": "コード表!C502"
+    },
+    {
+      "table": 2204,
+      "raw": "22",
+      "cell": "コード表!C503"
+    },
+    {
+      "table": 2204,
+      "raw": "23",
+      "cell": "コード表!C504"
+    },
+    {
+      "table": 2204,
+      "raw": "24",
+      "cell": "コード表!C505"
+    },
+    {
+      "table": 2204,
+      "raw": "25",
+      "cell": "コード表!C506"
+    },
+    {
+      "table": 2204,
+      "raw": "26",
+      "cell": "コード表!C507"
+    },
+    {
+      "table": 2204,
+      "raw": "27",
+      "cell": "コード表!C508"
+    },
+    {
+      "table": 2204,
+      "raw": "31",
+      "cell": "コード表!C509"
+    },
+    {
+      "table": 2204,
+      "raw": "40",
+      "cell": "コード表!C510"
+    },
+    {
+      "table": 2204,
+      "raw": "41",
+      "cell": "コード表!C511"
+    },
+    {
+      "table": 2301,
+      "raw": "0",
+      "cell": "コード表!C517"
+    },
+    {
+      "table": 2301,
+      "raw": "1",
+      "cell": "コード表!C518"
+    },
+    {
+      "table": 2301,
+      "raw": "2",
+      "cell": "コード表!C519"
+    },
+    {
+      "table": 2301,
+      "raw": "3",
+      "cell": "コード表!C520"
+    },
+    {
+      "table": 2301,
+      "raw": "4",
+      "cell": "コード表!C521"
+    },
+    {
+      "table": 2302,
+      "raw": "0",
+      "cell": "コード表!C527"
+    },
+    {
+      "table": 2302,
+      "raw": "1",
+      "cell": "コード表!C528"
+    },
+    {
+      "table": 2302,
+      "raw": "2",
+      "cell": "コード表!C529"
+    },
+    {
+      "table": 2302,
+      "raw": "3",
+      "cell": "コード表!C530"
+    },
+    {
+      "table": 2303,
+      "raw": "0",
+      "cell": "コード表!C536"
+    },
+    {
+      "table": 2303,
+      "raw": "1",
+      "cell": "コード表!C537"
+    },
+    {
+      "table": 2303,
+      "raw": "2",
+      "cell": "コード表!C538"
+    },
+    {
+      "table": 2303,
+      "raw": "3",
+      "cell": "コード表!C539"
+    },
+    {
+      "table": 2303,
+      "raw": "4",
+      "cell": "コード表!C540"
+    },
+    {
+      "table": 2303,
+      "raw": "9",
+      "cell": "コード表!C541"
+    },
+    {
+      "table": 2007,
+      "raw": "004",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "006",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "007",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "008",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "009",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "011",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "012",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "013",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "014",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "015",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "017",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "018",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "019",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "020",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "021",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "022",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "023",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "024",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "025",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "026",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "027",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "028",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "029",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "030",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "031",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "032",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "033",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "034",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "035",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "036",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "037",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "038",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "039",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "040",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "041",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "042",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "043",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "044",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "045",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "046",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "047",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "048",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "049",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "050",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "051",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "052",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "053",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "054",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "055",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "056",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "057",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "058",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "059",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "060",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "061",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "062",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "063",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "064",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "065",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "066",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "067",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "068",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "069",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "070",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "071",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "072",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "073",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "074",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "075",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "076",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "077",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "078",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "079",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "080",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "081",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "082",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "083",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "084",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "085",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "086",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "087",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "088",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "089",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "090",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "091",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "092",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "093",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "094",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "095",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "096",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "097",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    },
+    {
+      "table": 2007,
+      "raw": "098",
+      "cell": "コード表!C307:C316 (explicit ellipsis range)"
+    }
+  ],
+  "headers": [
+    {
+      "id": "TK",
+      "cell": "フォーマット!E18",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "RA",
+      "cell": "フォーマット!E76",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "SE",
+      "cell": "フォーマット!E143",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "HR",
+      "cell": "フォーマット!E218",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "H1",
+      "cell": "フォーマット!E300",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "H6",
+      "cell": "フォーマット!E369",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "O1",
+      "cell": "フォーマット!E393",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "O2",
+      "cell": "フォーマット!E430",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "O3",
+      "cell": "フォーマット!E453",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "O4",
+      "cell": "フォーマット!E477",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "O5",
+      "cell": "フォーマット!E500",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "O6",
+      "cell": "フォーマット!E523",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "UM",
+      "cell": "フォーマット!E546",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "KS",
+      "cell": "フォーマット!E620",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "CH",
+      "cell": "フォーマット!E710",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "BR",
+      "cell": "フォーマット!E781",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "BN",
+      "cell": "フォーマット!E802",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "HN",
+      "cell": "フォーマット!E823",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "SK",
+      "cell": "フォーマット!E847",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "CK",
+      "cell": "フォーマット!E865",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "RC",
+      "cell": "フォーマット!E1106",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "HC",
+      "cell": "フォーマット!E1144",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "HS",
+      "cell": "フォーマット!E1172",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "HY",
+      "cell": "フォーマット!E1191",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "YS",
+      "cell": "フォーマット!E1202",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "BT",
+      "cell": "フォーマット!E1231",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "CS",
+      "cell": "フォーマット!E1243",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "DM",
+      "cell": "フォーマット!E1256",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "TM",
+      "cell": "フォーマット!E1278",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "WF",
+      "cell": "フォーマット!E1298",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "JG",
+      "cell": "フォーマット!E1340",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "WC",
+      "cell": "フォーマット!E1359",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "WH",
+      "cell": "フォーマット!E1415",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "WE",
+      "cell": "フォーマット!E1437",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "AV",
+      "cell": "フォーマット!E1463",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "JC",
+      "cell": "フォーマット!E1481",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "TC",
+      "cell": "フォーマット!E1511",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    },
+    {
+      "id": "CC",
+      "cell": "フォーマット!E1533",
+      "idPosition": 1,
+      "categoryPosition": 3,
+      "createdDatePosition": 4
+    }
+  ]
+}

@@ -336,10 +336,15 @@ let ``Watch events stream publishes notifications`` () =
         | Ok cfg -> cfg
         | Error err -> failwithf "unexpected config error %A" err
 
-    let service = new JvLinkService(stubClient :> IJvLinkClient, config)
+    use service = new JvLinkService(stubClient :> IJvLinkClient, config)
 
     let received = ResizeArray<Result<WatchEvent, XanthosError>>()
-    use subscription = service.WatchEvents.Subscribe(received.Add)
+    use notification = new ManualResetEventSlim(false)
+
+    use subscription =
+        service.WatchEvents.Subscribe(fun item ->
+            received.Add item
+            notification.Set())
 
     match service.StartWatchEvents() with
     | Ok() -> ()
@@ -347,8 +352,7 @@ let ``Watch events stream publishes notifications`` () =
 
     stubClient.RaiseEvent "0B1220240101010101"
 
-    // Allow async event processing (events are queued to a background thread)
-    Thread.Sleep(50)
+    Assert.True(notification.Wait(TimeSpan.FromSeconds 5.), "No event notification arrived.")
 
     Assert.Equal(1, received.Count)
 

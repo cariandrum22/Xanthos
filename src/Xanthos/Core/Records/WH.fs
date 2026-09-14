@@ -1,11 +1,11 @@
-namespace Xanthos.Core.Records
+namespace Xanthos.Legacy.Records
 
 open System
 open Xanthos.Core
 open Xanthos.Core.Text
-open Xanthos.Core.Records.FieldDefinitions
-open Xanthos.Core.Records.RecordParser
-open Xanthos.Core.Records.CodeTables
+open Xanthos.Legacy.Records.FieldDefinitions
+open Xanthos.Legacy.Records.RecordParser
+open Xanthos.Legacy.Records.CodeTables
 
 /// WH Record: 馬体重 (Horse Weight)
 /// Record Length: 847 bytes
