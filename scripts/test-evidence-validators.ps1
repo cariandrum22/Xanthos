@@ -162,3 +162,6 @@ foreach ($fault in @('valid', 'missing', 'sdk-present', 'dll-present', 'wrong-co
     if (($fault -eq 'valid') -ne ($LASTEXITCODE -eq 0)) { throw "Unexpected SDK absence validator outcome: $fault" }
 }
 Write-Output 'PASS: six SDK absence evidence controls.'
+# Expected child-process failures must not become the GitHub Actions step exit code.
+# All assertions above must complete before reporting success to the caller.
+exit 0
