@@ -4,6 +4,11 @@ open System
 
 type Snapshot = { Flag: int; Path: string }
 
+type InjectionPoint =
+    | NoInjection
+    | AfterPath
+    | AfterFlag
+
 type Operations =
     { Snapshot: unit -> Snapshot
       SetPath: string -> unit
@@ -15,7 +20,7 @@ type Operations =
 
 /// Every operation must use a fresh native session. Never restore the original
 /// path while the saving flag is different or its current value is unknown.
-let run operations isolatedPath inject =
+let run operations isolatedPath injection =
     let original = operations.Snapshot()
 
     if original.Flag <> 0 && original.Flag <> 1 then
@@ -26,7 +31,12 @@ let run operations isolatedPath inject =
 
     operations.VerifyIsolated()
     let mutable bodyError: exn option = None
-    let injectedError = InvalidOperationException("controlled-after-change")
+    let injectedError = InvalidOperationException(sprintf "controlled-%A" injection)
+
+    let injectAt point =
+        if injection = point then
+            operations.Report(sprintf "SETTINGS injecting=%A" point)
+            raise injectedError
 
     try
         operations.SetPath isolatedPath
@@ -40,6 +50,7 @@ let run operations isolatedPath inject =
 
         operations.VerifyIsolated()
         operations.Report "SETTINGS isolatedPathMatched=true isolatedDirectoryEmpty=true"
+        injectAt AfterPath
         operations.SetFlag(original.Flag = 0)
         let changed = operations.Snapshot()
 
@@ -51,8 +62,7 @@ let run operations isolatedPath inject =
 
         operations.Report "SETTINGS changedMatched=true"
 
-        if inject then
-            raise injectedError
+        injectAt AfterFlag
     with error ->
         bodyError <- Some error
 
@@ -97,6 +107,7 @@ let run operations isolatedPath inject =
     match bodyError with
     | Some error when Object.ReferenceEquals(error, injectedError) -> ()
     | Some error -> System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw()
+    | None when injection <> NoInjection -> failwith "Requested exception injection was not reached."
     | None -> ()
 
-    operations.Report(sprintf "SETTINGS completed=true injected=%b" inject)
+    operations.Report(sprintf "SETTINGS completed=true injected=%b injection=%A" (injection <> NoInjection) injection)

@@ -100,5 +100,14 @@ if not (OperatingSystem.IsWindows()) || IntPtr.Size <> 8 then
 if Environment.GetEnvironmentVariable "XANTHOS_SETTINGS_EXCLUSIVE" <> "verified" then
     failwith "Use the exclusive PowerShell entry point."
 
-run false
-run true
+let cases =
+    match Array.toList fsi.CommandLineArgs[1..] with
+    | []
+    | [ "All" ] -> [ NoInjection; AfterPath; AfterFlag ]
+    | [ "Normal" ] -> [ NoInjection ]
+    | [ "AfterPath" ] -> [ AfterPath ]
+    | [ "AfterFlag" ] -> [ AfterFlag ]
+    | _ -> failwith "Expected All, Normal, AfterPath, or AfterFlag. Settings were not changed."
+
+for injection in cases do
+    run injection

@@ -181,6 +181,19 @@ test. A failed flag restoration retains the isolated path for human recovery.
 Do not terminate the process while restoration is running. Validate the ordering
 and recovery controls without COM using `dotnet fsi scripts/test-settings-workflow.fsx`.
 
+From a Windows x64 desktop, run:
+
+```powershell
+./scripts/test-settings-roundtrip.ps1 -CollectorStatePath <stopped-collector.json> -EvidenceDirectory <new-directory>
+```
+
+The default `-Case All`
+runs normal restoration and exceptions after the path change and after both changes.
+For diagnosis, `-Case AfterPath` verifies path restoration without calling the flag
+setter; `-Case AfterFlag` retains the full mutation-and-exception check. Each result
+records its case and injection point. A selected case passing does not establish
+that the full suite passed. A rejected setter remains a failure, without retry.
+
 ### Interactive and service-dependent evidence
 
 Image normal/NoImage/error outcomes are separate. Playback requests returning zero do not establish that video displayed; record the user's observation. For real notifications, subscribe before publication, retain origin/raw key, retrieve with that same key and parse the result. Synthetic events certify only deterministic behavior.

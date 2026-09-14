@@ -1,6 +1,7 @@
 param(
     [Parameter(Mandatory)][string]$CollectorStatePath,
-    [Parameter(Mandatory)][string]$EvidenceDirectory
+    [Parameter(Mandatory)][string]$EvidenceDirectory,
+    [ValidateSet('All', 'Normal', 'AfterPath', 'AfterFlag')][string]$Case = 'All'
 )
 $ErrorActionPreference = 'Stop'
 if (Test-Path -LiteralPath $EvidenceDirectory) { throw 'Use a fresh settings evidence directory.' }
@@ -22,9 +23,9 @@ try {
     $owned = $mutex.WaitOne(0)
     if (-not $owned) { throw 'Another settings verification owns the SDK.' }
     $env:XANTHOS_SETTINGS_EXCLUSIVE = 'verified'
-    & dotnet fsi "$PSScriptRoot/test-settings-roundtrip.fsx" *> (Join-Path $EvidenceDirectory 'test.log')
+    & dotnet fsi "$PSScriptRoot/test-settings-roundtrip.fsx" -- $Case *> (Join-Path $EvidenceDirectory 'test.log')
     $code = $LASTEXITCODE
-    @{ status = $(if ($code -eq 0) { 'pass' } else { 'fail' }); exitCode = $code; settingsValuesLogged = $false } |
+    @{ status = $(if ($code -eq 0) { 'pass' } else { 'fail' }); case = $Case; exitCode = $code; settingsValuesLogged = $false } |
         ConvertTo-Json | Set-Content (Join-Path $EvidenceDirectory 'result.json') -Encoding utf8
     if ($code -ne 0) { throw 'Real SDK settings verification failed. Inspect restoration evidence before any further SDK mutation.' }
 }

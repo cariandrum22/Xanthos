@@ -13,6 +13,7 @@ for originalFlag in [ 0; 1 ] do
     for mode in
         [ "normal"
           "injected"
+          "path-injected"
           "denied"
           "path-rejected"
           "path-ignored"
@@ -89,12 +90,18 @@ for originalFlag in [ 0; 1 ] do
 
         let error =
             try
-                SettingsRoundtrip.run operations "isolated" (mode = "injected")
+                let injection =
+                    match mode with
+                    | "injected" -> AfterFlag
+                    | "path-injected" -> AfterPath
+                    | _ -> NoInjection
+
+                SettingsRoundtrip.run operations "isolated" injection
                 None
             with error ->
                 Some error
 
-        let success = mode = "normal" || mode = "injected"
+        let success = mode = "normal" || mode = "injected" || mode = "path-injected"
         check (error.IsNone = success) (sprintf "Unexpected outcome: %s flag=%d" mode originalFlag)
 
         let incompleteRestore =
@@ -112,13 +119,28 @@ for originalFlag in [ 0; 1 ] do
             check (state = original) "Settings did not return to their original values."
             check (dataChecks = 1) "Original data was not checked."
 
-        if success then
+        if mode = "path-injected" then
+            check (List.ofSeq writes = [ "path:isolated"; "path:original" ]) "Path injection called the flag setter."
+            check (flagWrites = 0) "Path-only recovery changed the flag."
+            check (reports.Contains "SETTINGS injecting=AfterPath") "Path exception was not injected."
+
+            check
+                (reports.Contains "SETTINGS completed=true injected=true injection=AfterPath")
+                "Path recovery did not finish."
+        elif success then
             check
                 (List.ofSeq writes = [ "path:isolated"
                                        sprintf "flag:%b" (originalFlag = 0)
                                        sprintf "flag:%b" (originalFlag <> 0)
                                        "path:original" ])
                 "Successful mutation/restoration ordering changed."
+
+        if mode = "injected" then
+            check (reports.Contains "SETTINGS injecting=AfterFlag") "Flag exception was not injected."
+
+            check
+                (reports.Contains "SETTINGS completed=true injected=true injection=AfterFlag")
+                "Flag recovery did not finish."
 
         if mode = "denied" then
             check (error.Value.Message = "setter-code=-100") "Refusal error was hidden."
