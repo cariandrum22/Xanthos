@@ -261,6 +261,7 @@ module ServiceIntegrationTests =
 module WatchEventsRobustnessTests =
     open Xanthos.Runtime
     open System.Threading
+    open System.Threading.Tasks
 
     let private createConfig () =
         { JvLinkConfig.Sid = "test-sid"
@@ -403,27 +404,48 @@ module WatchEventsRobustnessTests =
 
     [<Fact>]
     let ``Subscribe and unsubscribe repeatedly works correctly`` () =
-        let stub = new JvLinkStub()
-        let service = new JvLinkService(stub, createConfig ())
-        let totalReceived = ref 0
+        task {
+            let stub = new JvLinkStub()
+            use service = new JvLinkService(stub, createConfig ())
+            let totalReceived = ref 0
 
-        service.StartWatchEvents() |> ignore
+            Assert.True(Result.isOk (service.StartWatchEvents()))
 
-        for _ in 1..10 do
-            let sub =
+            for _ in 1..10 do
+                let received =
+                    TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously)
+
+                use sub =
+                    service.WatchEvents.Subscribe(fun ev ->
+                        match ev with
+                        | Ok event ->
+                            Interlocked.Increment(totalReceived) |> ignore
+                            received.TrySetResult(event.RawKey) |> ignore
+                        | Error error ->
+                            received.TrySetException(InvalidOperationException(sprintf "%A" error))
+                            |> ignore)
+
+                stub.RaiseEvent "0B12202401010101"
+                // Wait for delivery, not a scheduling assumption. The deadline
+                // bounds a broken stream without slowing successful iterations.
+                let! key = received.Task.WaitAsync(TimeSpan.FromSeconds 5.)
+                Assert.Equal("0B12202401010101", key)
+
+            // A final delivery proves the consumer has processed an event after
+            // all ten subscriptions were disposed, without notifying any of them.
+            let probe =
+                TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+
+            use probeSubscription =
                 service.WatchEvents.Subscribe(fun ev ->
                     match ev with
-                    | Ok _ -> Interlocked.Increment(totalReceived) |> ignore
-                    | _ -> ())
+                    | Ok _ -> probe.TrySetResult() |> ignore
+                    | Error error -> probe.TrySetException(InvalidOperationException(sprintf "%A" error)) |> ignore)
 
-            stub.RaiseEvent "0B12202401010101"
-            Thread.Sleep(20)
-            sub.Dispose()
-
-        Thread.Sleep(100)
-
-        // Each subscription should have received at least one event
-        Assert.True(!totalReceived >= 10)
+            stub.RaiseEvent "0B12202401010102"
+            do! probe.Task.WaitAsync(TimeSpan.FromSeconds 5.)
+            Assert.Equal(10, totalReceived.Value)
+        }
 
     [<Fact>]
     let ``Events with various types are correctly parsed`` () =
