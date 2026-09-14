@@ -9,6 +9,15 @@ open Xanthos.Core
 open Xanthos.Interop
 open Xanthos.Runtime
 
+module private ConsentWorker =
+    let start (call: unit -> 'T) =
+        Task.Factory.StartNew<'T>(
+            Func<'T>(call),
+            CancellationToken.None,
+            TaskCreationOptions.LongRunning,
+            TaskScheduler.Default
+        )
+
 /// Controlled SDK boundary for consent policy tests; never counted as real COM evidence.
 type ConsentProxy() =
     inherit DispatchProxy()
@@ -37,7 +46,15 @@ type ConsentProxy() =
         member _.Dispatcher =
             { new IComDispatcher with
                 member _.Invoke<'T>(_, call: unit -> 'T) = call ()
-                member _.InvokeAsync<'T>(_, call: unit -> 'T) = Task.Run<'T>(Func<'T>(call))
+
+                member _.InvokeAsync<'T>(name, call: unit -> 'T) =
+                    // Only Open models a blocking native dialog. Complete setup calls
+                    // directly so their short timeout does not measure pool scheduling.
+                    if name = "JVOpen" then
+                        ConsentWorker.start call
+                    else
+                        Task.FromResult(call ())
+
                 member _.Dispose() = () }
 
 module ConsentTests =
@@ -85,10 +102,15 @@ module ConsentTests =
                   FromTime = DateTime(2026, 9, 5)
                   Option = 1 }
 
-            let operation = Task.Run(fun () -> service.FetchPayloads request)
+            let operation = ConsentWorker.start (fun () -> service.FetchPayloads request)
 
             try
-                Assert.True(entered.Wait(TimeSpan.FromSeconds 5.), "SDK open did not start")
+                if not (entered.Wait(TimeSpan.FromSeconds 5.)) then
+                    if operation.IsCompleted then
+                        failwithf "SDK open did not start; operation completed with %A" operation.Result
+                    else
+                        failwith "SDK open did not start; dedicated operation is still running"
+
                 Assert.False(operation.Wait(TimeSpan.FromMilliseconds 200.), "User consent was interrupted by a timer")
             finally
                 choice.Set()
@@ -142,7 +164,7 @@ module ConsentTests =
                   Option = 1 }
 
             let operation =
-                Task.Run(fun () -> service.FetchPayloads(request, cancellationToken = cancellation.Token))
+                ConsentWorker.start (fun () -> service.FetchPayloads(request, cancellationToken = cancellation.Token))
 
             try
                 Assert.True(entered.Wait(TimeSpan.FromSeconds 5.))
