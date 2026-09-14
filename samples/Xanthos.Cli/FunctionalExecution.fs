@@ -58,7 +58,7 @@ type internal CommandRunner(dependencies: Dependencies) =
                   Message = message }
         )
 
-    let parse spec (data: byte[]) =
+    let tryParse spec (data: byte[]) =
         let id = RecordBytes.ascii "" "RecordId" 1 2 data |> Result.defaultValue ""
 
         let raceDate =
@@ -74,8 +74,11 @@ type internal CommandRunner(dependencies: Dependencies) =
             DataSpecs.parseOptions spec raceDate
             |> Option.defaultValue Records.ParseOptions.Default
 
-        match Records.parseWith options data with
-        | Ok _ -> id
+        Records.parseWith options data |> Result.map (fun _ -> id)
+
+    let parse spec data =
+        match tryParse spec data with
+        | Ok id -> id
         | Error e -> invalid "Records.parse" $"{e.RecordId}.{e.Field} byte={e.Position} length={e.Length}: {e.Message}"
 
     let useGets (ctx: ExecutionContext) =
@@ -153,7 +156,7 @@ type internal CommandRunner(dependencies: Dependencies) =
             printfn "NO_DATA spec=%s" request.Dataspec
             false
 
-    let readRecords useGets spec maximum output onRecord (cancel: CancellationToken) session =
+    let readRecords validate useGets spec maximum output onRecord (cancel: CancellationToken) session =
         let mutable count = 0
         let mutable eof = false
 
@@ -162,7 +165,17 @@ type internal CommandRunner(dependencies: Dependencies) =
 
             match result.State with
             | ReadState.Record ->
-                let id = parse spec result.Data
+                let id =
+                    if validate then
+                        parse spec result.Data
+                    else
+                        // A malformed ID must not become a path component outside the capture directory.
+                        RecordBytes.ascii "" "RecordId" 1 2 result.Data
+                        |> Result.toOption
+                        |> Option.filter (fun id ->
+                            id.Length = 2 && id |> Seq.forall (fun c -> Char.IsAsciiLetterOrDigit c))
+                        |> Option.defaultValue "UNKNOWN"
+
                 count <- count + 1
 
                 output
@@ -173,9 +186,10 @@ type internal CommandRunner(dependencies: Dependencies) =
                 onRecord id result
 
                 printfn
-                    "RECORD id=%s bytes=%d parsed=true method=%s"
+                    "RECORD id=%s bytes=%d parsed=%s method=%s"
                     id
                     result.ByteCount
+                    (if validate then "true" else "see-metadata")
                     (if useGets then "JVGets" else "JVRead")
             | ReadState.FileBoundary -> ()
             | ReadState.DownloadPending -> cancel.WaitHandle.WaitOne(100) |> ignore
@@ -220,6 +234,7 @@ type internal CommandRunner(dependencies: Dependencies) =
 
                     let count =
                         readRecords
+                            true
                             useGets
                             request.Dataspec
                             (defaultArg args.MaxRecords (if check then 1 else Int32.MaxValue))
@@ -250,7 +265,7 @@ type internal CommandRunner(dependencies: Dependencies) =
                         invalid "session-check" "Reopen returned NoData."
 
                     let count =
-                        readRecords useGets request.Dataspec 1 None (fun _ _ -> ()) token session
+                        readRecords true useGets request.Dataspec 1 None (fun _ _ -> ()) token session
 
                     if count <> 1 then
                         invalid "session-check" "Reopen did not yield a parsed record."
@@ -267,7 +282,7 @@ type internal CommandRunner(dependencies: Dependencies) =
                 match JvLink.openRealtime args.Spec args.Key session |> require with
                 | RealtimeOpenOutcome.NoData -> printfn "NO_DATA spec=%s key=%s" args.Spec args.Key
                 | RealtimeOpenOutcome.Opened ->
-                    readRecords useGets args.Spec Int32.MaxValue None (fun _ _ -> ()) token session
+                    readRecords true useGets args.Spec Int32.MaxValue None (fun _ _ -> ()) token session
                     |> ignore
             finally
                 JvLink.closeData session |> require
@@ -468,6 +483,7 @@ type internal CommandRunner(dependencies: Dependencies) =
                 withCancellation (fun token ->
                     Directory.CreateDirectory args.FixturesOutputDir |> ignore
                     let version = JvLink.getVersion session |> require
+                    let mutable parseFailures = 0
 
                     for spec in args.Specs do
                         let counts = Collections.Generic.Dictionary<string, int>()
@@ -481,6 +497,7 @@ type internal CommandRunner(dependencies: Dependencies) =
                         try
                             if opened request session then
                                 readRecords
+                                    false
                                     args.UseJvGets
                                     spec
                                     Int32.MaxValue
@@ -499,6 +516,22 @@ type internal CommandRunner(dependencies: Dependencies) =
                                                 )
 
                                             File.WriteAllBytes(filename, record.Data)
+
+                                            let parseStatus =
+                                                match tryParse spec record.Data with
+                                                | Ok _ -> "ok"
+                                                | Error error ->
+                                                    parseFailures <- parseFailures + 1
+
+                                                    let message =
+                                                        $"{error.RecordId}.{error.Field} byte={error.Position} length={error.Length}: {error.Message}"
+
+                                                    printfn
+                                                        "CAPTURE_PARSE_ERROR file=%s %s"
+                                                        (Path.GetFileName filename)
+                                                        message
+
+                                                    "error: " + message
 
                                             let metadata =
                                                 {| mode = dependencies.Mode
@@ -522,7 +555,7 @@ type internal CommandRunner(dependencies: Dependencies) =
                                                     Convert.ToHexString(
                                                         Security.Cryptography.SHA256.HashData record.Data
                                                     )
-                                                   parseStatus = "ok" |}
+                                                   parseStatus = parseStatus |}
 
                                             File.WriteAllText(
                                                 Path.ChangeExtension(filename, ".meta.json"),
@@ -534,7 +567,12 @@ type internal CommandRunner(dependencies: Dependencies) =
                                     session
                                 |> ignore
                         finally
-                            JvLink.closeData session |> require)
+                            JvLink.closeData session |> require
+
+                    if parseFailures > 0 then
+                        invalid
+                            "capture-fixtures"
+                            $"Retained {parseFailures} records with parse errors; inspect their metadata.")
             | Help -> ())
 
 let internal runWith dependencies ctx command =

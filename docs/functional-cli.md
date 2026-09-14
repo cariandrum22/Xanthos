@@ -20,6 +20,8 @@ Downloads and realtime responses are parsed through `Records`; failures terminat
 
 `capture-fixtures` writes `SPEC_ID_NNN.bin` and a `.meta.json` sidecar with the acquisition interval (JST), dataspec, SDK version, source filename, parser status and SHA-256. Keep licensed captures in ignored local directories. Different dataspecs have distinct filenames.
 
+Capture saves raw bytes before parsing. Rejected records retain a sidecar with `parseStatus = "error: ..."`, including the field and byte position; collection continues with subsequent records and dataspecs. If any retained record failed parsing, the command exits with code 2 after collection and cleanup. Inspect the metadata before using captured records as validated fixtures. Ordinary download/realtime commands still stop on parsing errors.
+
 `watch-events --open-after` retains the notification origin and original key and retrieves its response through a separate owned Session. Ctrl+C cancels data/notification loops; SDK consent dialogs wait for the user's decision without an automatic timeout. Declining ends the request.
 
 `movie-open` preserves NoData and download-pending states and prints the actual JVMVRead buffer size and byte count. The SDK requires a racing-viewer-enabled software SID. Its interface specification supplies `SA000000/SD000004` for development, selectable through `--sid`; this is not a production registration or a service key. An unregistered SID can return -304. Do not report that response as successful retrieval or playback.

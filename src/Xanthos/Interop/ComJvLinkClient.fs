@@ -41,6 +41,10 @@ type internal ComClientActivation =
 type ComJvLinkClient
     internal (activation: ComClientActivation, ?useJvGets: bool, ?progId: string, ?eventConnector: ComEventConnector) as this
     =
+    // A failed constructor has no complete ownership graph for finalization.
+    // Enable the finalizer only after every field has been initialized.
+    do GC.SuppressFinalize this
+
     let useJvGetsOverride = useJvGets
     let eventConnector = defaultArg eventConnector ComEventConnector.Default
     // Note: The ProgID is "JVDTLab.JVLink" (not "JVDTLabLib.JVLink")
@@ -227,6 +231,8 @@ type ComJvLinkClient
             elif not (isNull gets) then isTrue gets
             else true
 
+    do GC.ReRegisterForFinalize this
+
     new(?useJvGets: bool, ?progId: string) =
         new ComJvLinkClient(ComClientActivation.Default, ?useJvGets = useJvGets, ?progId = progId)
 
@@ -312,10 +318,19 @@ type ComJvLinkClient
 
         member _.CourseFile key =
             run (Xanthos.SdkOperations.courseFile key)
-            |> Result.map (fun image -> image.Value.Filepath, image.Value.Explanation)
+            |> Result.bind (fun image ->
+                if image.State = Xanthos.ImageState.Available then
+                    Ok(image.Value.Filepath, image.Value.Explanation)
+                else
+                    Error(InvalidInput "No matching data exists"))
 
         member _.CourseFile2(key, path) =
-            run (Xanthos.SdkOperations.courseFile2 key path) |> Result.map ignore
+            run (Xanthos.SdkOperations.courseFile2 key path)
+            |> Result.bind (fun image ->
+                if image.State = Xanthos.ImageState.Available then
+                    Ok()
+                else
+                    Error(InvalidInput "No matching data exists"))
 
         member _.SilksFile(pattern, path) =
             run (Xanthos.SdkOperations.silksFile pattern path)
@@ -601,7 +616,12 @@ type ComJvLinkClient
             with ex ->
                 Error(nativeError "JVWatchEventClose" ex)
 
-    override this.Finalize() = this.Abandon(TimeSpan.Zero)
+    override this.Finalize() =
+        // Finalization must never terminate the process, including shutdown failures.
+        try
+            this.Abandon(TimeSpan.Zero)
+        with _ ->
+            ()
 #else
 module ComJvLinkClient =
     let notAvailable () =

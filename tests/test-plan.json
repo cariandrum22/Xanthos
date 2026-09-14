@@ -58920,6 +58920,294 @@
       "profiles": [
         "WindowsManaged"
       ]
+    },
+    {
+      "id": "T-270d679716b7d45c1115",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.ReleaseCompatibilityTests.Legacy service parsing options retain old identifier records and partial successes",
+      "displayName": "Xanthos.UnitTests.ReleaseCompatibilityTests.Legacy service parsing options retain old identifier records and partial successes(spec: \"DIFF\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-efb54d31fb407b7cba23",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.ReleaseCompatibilityTests.Legacy service parsing options retain old identifier records and partial successes",
+      "displayName": "Xanthos.UnitTests.ReleaseCompatibilityTests.Legacy service parsing options retain old identifier records and partial successes(spec: \"RCOV\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-c9b6995e589e34f9d15d",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.ReleaseCompatibilityTests.Legacy service parsing options retain old identifier records and partial successes",
+      "displayName": "Xanthos.UnitTests.ReleaseCompatibilityTests.Legacy service parsing options retain old identifier records and partial successes(spec: \"TCOV\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-1f22096c4c66774943d3",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.ReleaseCompatibilityTests.Legacy service parsing options retain old identifier records and partial successes",
+      "displayName": "Xanthos.UnitTests.ReleaseCompatibilityTests.Legacy service parsing options retain old identifier records and partial successes(spec: \"HOSE\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-19db76f100565d9f5470",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.ReleaseCompatibilityTests.Legacy service parsing options retain old identifier records and partial successes",
+      "displayName": "Xanthos.UnitTests.ReleaseCompatibilityTests.Legacy service parsing options retain old identifier records and partial successes(spec: \"BLOD\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-22bc11741abd78137b5f",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.ReleaseCompatibilityTests.String SDK properties normalize null BSTR without losing nonempty values",
+      "displayName": "Xanthos.UnitTests.ReleaseCompatibilityTests.String SDK properties normalize null BSTR without losing nonempty values(value: \"sdk-value\", expected: \"sdk-value\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-9365a69acbbdbdfa28d1",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.ReleaseCompatibilityTests.String SDK properties normalize null BSTR without losing nonempty values",
+      "displayName": "Xanthos.UnitTests.ReleaseCompatibilityTests.String SDK properties normalize null BSTR without losing nonempty values(value: \"\", expected: \"\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-1298f9bd5a5fc6c97d5e",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.ReleaseCompatibilityTests.String SDK properties normalize null BSTR without losing nonempty values",
+      "displayName": "Xanthos.UnitTests.ReleaseCompatibilityTests.String SDK properties normalize null BSTR without losing nonempty values(value: null, expected: \"\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-a5ff7021f392c72e1f83",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.ReleaseCompatibilityTests.Legacy service parsing options retain old identifier records and partial successes",
+      "displayName": "Xanthos.UnitTests.ReleaseCompatibilityTests.Legacy service parsing options retain old identifier records and partial successes(spec: \"SNAP\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-ed08329dbb8e71219f18",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.ReleaseCompatibilityTests.Legacy service exposes historical odds interpretation without changing default parsing",
+      "displayName": "Xanthos.UnitTests.ReleaseCompatibilityTests.Legacy service exposes historical odds interpretation without changing default parsing",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-3eba6a888c67d61af54f",
+      "project": "tests/Xanthos.FunctionalScenarioTests/Xanthos.FunctionalScenarioTests.fsproj",
+      "fqn": "Xanthos.FunctionalScenarioTests.CaptureReadMethodScenarios.Capture retains malformed bytes and diagnostics then continues records and dataspecs",
+      "displayName": "Xanthos.FunctionalScenarioTests.CaptureReadMethodScenarios.Capture retains malformed bytes and diagnostics then continues records and dataspecs",
+      "groups": [
+        "FunctionalScenarioTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ],
+      "tfm": "net10.0",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ]
+    },
+    {
+      "id": "T-464ca0bfdf6808772349",
+      "project": "tests/Xanthos.WindowsTests/Xanthos.WindowsTests.fsproj",
+      "fqn": "Xanthos.WindowsTests.LifecycleWindowsTests.Legacy course image adapter preserves absence instead of returning a nonexistent file",
+      "displayName": "Xanthos.WindowsTests.LifecycleWindowsTests.Legacy course image adapter preserves absence instead of returning a nonexistent file(code: -1)",
+      "groups": [
+        "WindowsTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "windows"
+      ],
+      "tfm": "net10.0-windows",
+      "profiles": [
+        "WindowsManaged"
+      ]
+    },
+    {
+      "id": "T-7b21594c637d93545b95",
+      "project": "tests/Xanthos.WindowsTests/Xanthos.WindowsTests.fsproj",
+      "fqn": "Xanthos.WindowsTests.LifecycleWindowsTests.Missing COM registration remains a handled error after forced finalization in a child process",
+      "displayName": "Xanthos.WindowsTests.LifecycleWindowsTests.Missing COM registration remains a handled error after forced finalization in a child process",
+      "groups": [
+        "WindowsTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "windows"
+      ],
+      "tfm": "net10.0-windows",
+      "profiles": [
+        "WindowsManaged"
+      ]
+    },
+    {
+      "id": "T-e2f421db2255471a25a2",
+      "project": "tests/Xanthos.WindowsTests/Xanthos.WindowsTests.fsproj",
+      "fqn": "Xanthos.WindowsTests.LifecycleWindowsTests.Legacy course image adapter preserves absence instead of returning a nonexistent file",
+      "displayName": "Xanthos.WindowsTests.LifecycleWindowsTests.Legacy course image adapter preserves absence instead of returning a nonexistent file(code: 0)",
+      "groups": [
+        "WindowsTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "windows"
+      ],
+      "tfm": "net10.0-windows",
+      "profiles": [
+        "WindowsManaged"
+      ]
+    },
+    {
+      "id": "T-eb2282d3886a0920b7e6",
+      "project": "tests/Xanthos.WindowsTests/Xanthos.WindowsTests.fsproj",
+      "fqn": "Xanthos.WindowsTests.LifecycleWindowsTests.Legacy course image adapter preserves absence instead of returning a nonexistent file",
+      "displayName": "Xanthos.WindowsTests.LifecycleWindowsTests.Legacy course image adapter preserves absence instead of returning a nonexistent file(code: -100)",
+      "groups": [
+        "WindowsTests"
+      ],
+      "requirement": "required",
+      "os": [
+        "windows"
+      ],
+      "tfm": "net10.0-windows",
+      "profiles": [
+        "WindowsManaged"
+      ]
     }
   ],
   "optionalSkipAllowlist": [

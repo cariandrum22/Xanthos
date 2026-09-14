@@ -81,6 +81,7 @@
     <Compile Include="FieldCategoryProperties.fs" />
     <Compile Include="FieldApplicabilityProperties.fs" />
     <Compile Include="FormatAndDataSpecProperties.fs" />
+    <Compile Include="ReleaseCompatibilityTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

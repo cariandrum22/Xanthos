@@ -17,6 +17,7 @@ type LifecycleDispatchTarget() =
     member val OnWatchClose: unit -> unit = ignore with get, set
     member val CloseCode = 0 with get, set
     member val WatchCloseCode = 0 with get, set
+    member val ImageCode = 0 with get, set
     member _.Closes = Volatile.Read(&closes)
     member _.WatchCloses = Volatile.Read(&watchCloses)
     member _.JVInit(_: string) = 0
@@ -38,6 +39,13 @@ type LifecycleDispatchTarget() =
         this.CloseCode
 
     member _.JVWatchEvent() = 0
+
+    member this.JVCourseFile(_: string, path: byref<string>, explanation: byref<string>) =
+        path <- "controlled-course.png"
+        explanation <- "controlled explanation"
+        this.ImageCode
+
+    member this.JVCourseFile2(_: string, _: string) = this.ImageCode
 
     member this.JVWatchEventClose() =
         Interlocked.Increment(&watchCloses) |> ignore
@@ -87,6 +95,68 @@ module LifecycleWindowsTests =
         { Spec = "RACE"
           FromTime = DateTime(2026, 9, 12)
           Option = 1 }
+
+    [<Theory; InlineData(0); InlineData(-1); InlineData(-100)>]
+    let ``Legacy course image adapter preserves absence instead of returning a nonexistent file`` code =
+        let target = LifecycleDispatchTarget(ImageCode = code)
+        let owner = OwnerProbe()
+        use client = new ComJvLinkClient(owner.Activation target)
+        let legacy = client :> IJvLinkClient
+        let first = legacy.CourseFile "9999999905240011"
+        let second = legacy.CourseFile2("9999999905240011", "controlled.png")
+
+        if code = 0 then
+            Assert.Equal(Ok("controlled-course.png", "controlled explanation"), first)
+            Assert.Equal(Ok(), second)
+        elif code = -1 then
+            Assert.Equal(Error(Xanthos.Core.InvalidInput "No matching data exists"), first)
+            Assert.Equal(Error(Xanthos.Core.InvalidInput "No matching data exists"), second)
+        else
+            Assert.True(Result.isError first)
+            Assert.True(Result.isError second)
+
+    [<Fact>]
+    let ``Missing COM registration remains a handled error after forced finalization in a child process`` () =
+        let script =
+            IO.Path.Combine(IO.Path.GetTempPath(), "Xanthos-Finalizer-" + Guid.NewGuid().ToString("N") + ".fsx")
+
+        let assembly = typeof<ComJvLinkClient>.Assembly.Location.Replace("\"", "\"\"")
+
+        let source =
+            "#r @\""
+            + assembly
+            + "\"\n"
+            + "open System\nopen Xanthos.Interop\n"
+            + "let failActivation () =\n"
+            + "    try\n        use client = new ComJvLinkClient(progId = \"Xanthos.Unregistered.FinalizerRegression\")\n        failwith \"unexpected activation\"\n"
+            + "    with ComActivationException _ -> ()\n"
+            + "for _ in 1 .. 32 do failActivation ()\n"
+            + "GC.Collect()\nGC.WaitForPendingFinalizers()\nGC.Collect()\n"
+            + "printfn \"FINALIZATION_COMPLETED\"\n"
+
+        try
+            IO.File.WriteAllText(script, source)
+            let start = Diagnostics.ProcessStartInfo("dotnet")
+            start.UseShellExecute <- false
+            start.CreateNoWindow <- true
+            start.RedirectStandardOutput <- true
+            start.RedirectStandardError <- true
+
+            for argument in [ "fsi"; "--exec"; script ] do
+                start.ArgumentList.Add argument
+
+            use child = Diagnostics.Process.Start start
+            let output = child.StandardOutput.ReadToEndAsync()
+            let errors = child.StandardError.ReadToEndAsync()
+
+            if not (child.WaitForExit 60000) then
+                child.Kill(true)
+                failwith "Finalization subprocess did not finish"
+
+            Assert.True(child.ExitCode = 0, output.Result + errors.Result)
+            Assert.Contains("FINALIZATION_COMPLETED", output.Result)
+        finally
+            IO.File.Delete script
 
     let private connector (sink: JvLinkEventSink option ref) remove =
         { ComEventConnector.Connect =

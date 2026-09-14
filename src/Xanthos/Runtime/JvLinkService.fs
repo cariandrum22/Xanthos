@@ -1832,6 +1832,36 @@ type JvLinkService
     // Typed Record Parsing API
     // -------------------------------------------------------------------------
 
+    /// Fetches records using explicit identifier and odds conventions from the acquisition context.
+    member this.FetchTypedRecordsWith
+        (request: JvOpenRequest, options: Xanthos.Records.ParseOptions, ?cancellationToken: CancellationToken)
+        : Result<ParsedRecord list, XanthosError> =
+        result {
+            let! payloads = this.FetchPayloads(request, ?cancellationToken = cancellationToken)
+            return! PayloadParser.parsePayloadsWith options payloads
+        }
+
+    /// Fetches records with explicit parsing conventions, retaining successful records and failed payloads.
+    member this.FetchTypedRecordsCollectErrorsWith
+        (request: JvOpenRequest, options: Xanthos.Records.ParseOptions, ?cancellationToken: CancellationToken)
+        : Result<ParsedRecord list * (JvPayload * XanthosError) list, XanthosError> =
+        result {
+            let! payloads = this.FetchPayloads(request, ?cancellationToken = cancellationToken)
+            return PayloadParser.tryParsePayloadsWith options payloads
+        }
+
+    /// Parses one payload using explicit identifier and odds conventions.
+    static member ParsePayloadWith(options, payload: JvPayload) =
+        PayloadParser.parsePayloadWith options payload
+
+    /// Parses payloads using explicit identifier and odds conventions; fails on the first invalid record.
+    static member ParsePayloadsWith(options, payloads: JvPayload list) =
+        PayloadParser.parsePayloadsWith options payloads
+
+    /// Parses payloads using explicit conventions, retaining both successes and failures.
+    static member TryParsePayloadsWith(options, payloads: JvPayload list) =
+        PayloadParser.tryParsePayloadsWith options payloads
+
     /// <summary>
     /// Fetches payloads and parses them into strongly typed domain records.
     /// Fails fast on the first parse error.
