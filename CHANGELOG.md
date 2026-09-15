@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add structured issue forms, a pull request template and automatic contribution metadata validation.
 - Add a managed line coverage badge from verified Linux Coverage suites, with source commit/run provenance and automatic generated-file refreshes on develop.
 
 ### Fixed

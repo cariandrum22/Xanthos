@@ -1,0 +1,28 @@
+name: Bug report
+description: Report incorrect behavior in parsing, the functional API, COM or the CLI.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Do not include service keys, licensed records or private machine logs. Use synthetic examples and public CI links.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Describe the failure and its impact.
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Include reproduction steps, actual behavior, Xanthos/.NET/OS versions, and JV-Link version/architecture for COM failures. Distinguish real COM from Stub or controlled tests.
+    validations:
+      required: true
+  - type: textarea
+    id: expected-outcome
+    attributes:
+      label: Expected outcome
+      description: Explain the expected behavior and how a fix can be verified.
+    validations:
+      required: true
