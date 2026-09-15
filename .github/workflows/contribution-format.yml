@@ -1,0 +1,41 @@
+name: Contribution format
+
+on:
+  issues:
+    types: [opened, edited, reopened]
+  pull_request:
+    types: [opened, edited, reopened, synchronize, ready_for_review]
+  push:
+    branches: [develop, main]
+    paths:
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/pull_request_template.md'
+      - '.github/workflows/contribution-format.yml'
+      - 'scripts/contribution_format.py'
+      - 'scripts/test_contribution_format.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: contribution-format-${{ github.event_name }}-${{ github.event.issue.number || github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contribution-format:
+    name: ${{ github.event_name == 'pull_request' && 'Contribution format' || github.event_name == 'issues' && 'Issue format' || 'Contribution validator tests' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Test contribution validator
+        run: python3 -m unittest discover -s scripts -p test_contribution_format.py -v
+
+      - name: Validate issue or pull-request metadata
+        if: github.event_name == 'issues' || github.event_name == 'pull_request'
+        run: python3 scripts/contribution_format.py --event "$GITHUB_EVENT_PATH"
