@@ -59579,6 +59579,326 @@
       "profiles": [
         "WindowsManaged"
       ]
+    },
+    {
+      "id": "T-1522aed8493821ab05c0",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.Cp932RecordTests.An alias cannot consume bytes outside its field or enter an ASCII field",
+      "displayName": "Xanthos.UnitTests.Cp932RecordTests.An alias cannot consume bytes outside its field or enter an ASCII field",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-bad1051c5c2a7386cbad",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.Cp932RecordTests.Concurrent alias decoding and failures do not share fallback state",
+      "displayName": "Xanthos.UnitTests.Cp932RecordTests.Concurrent alias decoding and failures do not share fallback state",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-7d5c55e933966335c0a7",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.Cp932RecordTests.Documented CP932 aliases decode exactly without changing source bytes or spaces",
+      "displayName": "Xanthos.UnitTests.Cp932RecordTests.Documented CP932 aliases decode exactly without changing source bytes or spaces",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-06b6faec0291265b4b51",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.Cp932RecordTests.Legacy and expanded BT descriptions retain aliases and own the complete original record",
+      "displayName": "Xanthos.UnitTests.Cp932RecordTests.Legacy and expanded BT descriptions retain aliases and own the complete original record(legacy: False)",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-72d36267085919eef84e",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.Cp932RecordTests.Legacy and expanded BT descriptions retain aliases and own the complete original record",
+      "displayName": "Xanthos.UnitTests.Cp932RecordTests.Legacy and expanded BT descriptions retain aliases and own the complete original record(legacy: True)",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-27d01b4b6e1a50ba9644",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.Cp932RecordTests.Malformed and undefined sequences remain located failures even beside valid aliases",
+      "displayName": "Xanthos.UnitTests.Cp932RecordTests.Malformed and undefined sequences remain located failures even beside valid aliases(hex: \"81\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-fb5e799cf746f69d6437",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.Cp932RecordTests.Malformed and undefined sequences remain located failures even beside valid aliases",
+      "displayName": "Xanthos.UnitTests.Cp932RecordTests.Malformed and undefined sequences remain located failures even beside valid aliases(hex: \"81ADFA4A\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-27ca73e5a0a127615b74",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.Cp932RecordTests.Malformed and undefined sequences remain located failures even beside valid aliases",
+      "displayName": "Xanthos.UnitTests.Cp932RecordTests.Malformed and undefined sequences remain located failures even beside valid aliases(hex: \"879D\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-d08b8931c8de32c09a48",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.Cp932RecordTests.Malformed and undefined sequences remain located failures even beside valid aliases",
+      "displayName": "Xanthos.UnitTests.Cp932RecordTests.Malformed and undefined sequences remain located failures even beside valid aliases(hex: \"ED7F\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-04d627da23f58e0a93ea",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.Cp932RecordTests.Malformed and undefined sequences remain located failures even beside valid aliases",
+      "displayName": "Xanthos.UnitTests.Cp932RecordTests.Malformed and undefined sequences remain located failures even beside valid aliases(hex: \"EEED\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-13035547584bc563e920",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.Cp932RecordTests.Malformed and undefined sequences remain located failures even beside valid aliases",
+      "displayName": "Xanthos.UnitTests.Cp932RecordTests.Malformed and undefined sequences remain located failures even beside valid aliases(hex: \"EEEE\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-bd94122c0b5b61a88c63",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.Cp932RecordTests.Malformed and undefined sequences remain located failures even beside valid aliases",
+      "displayName": "Xanthos.UnitTests.Cp932RecordTests.Malformed and undefined sequences remain located failures even beside valid aliases(hex: \"FA\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-7b07ebf71a64e1cb2f15",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.Cp932RecordTests.Malformed and undefined sequences remain located failures even beside valid aliases",
+      "displayName": "Xanthos.UnitTests.Cp932RecordTests.Malformed and undefined sequences remain located failures even beside valid aliases(hex: \"FA00\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-e1182e43a1aad278082e",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.Cp932RecordTests.Malformed and undefined sequences remain located failures even beside valid aliases",
+      "displayName": "Xanthos.UnitTests.Cp932RecordTests.Malformed and undefined sequences remain located failures even beside valid aliases(hex: \"FA4A82\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-b32120293fe5b28e9411",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.Cp932RecordTests.Malformed and undefined sequences remain located failures even beside valid aliases",
+      "displayName": "Xanthos.UnitTests.Cp932RecordTests.Malformed and undefined sequences remain located failures even beside valid aliases(hex: \"FA4AEEEDFA4B\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-1a52b56298914f1113fc",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.Cp932RecordTests.Malformed and undefined sequences remain located failures even beside valid aliases",
+      "displayName": "Xanthos.UnitTests.Cp932RecordTests.Malformed and undefined sequences remain located failures even beside valid aliases(hex: \"FC4C\")",
+      "groups": [
+        "UnitTests"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
     }
   ],
   "optionalSkipAllowlist": [

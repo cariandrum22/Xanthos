@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Decode documented CP932 aliases in official record text, including roman numerals in BT lineage descriptions, while preserving original bytes and rejecting malformed sequences on all supported platforms.
 - Build parser and text test fixtures directly with the CP932 provider so isolated and coverage runs do not depend on other tests registering code pages first.
 - Make repeated watch-event subscription tests wait for acknowledged delivery before unsubscribing, and verify that disposed subscribers receive no later events.
 
