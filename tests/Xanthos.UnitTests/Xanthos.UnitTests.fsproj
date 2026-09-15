@@ -28,6 +28,7 @@
     <Compile Include="EventContractTests.fs" />
     <Compile Include="LifecycleRegressionTests.fs" />
     <Compile Include="OfficialFoundationTests.fs" />
+    <Compile Include="Cp932RecordTests.fs" />
     <Compile Include="RecordOracle.fs" />
     <Compile Include="LegacyRegressionTests.fs" />
     <Compile Include="AdditionalRecordContractTests.fs" />

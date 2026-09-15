@@ -26,9 +26,74 @@ type RecordEnvelope = { Header: RecordHeader; Raw: byte[] }
 /// Strict, byte-oriented primitives shared by official record readers.
 [<RequireQualifiedAccess>]
 module RecordBytes =
+    // .NET stores 398 exact CP932 duplicate mappings in its best-fit table.
+    // Admit only those documented byte pairs, not general best-fit replacement.
+    // https://www.unicode.org/Public/MAPPINGS/VENDORS/MICSFT/WINDOWS/CP932.TXT
+    let private isCp932Alias (bytes: byte[]) =
+        if bytes.Length <> 2 then
+            false
+        else
+            let trail = bytes[1]
+            let validTrail = trail >= 0x40uy && trail <= 0xFCuy && trail <> 0x7Fuy
+
+            match bytes[0] with
+            | 0x87uy ->
+                match trail with
+                | 0x90uy
+                | 0x91uy
+                | 0x92uy
+                | 0x95uy
+                | 0x96uy
+                | 0x97uy
+                | 0x9Auy
+                | 0x9Buy
+                | 0x9Cuy -> true
+                | _ -> false
+            | 0xEDuy -> validTrail
+            | 0xEEuy -> validTrail && (trail <= 0xECuy || trail >= 0xEFuy)
+            | 0xFAuy -> (trail >= 0x4Auy && trail <= 0x54uy) || (trail >= 0x58uy && trail <= 0x5Buy)
+            | _ -> false
+
+    let private aliasEncoding = CodePagesEncodingProvider.Instance.GetEncoding(932)
+
+    type private Cp932AliasFallback() =
+        inherit DecoderFallback()
+        override _.MaxCharCount = 1
+
+        override _.CreateFallbackBuffer() =
+            let invalid = DecoderFallback.ExceptionFallback.CreateFallbackBuffer()
+            let mutable character = '\u0000'
+            let mutable position = -1
+
+            { new DecoderFallbackBuffer() with
+                override _.Fallback(bytes, index) =
+                    if position = 0 || not (isCp932Alias bytes) then
+                        invalid.Fallback(bytes, index)
+                    else
+                        character <- (aliasEncoding.GetString bytes)[0]
+                        position <- 0
+                        true
+
+                override _.GetNextChar() =
+                    if position = 0 then
+                        position <- 1
+                        character
+                    else
+                        '\u0000'
+
+                override _.MovePrevious() =
+                    if position = 1 then
+                        position <- 0
+                        true
+                    else
+                        false
+
+                override _.Remaining = if position = 0 then 1 else 0
+                override _.Reset() = position <- -1 }
+
     let private encoding =
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)
-        Encoding.GetEncoding(932, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback)
+        Encoding.GetEncoding(932, EncoderFallback.ExceptionFallback, Cp932AliasFallback())
 
     let private error recordId field position length raw message =
         Error
