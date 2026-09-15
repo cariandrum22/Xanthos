@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-09-16
+
 ### Added
 
 - Add structured issue forms, a pull request template and automatic contribution metadata validation.
@@ -137,7 +139,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Error catalog generated from JV-Link specifications
 - API documentation with fsdocs
 
-[Unreleased]: https://github.com/cariandrum22/Xanthos/compare/v0.3.0...develop
+[Unreleased]: https://github.com/cariandrum22/Xanthos/compare/v0.3.1...develop
+[0.3.1]: https://github.com/cariandrum22/Xanthos/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/cariandrum22/Xanthos/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/cariandrum22/Xanthos/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/cariandrum22/Xanthos/releases/tag/v0.1.0
