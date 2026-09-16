@@ -54,7 +54,7 @@ let ``Open should require non-empty spec`` () =
               Option = 1 }
     with
     | Error(InvalidInput _) -> ()
-    | other -> failwithf "Expected InvalidInput, got %A" other
+    | other -> failwithf "ComContractTests: Open should require non-empty spec: Expected InvalidInput, got %A" other
 
 [<Fact>]
 let ``Open with valid request should succeed`` () =
@@ -64,7 +64,7 @@ let ``Open with valid request should succeed`` () =
 
     match client.Open defaultRequest with
     | Ok _ -> ()
-    | Error e -> failwithf "Expected Ok, got %A" e
+    | Error e -> failwithf "ComContractTests: Open with valid request should succeed: Expected Ok, got %A" e
 
 [<Fact>]
 let ``Read before Open should return InvalidState`` () =
@@ -87,7 +87,8 @@ let ``Gets before Open should return InvalidState`` () =
 
     match client.Gets(&buff, 1024, &fname) with
     | Error(InvalidState _) -> ()
-    | other -> failwithf "Expected InvalidState, got %A" other
+    | other ->
+        failwithf "ComContractTests: Gets before Open should return InvalidState: Expected InvalidState, got %A" other
 
 [<Fact>]
 let ``Skip before Open should return InvalidState`` () =
@@ -97,7 +98,8 @@ let ``Skip before Open should return InvalidState`` () =
 
     match client.Skip() with
     | Error(InvalidState _) -> ()
-    | other -> failwithf "Expected InvalidState, got %A" other
+    | other ->
+        failwithf "ComContractTests: Skip before Open should return InvalidState: Expected InvalidState, got %A" other
 
 [<Fact>]
 let ``Close should be idempotent`` () =
@@ -250,7 +252,7 @@ let ``Gets should return 0 for empty queue`` () =
 
     match client.Gets(&buff, 1024, &fname) with
     | Ok code -> Assert.Equal(0, code)
-    | Error e -> failwithf "Expected 0, got error %A" e
+    | Error e -> failwithf "ComContractTests: Gets should return 0 for empty queue: Expected 0, got error %A" e
 
 // ============================================================================
 // Status/Skip/Cancel Contract Tests
@@ -282,7 +284,7 @@ let ``Status should track completed payloads`` () =
 
     match client.Status() with
     | Ok n -> Assert.Equal(2, n)
-    | Error e -> failwithf "Expected Ok, got %A" e
+    | Error e -> failwithf "ComContractTests: Status should track completed payloads: Expected Ok, got %A" e
 
 [<Fact>]
 let ``Skip should advance to next payload`` () =
@@ -355,7 +357,7 @@ let ``MoviePlay should return Ok on success`` () =
 
     match client.MoviePlay "testkey" with
     | Ok() -> ()
-    | Error e -> failwithf "Expected Ok, got %A" e
+    | Error e -> failwithf "ComContractTests: MoviePlay should return Ok on success: Expected Ok, got %A" e
 
 [<Fact>]
 let ``MoviePlayWithType should return Ok on success`` () =
@@ -365,7 +367,7 @@ let ``MoviePlayWithType should return Ok on success`` () =
 
     match client.MoviePlayWithType("00", "testkey") with
     | Ok() -> ()
-    | Error e -> failwithf "Expected Ok, got %A" e
+    | Error e -> failwithf "ComContractTests: MoviePlayWithType should return Ok on success: Expected Ok, got %A" e
 
 [<Fact>]
 let ``MovieRead should return MovieEnd when empty`` () =
@@ -401,7 +403,7 @@ let ``WatchEvent should require initialization`` () =
     let stub = new JvLinkStub()
     let client = stub :> IJvLinkClient
     // Not calling Init
-    match client.WatchEvent(fun _ -> ()) with
+    match client.WatchEvent(ignore) with
     | Error NotInitialized -> ()
     | other -> failwithf "Expected NotInitialized, got %A" other
 
@@ -411,9 +413,9 @@ let ``WatchEvent should succeed after Init`` () =
     let client = stub :> IJvLinkClient
     ignore (client.Init "sid")
 
-    match client.WatchEvent(fun _ -> ()) with
+    match client.WatchEvent(ignore) with
     | Ok() -> ()
-    | Error e -> failwithf "Expected Ok, got %A" e
+    | Error e -> failwithf "ComContractTests: WatchEvent should succeed after Init: Expected Ok, got %A" e
 
 [<Fact>]
 let ``WatchEvent callback should be invoked on RaiseEvent`` () =
@@ -505,7 +507,7 @@ let ``OpenRealtime should enable realtime mode`` () =
 
     match client.OpenRealtime("TEST", "20240101") with
     | Ok _ -> ()
-    | Error e -> failwithf "Expected Ok, got %A" e
+    | Error e -> failwithf "ComContractTests: OpenRealtime should enable realtime mode: Expected Ok, got %A" e
 
 [<Fact>]
 let ``OpenRealtime should require non-empty spec`` () =
@@ -515,7 +517,8 @@ let ``OpenRealtime should require non-empty spec`` () =
 
     match client.OpenRealtime("", "20240101") with
     | Error(InvalidInput _) -> ()
-    | other -> failwithf "Expected InvalidInput, got %A" other
+    | other ->
+        failwithf "ComContractTests: OpenRealtime should require non-empty spec: Expected InvalidInput, got %A" other
 
 [<Fact>]
 let ``OpenRealtime should move payloads to realtime queue`` () =
@@ -543,7 +546,7 @@ let ``DeleteFile should return Ok`` () =
 
     match client.DeleteFile "testfile.jvd" with
     | Ok() -> ()
-    | Error e -> failwithf "Expected Ok, got %A" e
+    | Error e -> failwithf "ComContractTests: DeleteFile should return Ok: Expected Ok, got %A" e
 
 [<Fact>]
 let ``CourseFile should return path and explanation`` () =
@@ -555,7 +558,7 @@ let ``CourseFile should return path and explanation`` () =
     | Ok(path, explanation) ->
         Assert.Equal("C:\\course.gif", path)
         Assert.Equal("Course explanation", explanation)
-    | Error e -> failwithf "Expected Ok, got %A" e
+    | Error e -> failwithf "ComContractTests: CourseFile should return path and explanation: Expected Ok, got %A" e
 
 [<Fact>]
 let ``CourseFile2 should save to specified filepath`` () =
@@ -565,7 +568,7 @@ let ``CourseFile2 should save to specified filepath`` () =
 
     match client.CourseFile2("testkey", outputPath) with
     | Ok() -> () // JVCourseFile2 saves to filepath - just returns unit on success
-    | Error e -> failwithf "Expected Ok, got %A" e
+    | Error e -> failwithf "ComContractTests: CourseFile2 should save to specified filepath: Expected Ok, got %A" e
 
 [<Fact>]
 let ``SilksFile should invoke responder`` () =
@@ -576,7 +579,7 @@ let ``SilksFile should invoke responder`` () =
     match client.SilksFile("01234", "C:\\output") with
     | Ok(Some result) -> Assert.Equal("C:\\output/01234.bmp", result)
     | Ok None -> failwith "Expected Some result, got None"
-    | Error e -> failwithf "Expected Ok, got %A" e
+    | Error e -> failwithf "ComContractTests: SilksFile should invoke responder: Expected Ok, got %A" e
 
 [<Fact>]
 let ``SilksBinary should invoke responder`` () =
@@ -588,7 +591,7 @@ let ``SilksBinary should invoke responder`` () =
     match client.SilksBinary "testpattern" with
     | Ok(Some bytes) -> Assert.Equal<byte[]>(expectedBytes, bytes)
     | Ok None -> failwith "Expected Some bytes, got None"
-    | Error e -> failwithf "Expected Ok, got %A" e
+    | Error e -> failwithf "ComContractTests: SilksBinary should invoke responder: Expected Ok, got %A" e
 
 // ============================================================================
 // SetUI and Configuration Contract Tests
@@ -601,7 +604,8 @@ let ``SetUiProperties should succeed and track invocations`` () =
 
     match client.SetUiProperties() with
     | Ok() -> Assert.Equal(1, stub.UiDialogInvocationCount)
-    | Error e -> failwithf "Expected Ok, got %A" e
+    | Error e ->
+        failwithf "ComContractTests: SetUiProperties should succeed and track invocations: Expected Ok, got %A" e
 
 [<Fact>]
 let ``SetSaveFlag should succeed`` () =
@@ -610,7 +614,7 @@ let ``SetSaveFlag should succeed`` () =
 
     match client.SetSaveFlag true with
     | Ok() -> ()
-    | Error e -> failwithf "Expected Ok, got %A" e
+    | Error e -> failwithf "ComContractTests: SetSaveFlag should succeed: Expected Ok, got %A" e
 
 [<Fact>]
 let ``SetServiceKeyDirect should succeed and track key`` () =
@@ -619,7 +623,7 @@ let ``SetServiceKeyDirect should succeed and track key`` () =
 
     match client.SetServiceKeyDirect "new-service-key" with
     | Ok() -> Assert.Equal(Some "new-service-key", stub.LastServiceKey)
-    | Error e -> failwithf "Expected Ok, got %A" e
+    | Error e -> failwithf "ComContractTests: SetServiceKeyDirect should succeed and track key: Expected Ok, got %A" e
 
 [<Fact>]
 let ``SetSavePathDirect should succeed and update path`` () =
@@ -628,4 +632,4 @@ let ``SetSavePathDirect should succeed and update path`` () =
 
     match client.SetSavePathDirect "C:\\new\\path" with
     | Ok() -> Assert.Equal("C:\\new\\path", stub.CurrentSavePath)
-    | Error e -> failwithf "Expected Ok, got %A" e
+    | Error e -> failwithf "ComContractTests: SetSavePathDirect should succeed and update path: Expected Ok, got %A" e

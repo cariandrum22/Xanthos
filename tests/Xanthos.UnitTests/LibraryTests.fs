@@ -101,13 +101,13 @@ let ``createRace should set all optional fields to None`` () =
 let ``createRace should set Surface to UnknownSurface`` () =
     match createRace validRaceId with
     | Ok raceInfo -> Assert.Equal(TrackSurface.UnknownSurface, raceInfo.Surface)
-    | Error _ -> failwith "Should succeed"
+    | Error _ -> failwith "LibraryTests: createRace should set Surface to UnknownSurface: Should succeed"
 
 [<Fact>]
 let ``createRace should set Condition to UnknownCondition`` () =
     match createRace validRaceId with
     | Ok raceInfo -> Assert.Equal(TrackCondition.UnknownCondition, raceInfo.Condition)
-    | Error _ -> failwith "Should succeed"
+    | Error _ -> failwith "LibraryTests: createRace should set Condition to UnknownCondition: Should succeed"
 
 [<Fact>]
 let ``createRace should preserve RaceId in Id field`` () =
@@ -116,7 +116,7 @@ let ``createRace should preserve RaceId in Id field`` () =
         // The RaceId should be created correctly
         let idValue = RaceId.value raceInfo.Id
         Assert.Equal(validRaceId, idValue)
-    | Error _ -> failwith "Should succeed"
+    | Error _ -> failwith "LibraryTests: createRace should preserve RaceId in Id field: Should succeed"
 
 [<Fact>]
 let ``createRace should handle long id with alphanumeric suffix`` () =
@@ -132,5 +132,6 @@ let ``createRace error should be validation error for empty`` () =
     | Error(ValidationError msg) ->
         // The error should be a validation error from RaceId.create
         Assert.Contains("RaceId cannot be empty", msg)
-    | Error _ -> failwith "Should be ValidationError"
+    | Error _ ->
+        failwith "LibraryTests: createRace error should be validation error for empty: Should be ValidationError"
     | Ok _ -> failwith "Should fail"

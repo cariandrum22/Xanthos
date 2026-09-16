@@ -42,12 +42,12 @@ type XanthosError =
 
 module Errors =
 
-    /// Lifts a `Result<'a, ComError>` into the higher-level `XanthosError` space.
+    /// Lifts a `Result<'T, ComError>` into the higher-level `XanthosError` space.
     [<System.Obsolete("Use mapComError instead.")>]
-    let mapComResult (result: Result<'a, ComError>) = Result.mapError InteropError result
+    let mapComResult (result: Result<'T, ComError>) = Result.mapError InteropError result
 
     /// Alias: same as `mapComResult` for readability when mapping COM errors.
-    let mapComError (result: Result<'a, ComError>) = Result.mapError InteropError result
+    let mapComError (result: Result<'T, ComError>) = Result.mapError InteropError result
 
     /// Helper to construct a validation error in a readable form.
     let validation message = ValidationError message

@@ -320,21 +320,22 @@ let ``parseRaceCard round-trips JSON payload`` (cards: RaceInfo list) =
         let json = Encoding.UTF8.GetString(payload)
         failwithf "parseRaceCard failed: %A. JSON: %s" err json
 
+[<TailCall>]
+let rec private collectStubPayloads (client: IJvLinkClient) acc =
+    match client.Read() with
+    | Ok(Payload payload) -> collectStubPayloads client ((payload.Data |> Array.toList) :: acc)
+    | Ok FileBoundary -> collectStubPayloads client acc
+    | Ok DownloadPending -> collectStubPayloads client acc
+    | Ok EndOfStream -> List.rev acc
+    | Error err -> failwithf "Unexpected stub error %A" err
+
 [<ReplayProperty(EndSize = 100, Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = false)>]
 let ``JvLinkStub streams payloads sequentially`` (payloads: byte[] list) =
     let client = JvLinkStub.FromPayloads payloads :> IJvLinkClient
 
     match client.Init "sid", client.Open defaultRequest with
     | Ok(), Ok _ ->
-        let rec collect acc =
-            match client.Read() with
-            | Ok(Payload payload) -> collect ((payload.Data |> Array.toList) :: acc)
-            | Ok FileBoundary -> collect acc
-            | Ok DownloadPending -> collect acc
-            | Ok EndOfStream -> List.rev acc
-            | Error err -> failwithf "Unexpected stub error %A" err
-
-        let actual = collect []
+        let actual = collectStubPayloads client []
         let expected = payloads |> List.map Array.toList
         actual = expected
     | _ -> false
@@ -369,21 +370,24 @@ let ``StreamRealtimeAsync backoff yields eventual payload`` (NonNegativeInt n) =
 
     let collected = ResizeArray<byte[]>()
 
-    let rec loop () =
+    let readUntilPayloadAsync () =
         task {
-            let! hasNext = enumerator.MoveNextAsync().AsTask()
+            let mutable reading = true
 
-            if hasNext then
-                match enumerator.Current with
-                | Ok payload when payload.Data.Length > 0 ->
-                    collected.Add payload.Data
-                    return ()
-                | _ -> return! loop ()
-            else
-                return ()
+            while reading do
+                let! hasNext = enumerator.MoveNextAsync().AsTask()
+
+                if hasNext then
+                    match enumerator.Current with
+                    | Ok payload when payload.Data.Length > 0 ->
+                        collected.Add payload.Data
+                        reading <- false
+                    | _ -> ()
+                else
+                    reading <- false
         }
 
-    loop().Wait()
+    readUntilPayloadAsync().Wait()
     enumerator.DisposeAsync().AsTask().Wait()
     collected.Count = 1 && collected.[0] = [| 0x11uy |]
 
@@ -397,7 +401,8 @@ let ``StreamRealtimeAsync cancels gracefully during prolonged DownloadPending`` 
     let config =
         match JvLinkConfig.create "SID" None None None with
         | Ok c -> c
-        | Error e -> failwithf "%A" e
+        | Error e ->
+            failwithf "PropertyTests: StreamRealtimeAsync cancels gracefully during prolonged DownloadPending: %A" e
 
     let service = new JvLinkService(stub, config)
     use cts = new CancellationTokenSource()
@@ -416,20 +421,23 @@ let ``StreamRealtimeAsync cancels gracefully during prolonged DownloadPending`` 
     let mutable observedErrors = 0
     let mutable iterations = 0
 
-    let rec loop () =
+    let readUntilCancelledAsync () =
         task {
-            let! hasNext = enum.MoveNextAsync().AsTask()
+            let mutable reading = true
 
-            if hasNext then
-                iterations <- iterations + 1
+            while reading do
+                let! hasNext = enum.MoveNextAsync().AsTask()
 
-                match enum.Current with
-                | Error _ -> observedErrors <- observedErrors + 1
-                | _ -> ()
+                if hasNext then
+                    iterations <- iterations + 1
 
-                if iterations < streak then return! loop () else return ()
-            else
-                return ()
+                    match enum.Current with
+                    | Error _ -> observedErrors <- observedErrors + 1
+                    | _ -> ()
+
+                    reading <- iterations < streak
+                else
+                    reading <- false
         }
 
     let disposeEnumerator () =
@@ -439,7 +447,7 @@ let ``StreamRealtimeAsync cancels gracefully during prolonged DownloadPending`` 
             ()
 
     try
-        loop().Wait()
+        readUntilCancelledAsync().Wait()
         disposeEnumerator ()
         observedErrors = 0
     with
@@ -523,7 +531,10 @@ let ``parseRaceCard preserves name and id invariants`` (cards: RaceInfo list) =
             let nameOk = not (String.IsNullOrWhiteSpace actual.Name)
             let idOk = RaceId.value actual.Id = (RaceId.value original.Id).Trim()
             nameOk && idOk)
-    | Error error -> failwithf "Valid generated card was rejected: %A" error
+    | Error error ->
+        failwithf
+            "PropertyTests: parseRaceCard preserves name and id invariants: Valid generated card was rejected: %A"
+            error
 
 [<ReplayProperty(EndSize = 100, Arbitrary = [| typeof<CustomArbitraries> |], QuietOnSuccess = false)>]
 let ``DistanceMeters includes boundary values when present`` (info: RaceInfo) =

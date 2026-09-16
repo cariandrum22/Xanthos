@@ -64,11 +64,11 @@ let ``StreamPayloads yields payloads lazily without accumulating in memory`` () 
 
     match results.[1] with
     | Ok p -> Assert.Equal("payload2", Text.decodeShiftJis p.Data)
-    | Error err -> failwithf "Unexpected error %A" err
+    | Error err -> failwithf "Lazy StreamPayloads: expected payload2, got error %A" err
 
     match results.[2] with
     | Ok p -> Assert.Equal("payload3", Text.decodeShiftJis p.Data)
-    | Error err -> failwithf "Unexpected error %A" err
+    | Error err -> failwithf "Lazy StreamPayloads: expected payload3, got error %A" err
 
 [<Fact>]
 let ``StreamPayloads ignores consecutive FileBoundary markers`` () =
@@ -96,7 +96,10 @@ let ``StreamPayloads ignores consecutive FileBoundary markers`` () =
     while payload.IsNone && enumerator.MoveNext() do
         match enumerator.Current with
         | Ok data -> payload <- Some(Text.decodeShiftJis data.Data)
-        | Error err -> failwithf "Unexpected error %A" err
+        | Error err ->
+            failwithf
+                "StreamPayloadsTests: StreamPayloads ignores consecutive FileBoundary markers: Unexpected error %A"
+                err
 
     Assert.Equal(Some "line", payload)
 
@@ -124,7 +127,10 @@ let ``StreamPayloads retries after DownloadPending before yielding payload`` () 
     while payload.IsNone && enumerator.MoveNext() do
         match enumerator.Current with
         | Ok data -> payload <- Some(Text.decodeShiftJis data.Data)
-        | Error err -> failwithf "Unexpected error %A" err
+        | Error err ->
+            failwithf
+                "StreamPayloadsTests: StreamPayloads retries after DownloadPending before yielding payload: Unexpected error %A"
+                err
 
     Assert.Equal(Some "hello", payload)
 
@@ -188,7 +194,10 @@ let ``StreamPayloadsAsync yields payloads asynchronously`` () =
                 if moved then
                     match enumerator.Current with
                     | Ok payload -> results.Add(payload)
-                    | Error err -> failwithf "Unexpected error %A" err
+                    | Error err ->
+                        failwithf
+                            "StreamPayloadsTests: StreamPayloadsAsync yields payloads asynchronously: Unexpected error %A"
+                            err
                 else
                     keepGoing <- false
         finally
@@ -300,7 +309,9 @@ let ``StreamPayloadsAsync with string parameters validates fromTime`` () =
 
             match enumerator.Current with
             | Error(ValidationError msg) -> Assert.Contains("fromTime", msg)
-            | _ -> failwith "Expected ValidationError"
+            | _ ->
+                failwith
+                    "StreamPayloadsTests: StreamPayloadsAsync with string parameters validates fromTime: Expected ValidationError"
 
             let! moved2 = enumerator.MoveNextAsync().AsTask()
             Assert.False(moved2, "Should have no more results")

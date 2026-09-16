@@ -45,13 +45,15 @@ let ``RA parse should fail with data too short`` () =
 
     match RA.parse data with
     | Error _ -> () // Expected
-    | Ok _ -> failwith "Should fail with insufficient data length"
+    | Ok _ ->
+        failwith
+            "RecordParserErrorTests: RA parse should fail with data too short: Should fail with insufficient data length"
 
 [<Fact>]
 let ``RA parse should fail with empty data`` () =
     match RA.parse [||] with
     | Error _ -> () // Expected
-    | Ok _ -> failwith "Should fail with empty data"
+    | Ok _ -> failwith "RecordParserErrorTests: RA parse should fail with empty data: Should fail with empty data"
 
 [<Fact>]
 let ``RA parse should handle corrupted Shift-JIS data`` () =
@@ -73,13 +75,15 @@ let ``SE parse should fail with data too short`` () =
 
     match SE.parse data with
     | Error _ -> () // Expected
-    | Ok _ -> failwith "Should fail with insufficient data length"
+    | Ok _ ->
+        failwith
+            "RecordParserErrorTests: SE parse should fail with data too short: Should fail with insufficient data length"
 
 [<Fact>]
 let ``SE parse should fail with empty data`` () =
     match SE.parse [||] with
     | Error _ -> () // Expected
-    | Ok _ -> failwith "Should fail with empty data"
+    | Ok _ -> failwith "RecordParserErrorTests: SE parse should fail with empty data: Should fail with empty data"
 
 [<Fact>]
 let ``SE parse should handle corrupted Shift-JIS data`` () =
@@ -101,13 +105,15 @@ let ``HR parse should fail with data too short`` () =
 
     match HR.parse data with
     | Error _ -> () // Expected
-    | Ok _ -> failwith "Should fail with insufficient data length"
+    | Ok _ ->
+        failwith
+            "RecordParserErrorTests: HR parse should fail with data too short: Should fail with insufficient data length"
 
 [<Fact>]
 let ``HR parse should fail with empty data`` () =
     match HR.parse [||] with
     | Error _ -> () // Expected
-    | Ok _ -> failwith "Should fail with empty data"
+    | Ok _ -> failwith "RecordParserErrorTests: HR parse should fail with empty data: Should fail with empty data"
 
 // ============================================================================
 // O1 Parser - Error Cases
@@ -120,13 +126,15 @@ let ``O1 parse should fail with data too short`` () =
 
     match O1.parse data with
     | Error _ -> () // Expected
-    | Ok _ -> failwith "Should fail with insufficient data length"
+    | Ok _ ->
+        failwith
+            "RecordParserErrorTests: O1 parse should fail with data too short: Should fail with insufficient data length"
 
 [<Fact>]
 let ``O1 parse should fail with empty data`` () =
     match O1.parse [||] with
     | Error _ -> () // Expected
-    | Ok _ -> failwith "Should fail with empty data"
+    | Ok _ -> failwith "RecordParserErrorTests: O1 parse should fail with empty data: Should fail with empty data"
 
 [<Fact>]
 let ``O1 parse should handle corrupted data gracefully`` () =
@@ -148,13 +156,15 @@ let ``H1 parse should fail with data too short`` () =
 
     match H1.parse data with
     | Error _ -> () // Expected
-    | Ok _ -> failwith "Should fail with insufficient data length"
+    | Ok _ ->
+        failwith
+            "RecordParserErrorTests: H1 parse should fail with data too short: Should fail with insufficient data length"
 
 [<Fact>]
 let ``H1 parse should fail with empty data`` () =
     match H1.parse [||] with
     | Error _ -> () // Expected
-    | Ok _ -> failwith "Should fail with empty data"
+    | Ok _ -> failwith "RecordParserErrorTests: H1 parse should fail with empty data: Should fail with empty data"
 
 [<Fact>]
 let ``H1 parse should handle corrupted data gracefully`` () =
@@ -176,13 +186,15 @@ let ``WF parse should fail with data too short`` () =
 
     match WF.parse data with
     | Error _ -> () // Expected
-    | Ok _ -> failwith "Should fail with insufficient data length"
+    | Ok _ ->
+        failwith
+            "RecordParserErrorTests: WF parse should fail with data too short: Should fail with insufficient data length"
 
 [<Fact>]
 let ``WF parse should fail with empty data`` () =
     match WF.parse [||] with
     | Error _ -> () // Expected
-    | Ok _ -> failwith "Should fail with empty data"
+    | Ok _ -> failwith "RecordParserErrorTests: WF parse should fail with empty data: Should fail with empty data"
 
 [<Fact>]
 let ``WF parse should handle corrupted data gracefully`` () =
@@ -204,13 +216,15 @@ let ``UM parse should fail with data too short`` () =
 
     match UM.parse data with
     | Error _ -> () // Expected
-    | Ok _ -> failwith "Should fail with insufficient data length"
+    | Ok _ ->
+        failwith
+            "RecordParserErrorTests: UM parse should fail with data too short: Should fail with insufficient data length"
 
 [<Fact>]
 let ``UM parse should fail with empty data`` () =
     match UM.parse [||] with
     | Error _ -> () // Expected
-    | Ok _ -> failwith "Should fail with empty data"
+    | Ok _ -> failwith "RecordParserErrorTests: UM parse should fail with empty data: Should fail with empty data"
 
 [<Fact>]
 let ``UM parse should handle corrupted data gracefully`` () =

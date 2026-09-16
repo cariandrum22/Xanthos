@@ -7,6 +7,13 @@ type internal NativeSessionLifetime() =
     let mutable dataOpen = false
     let mutable watching = false
 
+    [<TailCall>]
+    let rec unwrap (error: exn) =
+        match error with
+        | :? System.Reflection.TargetInvocationException when not (isNull error.InnerException) ->
+            unwrap error.InnerException
+        | _ -> error
+
     member _.Watching = watching
 
     member _.Observe(api, code) =
@@ -32,12 +39,6 @@ type internal NativeSessionLifetime() =
             with
             | SessionCleanupException error -> remember error
             | ex ->
-                let rec unwrap (error: exn) =
-                    match error with
-                    | :? System.Reflection.TargetInvocationException when not (isNull error.InnerException) ->
-                        unwrap error.InnerException
-                    | _ -> error
-
                 let cause = unwrap ex
 
                 remember

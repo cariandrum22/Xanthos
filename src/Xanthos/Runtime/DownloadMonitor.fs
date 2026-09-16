@@ -25,6 +25,31 @@ type WaitCompletionResult =
 /// </remarks>
 module DownloadMonitor =
 
+    // Sleep that respects cancellation by sleeping in small chunks
+    let private sleepWithCancellation (span: TimeSpan) (token: CancellationToken) =
+        let chunkMs = 50
+        let mutable remaining = int span.TotalMilliseconds
+
+        while remaining > 0 && not token.IsCancellationRequested do
+            let sleepTime = min remaining chunkMs
+            Thread.Sleep sleepTime
+            remaining <- remaining - sleepTime
+
+    [<TailCall>]
+    let rec private poll statusCall expectedDownloadCount interval deadline (ct: CancellationToken) =
+        ct.ThrowIfCancellationRequested()
+
+        match statusCall () with
+        | Error e -> Error e
+        | Ok completed when completed >= expectedDownloadCount -> Ok(Completed completed)
+        | Ok completed ->
+            match deadline with
+            | Some d when DateTime.UtcNow >= d -> Ok(TimedOut completed)
+            | _ ->
+                sleepWithCancellation interval ct
+                ct.ThrowIfCancellationRequested()
+                poll statusCall expectedDownloadCount interval deadline ct
+
     /// <summary>
     /// Polls JV-Link via JVStatus until the reported completed file count reaches the expected value,
     /// or cancellation/timeout occurs.
@@ -53,29 +78,4 @@ module DownloadMonitor =
             | Some t -> Some(DateTime.UtcNow + t)
             | None -> None
 
-        // Sleep that respects cancellation by sleeping in small chunks
-        let sleepWithCancellation (span: TimeSpan) (token: CancellationToken) =
-            let chunkMs = 50
-            let mutable remaining = int span.TotalMilliseconds
-
-            while remaining > 0 && not token.IsCancellationRequested do
-                let sleepTime = min remaining chunkMs
-                Thread.Sleep sleepTime
-                remaining <- remaining - sleepTime
-
-        let rec loop last =
-            ct.ThrowIfCancellationRequested()
-
-            match statusCall () with
-            | Error e -> Error e
-            | Ok completed when completed >= expectedDownloadCount -> Ok(Completed completed)
-            | Ok completed ->
-                match deadline with
-                | Some d when DateTime.UtcNow >= d -> Ok(TimedOut completed)
-                | _ ->
-                    sleepWithCancellation interval ct
-                    // Check cancellation again after sleep
-                    ct.ThrowIfCancellationRequested()
-                    loop completed
-
-        loop 0
+        poll statusCall expectedDownloadCount interval deadline ct

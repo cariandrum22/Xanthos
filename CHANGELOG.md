@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Check FSharpLint regressions against a reviewed diagnostic baseline, fail CI on new findings or incomplete/failed analysis, and retain existing warnings in a downloadable report instead of ignoring every nonzero lint exit.
+- Resolve FSharpLint findings in the library, CLI and tests, including ambiguous test failures, redundant expressions and recursive traversal. Require a successful lint exit in CI and compiler validation of annotated tail calls.
 
 ## [0.3.1] - 2026-09-16
 

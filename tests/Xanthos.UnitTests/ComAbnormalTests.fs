@@ -61,7 +61,7 @@ let ``Stub.Gets should handle large SAFEARRAY bytes`` () =
     | Ok n ->
         Assert.True(n > 0)
         Assert.True(buff.Length > 0)
-    | Error e -> failwithf "Unexpected error %A" e
+    | Error e -> failwithf "ComAbnormalTests: Stub.Gets should handle large SAFEARRAY bytes: Unexpected error %A" e
 
 [<Fact>]
 let ``Stub.Read should propagate CommunicationFailure`` () =

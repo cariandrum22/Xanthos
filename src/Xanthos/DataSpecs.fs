@@ -74,27 +74,29 @@ module DataSpecs =
                 else
                     Set.ofList [ 1; 3; 4 ]
 
-            { Id = id
-              RecordIds = recordIds
-              SetupRecordIds =
-                if id = "DIFF" || id = "DIFN" then
-                    recordIds - Set.ofList [ "RA"; "SE" ]
-                elif realtime || supplementation then
-                    Set.empty
-                else
-                    recordIds
-              OpenOptions = options
-              IsRealtime = realtime
-              SupportsEndTime =
-                not realtime
-                && not (List.contains id [ "TOKU"; "DIFF"; "DIFN"; "HOSE"; "HOSN"; "HOYU"; "COMM" ])
-              IdentifierFormat =
-                if legacy then
-                    Data.IdentifierFormat.Legacy
-                else
-                    Data.IdentifierFormat.Expanded
-              DeliveryStart = if expanded then Some(DateOnly(2023, 8, 8)) else None })
-        |> List.map (fun definition -> definition.Id, definition)
+            let definition =
+                { Id = id
+                  RecordIds = recordIds
+                  SetupRecordIds =
+                    if id = "DIFF" || id = "DIFN" then
+                        recordIds - Set.ofList [ "RA"; "SE" ]
+                    elif realtime || supplementation then
+                        Set.empty
+                    else
+                        recordIds
+                  OpenOptions = options
+                  IsRealtime = realtime
+                  SupportsEndTime =
+                    not realtime
+                    && not (List.contains id [ "TOKU"; "DIFF"; "DIFN"; "HOSE"; "HOSN"; "HOYU"; "COMM" ])
+                  IdentifierFormat =
+                    if legacy then
+                        Data.IdentifierFormat.Legacy
+                    else
+                        Data.IdentifierFormat.Expanded
+                  DeliveryStart = if expanded then Some(DateOnly(2023, 8, 8)) else None }
+
+            id, definition)
         |> Map.ofList
 
     let all = definitions |> Map.toList |> List.map snd

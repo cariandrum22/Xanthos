@@ -178,7 +178,10 @@ module OddsContractTests =
             | Records.Record.O4 r -> box r
             | Records.Record.O5 r -> box r
             | Records.Record.O6 r -> box r
-            | other -> failwithf "%A" other
+            | other ->
+                failwithf
+                    "OddsContractTests: Every odds leaf and repeated slot matches the independent layout: %A"
+                    other
 
         Assert.Equal(record, dispatched)
         Assert.Equal(expectedMappings, (mappings id).Length)

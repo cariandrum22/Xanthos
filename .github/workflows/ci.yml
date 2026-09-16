@@ -115,23 +115,9 @@ jobs:
       - name: Check formatting (fantomas)
         run: dotnet fantomas --check .
 
-      - name: Verify lint result and baseline checks
-        run: python3 -m unittest discover -s scripts -p test_check_fsharplint.py -v
-
-      - name: Check FSharpLint regressions
-        id: lint
-        run: python3 scripts/check_fsharplint.py
+      - name: Lint (fsharplint)
+        run: dotnet fsharplint lint Xanthos.sln
         timeout-minutes: 20
-
-      - name: Preserve FSharpLint diagnostics
-        if: always() && steps.lint.outcome != 'skipped'
-        uses: actions/upload-artifact@v7.0.1
-        with:
-          name: fsharplint-report
-          path: .artifacts/lint/
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 7
 
   test-summary:
     name: Test Summary

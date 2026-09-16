@@ -283,7 +283,7 @@ module RecordParser =
 
     /// <summary>Computation expression builder for Result with XanthosError.</summary>
     type XanthosParseBuilder() =
-        member _.Bind(m: Result<'a, XanthosError>, f) = Result.bind f m
+        member _.Bind(m: Result<'T, XanthosError>, f) = Result.bind f m
         member _.Return v = Ok v
         member _.ReturnFrom m = m
 

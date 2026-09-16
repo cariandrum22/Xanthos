@@ -59899,6 +59899,132 @@
         "macos",
         "windows"
       ]
+    },
+    {
+      "id": "T-be5c44999088bb88251c",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LegacyRegressionTests.Fetch cancellation during retry delay prevents another read and closes the session",
+      "displayName": "Xanthos.UnitTests.LegacyRegressionTests.Fetch cancellation during retry delay prevents another read and closes the session",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-238fdbb27aff4a30c45b",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LegacyRegressionTests.Read recovery stops at the retry limit and closes after skip failure",
+      "displayName": "Xanthos.UnitTests.LegacyRegressionTests.Read recovery stops at the retry limit and closes after skip failure(mode: \"fetch\")",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-d99209dbfa19a2065c6c",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LegacyRegressionTests.Read recovery stops at the retry limit and closes after skip failure",
+      "displayName": "Xanthos.UnitTests.LegacyRegressionTests.Read recovery stops at the retry limit and closes after skip failure(mode: \"realtime\")",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-9454fe75149455e7d03e",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LegacyRegressionTests.Read recovery stops at the retry limit and closes after skip failure",
+      "displayName": "Xanthos.UnitTests.LegacyRegressionTests.Read recovery stops at the retry limit and closes after skip failure(mode: \"stored\")",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-36ecc0c225e19c107f05",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LegacyRegressionTests.Synchronous streams close on early disposal and reopen on each enumeration",
+      "displayName": "Xanthos.UnitTests.LegacyRegressionTests.Synchronous streams close on early disposal and reopen on each enumeration(realtime: False)",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
+    },
+    {
+      "id": "T-93099964229a3c5dfbc4",
+      "project": "tests/Xanthos.UnitTests/Xanthos.UnitTests.fsproj",
+      "fqn": "Xanthos.UnitTests.LegacyRegressionTests.Synchronous streams close on early disposal and reopen on each enumeration",
+      "displayName": "Xanthos.UnitTests.LegacyRegressionTests.Synchronous streams close on early disposal and reopen on each enumeration(realtime: True)",
+      "groups": [
+        "UnitTests",
+        "Contract"
+      ],
+      "requirement": "required",
+      "profiles": [
+        "Fast",
+        "Coverage"
+      ],
+      "tfm": "net10.0",
+      "os": [
+        "linux",
+        "macos",
+        "windows"
+      ]
     }
   ],
   "optionalSkipAllowlist": [

@@ -205,8 +205,13 @@ let ``FetchPayloadsWithSize should fail when Init fails`` () =
 
     match service.FetchPayloadsWithSize(request) with
     | Error(InteropError NotInitialized) -> ()
-    | Error other -> failwithf "Expected NotInitialized, got %A" other
-    | Ok _ -> failwith "Should fail with init error"
+    | Error other ->
+        failwithf
+            "JvLinkServiceErrorTests: FetchPayloadsWithSize should fail when Init fails: Expected NotInitialized, got %A"
+            other
+    | Ok _ ->
+        failwith
+            "JvLinkServiceErrorTests: FetchPayloadsWithSize should fail when Init fails: Should fail with init error"
 
 [<Fact>]
 let ``FetchPayloadsWithSize should fail when Open fails`` () =
@@ -220,8 +225,13 @@ let ``FetchPayloadsWithSize should fail when Open fails`` () =
 
     match service.FetchPayloadsWithSize(request) with
     | Error(InteropError(InvalidInput _)) -> ()
-    | Error other -> failwithf "Expected InvalidInput, got %A" other
-    | Ok _ -> failwith "Should fail with open error"
+    | Error other ->
+        failwithf
+            "JvLinkServiceErrorTests: FetchPayloadsWithSize should fail when Open fails: Expected InvalidInput, got %A"
+            other
+    | Ok _ ->
+        failwith
+            "JvLinkServiceErrorTests: FetchPayloadsWithSize should fail when Open fails: Should fail with open error"
 
 // ============================================================================
 // FetchPayloads Overload Validation Tests
@@ -257,8 +267,13 @@ let ``FetchPayloadsWithSize overload should fail when fromTime is None`` () =
 
     match service.FetchPayloadsWithSize("RACE", None) with
     | Error(ValidationError msg) -> Assert.Contains("fromTime", msg)
-    | Error other -> failwithf "Expected ValidationError, got %A" other
-    | Ok _ -> failwith "Should fail with validation error"
+    | Error other ->
+        failwithf
+            "JvLinkServiceErrorTests: FetchPayloadsWithSize overload should fail when fromTime is None: Expected ValidationError, got %A"
+            other
+    | Ok _ ->
+        failwith
+            "JvLinkServiceErrorTests: FetchPayloadsWithSize overload should fail when fromTime is None: Should fail with validation error"
 
 [<Fact>]
 let ``FetchPayloadsWithSize overload should succeed when fromTime is Some`` () =
@@ -271,7 +286,10 @@ let ``FetchPayloadsWithSize overload should succeed when fromTime is Some`` () =
 
     match service.FetchPayloadsWithSize("RACE", Some(DateTime(2024, 1, 1))) with
     | Ok _ -> ()
-    | Error err -> failwithf "Should succeed, got %A" err
+    | Error err ->
+        failwithf
+            "JvLinkServiceErrorTests: FetchPayloadsWithSize overload should succeed when fromTime is Some: Should succeed, got %A"
+            err
 
 [<Fact>]
 let ``FetchPayloads overload should use default option when not specified`` () =
@@ -314,7 +332,10 @@ let ``StreamRealtimePayloads should yield error when Init fails`` () =
 
     match results.[0] with
     | Error(InteropError NotInitialized) -> ()
-    | Error other -> failwithf "Expected NotInitialized, got %A" other
+    | Error other ->
+        failwithf
+            "JvLinkServiceErrorTests: StreamRealtimePayloads should yield error when Init fails: Expected NotInitialized, got %A"
+            other
     | Ok _ -> failwith "Should yield init error"
 
 [<Fact>]
@@ -328,7 +349,10 @@ let ``StreamRealtimePayloads should yield error when OpenRealtime fails`` () =
 
     match results.[0] with
     | Error(InteropError(InvalidInput _)) -> ()
-    | Error other -> failwithf "Expected InvalidInput, got %A" other
+    | Error other ->
+        failwithf
+            "JvLinkServiceErrorTests: StreamRealtimePayloads should yield error when OpenRealtime fails: Expected InvalidInput, got %A"
+            other
     | Ok _ -> failwith "Should yield open error"
 
 [<Fact>]
@@ -347,7 +371,10 @@ let ``StreamRealtimePayloads should handle FileBoundary and continue`` () =
 
     match results.[0] with
     | Ok payload -> Assert.Equal(1, payload.Data.Length)
-    | Error err -> failwithf "Should succeed, got %A" err
+    | Error err ->
+        failwithf
+            "JvLinkServiceErrorTests: StreamRealtimePayloads should handle FileBoundary and continue: Should succeed, got %A"
+            err
 
 [<Fact>]
 let ``StreamRealtimePayloads should handle DownloadPending and retry`` () =
@@ -436,8 +463,13 @@ let ``StreamRealtimeAsync should yield error when Init fails`` () =
 
         match results.[0] with
         | Error(InteropError NotInitialized) -> ()
-        | Error other -> failwithf "Expected NotInitialized, got %A" other
-        | Ok _ -> failwith "Should yield init error"
+        | Error other ->
+            failwithf
+                "JvLinkServiceErrorTests: StreamRealtimeAsync should yield error when Init fails: Expected NotInitialized, got %A"
+                other
+        | Ok _ ->
+            failwith
+                "JvLinkServiceErrorTests: StreamRealtimeAsync should yield error when Init fails: Should yield init error"
     }
 
 [<Fact>]
@@ -461,8 +493,13 @@ let ``StreamRealtimeAsync should yield error when OpenRealtime fails`` () =
 
         match results.[0] with
         | Error(InteropError(InvalidInput _)) -> ()
-        | Error other -> failwithf "Expected InvalidInput, got %A" other
-        | Ok _ -> failwith "Should yield open error"
+        | Error other ->
+            failwithf
+                "JvLinkServiceErrorTests: StreamRealtimeAsync should yield error when OpenRealtime fails: Expected InvalidInput, got %A"
+                other
+        | Ok _ ->
+            failwith
+                "JvLinkServiceErrorTests: StreamRealtimeAsync should yield error when OpenRealtime fails: Should yield open error"
     }
 
 // NOTE: DownloadPending async test removed - it causes timeout due to Task.Delay in JvLinkService
@@ -501,6 +538,11 @@ let ``StreamRealtimeAsync should handle Read error`` () =
 
         match results.[1] with
         | Error(InteropError(CommunicationFailure(code, _))) -> Assert.Equal(-600, code)
-        | Error other -> failwithf "Expected CommunicationFailure, got %A" other
-        | Ok _ -> failwith "Second result should be error"
+        | Error other ->
+            failwithf
+                "JvLinkServiceErrorTests: StreamRealtimeAsync should handle Read error: Expected CommunicationFailure, got %A"
+                other
+        | Ok _ ->
+            failwith
+                "JvLinkServiceErrorTests: StreamRealtimeAsync should handle Read error: Second result should be error"
     }

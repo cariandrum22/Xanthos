@@ -156,7 +156,10 @@ module VotesContractTests =
             match Records.parse data |> value with
             | Records.Record.H1 r -> box r
             | Records.Record.H6 r -> box r
-            | other -> failwithf "%A" other
+            | other ->
+                failwithf
+                    "VotesContractTests: Every vote leaf and repeated combination matches the independent oracle: %A"
+                    other
 
         Assert.Equal(r, dispatched)
         Assert.Equal(expectedMappings, (mappings id).Length)
@@ -280,7 +283,9 @@ module VotesContractTests =
             else
                 match Records.parseH6 data with
                 | Error e -> e
-                | _ -> failwith "Accepted malformed entry"
+                | _ ->
+                    failwith
+                        "VotesContractTests: Malformed final vote entry reports its actual offset: Accepted malformed entry"
 
         Assert.Equal(id, error.RecordId)
         Assert.Equal(name, error.Field)

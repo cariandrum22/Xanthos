@@ -69,9 +69,9 @@ type ImageState =
     | Available
     | NoImage
 
-type ImageResult<'value> =
+type ImageResult<'T> =
     { State: ImageState
-      Value: 'value
+      Value: 'T
       ReturnCode: int }
 
 type CourseImage =

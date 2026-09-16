@@ -53,7 +53,8 @@ let ``TK and SE should share the same RaceKey format`` () =
         Assert.Equal(tkRecord.RaceKey, seRecord.RaceKey)
         Assert.Equal(raceKey, tkRecord.RaceKey)
         Assert.Equal(raceKey, seRecord.RaceKey)
-    | _ -> failwith "Both parsers should succeed"
+    | _ ->
+        failwith "RecordRelationshipTests: TK and SE should share the same RaceKey format: Both parsers should succeed"
 
 [<Fact>]
 let ``O1 and H1 should share the same RaceKey format`` () =
@@ -72,7 +73,8 @@ let ``O1 and H1 should share the same RaceKey format`` () =
         Assert.Equal(o1Record.RaceKey, h1Record.RaceKey)
         Assert.Equal(raceKey, o1Record.RaceKey)
         Assert.Equal(raceKey, h1Record.RaceKey)
-    | _ -> failwith "Both parsers should succeed"
+    | _ ->
+        failwith "RecordRelationshipTests: O1 and H1 should share the same RaceKey format: Both parsers should succeed"
 
 // ============================================================================
 // HorseId Consistency Tests
@@ -99,7 +101,8 @@ let ``TK and SE should share the same HorseId format`` () =
         Assert.Equal(tkRecord.HorseId, seRecord.HorseId)
         Assert.Equal(horseId, tkRecord.HorseId)
         Assert.Equal(horseId, seRecord.HorseId)
-    | _ -> failwith "Both parsers should succeed"
+    | _ ->
+        failwith "RecordRelationshipTests: TK and SE should share the same HorseId format: Both parsers should succeed"
 
 [<Fact>]
 let ``TK and UM should share the same HorseId format`` () =
@@ -121,7 +124,8 @@ let ``TK and UM should share the same HorseId format`` () =
         Assert.Equal(tkRecord.HorseId, umRecord.HorseId)
         Assert.Equal(horseId, tkRecord.HorseId)
         Assert.Equal(horseId, umRecord.HorseId)
-    | _ -> failwith "Both parsers should succeed"
+    | _ ->
+        failwith "RecordRelationshipTests: TK and UM should share the same HorseId format: Both parsers should succeed"
 
 // ============================================================================
 // Cross-Record Data Integrity Tests
@@ -148,7 +152,8 @@ let ``Multiple SE records can share the same RaceKey`` () =
         // Same race, different horses
         Assert.Equal(se1Record.RaceKey, se2Record.RaceKey)
         Assert.NotEqual<string>(se1Record.HorseId, se2Record.HorseId)
-    | _ -> failwith "Both parsers should succeed"
+    | _ ->
+        failwith "RecordRelationshipTests: Multiple SE records can share the same RaceKey: Both parsers should succeed"
 
 [<Fact>]
 let ``WF weight data should relate to SE horse data`` () =
@@ -168,7 +173,8 @@ let ``WF weight data should relate to SE horse data`` () =
     | Ok seRecord, Ok wfRecord ->
         // Both records should refer to the same race
         Assert.Equal(seRecord.RaceKey, wfRecord.RaceKey)
-    | _ -> failwith "Both parsers should succeed"
+    | _ ->
+        failwith "RecordRelationshipTests: WF weight data should relate to SE horse data: Both parsers should succeed"
 
 // ============================================================================
 // RaceKey Format Validation
@@ -186,12 +192,12 @@ let ``RaceKey should be 16 characters across all record types`` () =
         Array.Copy(encodeShiftJis raceKey, 0, data, 2, 16)
         data
 
-    let _ = TK.parse (testData "TK")
-    let _ = RA.parse (testData "RA")
-    let _ = SE.parse (testData "SE")
-    let _ = O1.parse (testData "O1")
-    let _ = H1.parse (testData "H1")
-    let _ = WF.parse (testData "WF")
+    TK.parse (testData "TK") |> ignore
+    RA.parse (testData "RA") |> ignore
+    SE.parse (testData "SE") |> ignore
+    O1.parse (testData "O1") |> ignore
+    H1.parse (testData "H1") |> ignore
+    WF.parse (testData "WF") |> ignore
 
     () // All should parse without exception
 

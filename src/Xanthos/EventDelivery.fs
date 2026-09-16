@@ -51,7 +51,7 @@ type internal EventDelivery(capacity: int, callback: JvEvent -> unit) =
         lock gate (fun () ->
             if not stopped && worker.IsNone then
                 let thread =
-                    new Thread(
+                    Thread(
                         ThreadStart(fun () ->
                             try
                                 for event in queue.GetConsumingEnumerable() do

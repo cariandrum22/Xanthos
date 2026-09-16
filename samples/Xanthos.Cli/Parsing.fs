@@ -60,26 +60,30 @@ module Parsing =
         with ex ->
             Error $"Failed to prepare save path '{path}': {ex.Message}"
 
-    let readGlobalOptions (tokens: string list) : Result<GlobalRawOptions * string list, string> =
-        let rec loop (raw: GlobalRawOptions) (tokens: string list) : Result<GlobalRawOptions * string list, string> =
-            match tokens with
-            | [] -> Ok(raw, [])
-            | "--sid" :: [] -> Error "Option '--sid' requires a value."
-            | "--sid" :: v :: rest -> loop { raw with Sid = Some v } rest
-            | "--service-key" :: [] -> Error "Option '--service-key' requires a value."
-            | "--service-key" :: v :: rest -> loop { raw with ServiceKey = Some v } rest
-            | "--save-path" :: [] -> Error "Option '--save-path' requires a value."
-            | "--save-path" :: v :: rest -> loop { raw with SavePath = Some v } rest
-            | "--stub" :: rest -> loop { raw with ForceStub = true } rest
-            | "--com" :: rest -> loop { raw with ForceCom = true } rest
-            | "--non-interactive" :: rest -> loop { raw with NonInteractive = true } rest
-            | "--diag" :: rest -> loop { raw with EnableDiagnostics = true } rest
-            | "--use-jvgets" :: rest -> loop { raw with UseJvGets = Some true } rest
-            | "--no-jvgets" :: rest -> loop { raw with UseJvGets = Some false } rest
-            | "--help" :: _ -> Ok({ raw with ShowHelp = true }, [])
-            | t :: _ when t.StartsWith "--" -> Error $"Unknown global option '{t}'."
-            | remaining -> Ok(raw, remaining)
+    [<TailCall>]
+    let rec private readGlobalArgs
+        (raw: GlobalRawOptions)
+        (tokens: string list)
+        : Result<GlobalRawOptions * string list, string> =
+        match tokens with
+        | [] -> Ok(raw, [])
+        | [ "--sid" ] -> Error "Option '--sid' requires a value."
+        | "--sid" :: v :: rest -> readGlobalArgs { raw with Sid = Some v } rest
+        | [ "--service-key" ] -> Error "Option '--service-key' requires a value."
+        | "--service-key" :: v :: rest -> readGlobalArgs { raw with ServiceKey = Some v } rest
+        | [ "--save-path" ] -> Error "Option '--save-path' requires a value."
+        | "--save-path" :: v :: rest -> readGlobalArgs { raw with SavePath = Some v } rest
+        | "--stub" :: rest -> readGlobalArgs { raw with ForceStub = true } rest
+        | "--com" :: rest -> readGlobalArgs { raw with ForceCom = true } rest
+        | "--non-interactive" :: rest -> readGlobalArgs { raw with NonInteractive = true } rest
+        | "--diag" :: rest -> readGlobalArgs { raw with EnableDiagnostics = true } rest
+        | "--use-jvgets" :: rest -> readGlobalArgs { raw with UseJvGets = Some true } rest
+        | "--no-jvgets" :: rest -> readGlobalArgs { raw with UseJvGets = Some false } rest
+        | "--help" :: _ -> Ok({ raw with ShowHelp = true }, [])
+        | t :: _ when t.StartsWith "--" -> Error $"Unknown global option '{t}'."
+        | remaining -> Ok(raw, remaining)
 
+    let readGlobalOptions (tokens: string list) : Result<GlobalRawOptions * string list, string> =
         let initialRaw: GlobalRawOptions =
             { Sid = None
               ServiceKey = None
@@ -91,7 +95,7 @@ module Parsing =
               ShowHelp = false
               UseJvGets = None }
 
-        loop initialRaw tokens
+        readGlobalArgs initialRaw tokens
 
     let buildGlobalSettings (raw: GlobalRawOptions) : Result<GlobalSettings, string> =
         result {
@@ -159,18 +163,19 @@ module Parsing =
           Output: string option
           MaxRecords: string option }
 
+    [<TailCall>]
     let rec parseDownloadArgs (state: DownloadRaw) (tokens: string list) : Result<DownloadRaw, string> =
         match tokens with
         | [] -> Ok state
-        | "--spec" :: [] -> Error "download: option '--spec' requires a value."
+        | [ "--spec" ] -> Error "download: option '--spec' requires a value."
         | "--spec" :: v :: rest -> parseDownloadArgs { state with Spec = Some v } rest
-        | "--from" :: [] -> Error "download: option '--from' requires a value."
+        | [ "--from" ] -> Error "download: option '--from' requires a value."
         | "--from" :: v :: rest -> parseDownloadArgs { state with From = Some v } rest
-        | "--option" :: [] -> Error "download: option '--option' requires a value."
+        | [ "--option" ] -> Error "download: option '--option' requires a value."
         | "--option" :: v :: rest -> parseDownloadArgs { state with OptionText = Some v } rest
-        | "--output" :: [] -> Error "download: option '--output' requires a value."
+        | [ "--output" ] -> Error "download: option '--output' requires a value."
         | "--output" :: v :: rest -> parseDownloadArgs { state with Output = Some v } rest
-        | "--max-records" :: [] -> Error "download: option '--max-records' requires a value."
+        | [ "--max-records" ] -> Error "download: option '--max-records' requires a value."
         | "--max-records" :: v :: rest -> parseDownloadArgs { state with MaxRecords = Some v } rest
         | u :: _ -> Error $"download: unknown option '{u}'."
 
@@ -219,12 +224,13 @@ module Parsing =
           Key: string option
           Continuous: bool }
 
+    [<TailCall>]
     let rec parseRealtimeArgs (state: RealtimeRaw) (tokens: string list) : Result<RealtimeRaw, string> =
         match tokens with
         | [] -> Ok state
-        | "--spec" :: [] -> Error "realtime: option '--spec' requires a value."
+        | [ "--spec" ] -> Error "realtime: option '--spec' requires a value."
         | "--spec" :: v :: rest -> parseRealtimeArgs { state with Spec = Some v } rest
-        | "--key" :: [] -> Error "realtime: option '--key' requires a value."
+        | [ "--key" ] -> Error "realtime: option '--key' requires a value."
         | "--key" :: v :: rest -> parseRealtimeArgs { state with Key = Some v } rest
         | "--continuous" :: rest -> parseRealtimeArgs { state with Continuous = true } rest
         | u :: _ -> Error $"realtime: unknown option '{u}'."
@@ -301,18 +307,19 @@ module Parsing =
         { DurationText: string option
           OpenAfter: bool }
 
-    let parseWatch (tokens: string list) : Result<Command, string> =
-        let rec loop (raw: WatchRaw) (tokens: string list) : Result<WatchRaw, string> =
-            match tokens with
-            | [] -> Ok raw
-            | "--duration" :: [] -> Error "watch-events: option '--duration' requires a value."
-            | "--duration" :: v :: rest -> loop { raw with DurationText = Some v } rest
-            | "--open-after" :: rest -> loop { raw with OpenAfter = true } rest
-            | u :: _ -> Error $"watch-events: unknown option '{u}'."
+    [<TailCall>]
+    let rec private parseWatchArgs (raw: WatchRaw) (tokens: string list) : Result<WatchRaw, string> =
+        match tokens with
+        | [] -> Ok raw
+        | [ "--duration" ] -> Error "watch-events: option '--duration' requires a value."
+        | "--duration" :: v :: rest -> parseWatchArgs { raw with DurationText = Some v } rest
+        | "--open-after" :: rest -> parseWatchArgs { raw with OpenAfter = true } rest
+        | u :: _ -> Error $"watch-events: unknown option '{u}'."
 
+    let parseWatch (tokens: string list) : Result<Command, string> =
         result {
             let! raw =
-                loop
+                parseWatchArgs
                     { DurationText = None
                       OpenAfter = false }
                     tokens
@@ -337,21 +344,22 @@ module Parsing =
           MaxRecords: string option
           UseJvGets: bool }
 
+    [<TailCall>]
     let rec parseCaptureFixturesArgs
         (state: CaptureFixturesRaw)
         (tokens: string list)
         : Result<CaptureFixturesRaw, string> =
         match tokens with
         | [] -> Ok state
-        | "--output" :: [] -> Error "capture-fixtures: option '--output' requires a value."
+        | [ "--output" ] -> Error "capture-fixtures: option '--output' requires a value."
         | "--output" :: v :: rest -> parseCaptureFixturesArgs { state with Output = Some v } rest
-        | "--specs" :: [] -> Error "capture-fixtures: option '--specs' requires a value."
+        | [ "--specs" ] -> Error "capture-fixtures: option '--specs' requires a value."
         | "--specs" :: v :: rest -> parseCaptureFixturesArgs { state with Specs = Some v } rest
-        | "--from" :: [] -> Error "capture-fixtures: option '--from' requires a value."
+        | [ "--from" ] -> Error "capture-fixtures: option '--from' requires a value."
         | "--from" :: v :: rest -> parseCaptureFixturesArgs { state with From = Some v } rest
-        | "--to" :: [] -> Error "capture-fixtures: option '--to' requires a value."
+        | [ "--to" ] -> Error "capture-fixtures: option '--to' requires a value."
         | "--to" :: v :: rest -> parseCaptureFixturesArgs { state with To = Some v } rest
-        | "--max-records" :: [] -> Error "capture-fixtures: option '--max-records' requires a value."
+        | [ "--max-records" ] -> Error "capture-fixtures: option '--max-records' requires a value."
         | "--max-records" :: v :: rest -> parseCaptureFixturesArgs { state with MaxRecords = Some v } rest
         | "--use-jvgets" :: rest -> parseCaptureFixturesArgs { state with UseJvGets = true } rest
         | "--no-jvgets" :: rest -> parseCaptureFixturesArgs { state with UseJvGets = false } rest

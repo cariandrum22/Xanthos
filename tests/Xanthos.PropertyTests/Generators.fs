@@ -13,7 +13,7 @@ let private trimmedStringGenWith invalidChars maxLength : Gen<string> =
         s
         |> Seq.filter (fun ch -> not (Char.IsControl ch) && not (List.contains ch invalidChars))
         |> Seq.toArray
-        |> fun chars -> new string (chars)
+        |> fun chars -> String(chars)
         |> fun value -> value.Trim [| ' '; '\t'; '\u00A0'; '\r'; '\n' |])
     |> Gen.filter (fun s -> not (String.IsNullOrWhiteSpace s))
     |> fun gen ->
@@ -169,17 +169,8 @@ let runnerOddsGen =
 let runnerOddsArb = Arb.fromGen runnerOddsGen
 
 let private uniqueRunnerIdsGen length =
-    let rec loop () =
-        gen {
-            let! ids = Gen.listOfLength length runnerIdGen
-
-            if (ids |> List.distinct |> List.length) = length then
-                return ids
-            else
-                return! loop ()
-        }
-
-    loop ()
+    Gen.listOfLength length runnerIdGen
+    |> Gen.filter (fun ids -> (ids |> List.distinct |> List.length) = length)
 
 let runnerOddsListGen =
     gen {

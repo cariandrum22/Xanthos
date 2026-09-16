@@ -61,7 +61,10 @@ module OfficialFoundationTests =
     let private value =
         function
         | Ok value -> value
-        | Error error -> failwithf "%A" error
+        | Error error ->
+            failwithf
+                "OfficialFoundationTests: O2 is quinella and O3 is wide without conflating their record origins: %A"
+                error
 
     let private oracle () =
         JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Contracts", "official-codes.json")))

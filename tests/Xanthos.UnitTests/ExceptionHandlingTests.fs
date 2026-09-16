@@ -58,7 +58,9 @@ let ``RA parser returns Error for empty RaceKey`` () =
     Array.Copy(encodeShiftJis "RA", 0, data, 0, 2)
 
     match RA.parse data with
-    | Ok _ -> failwith "Should return Error for empty required field RaceKey"
+    | Ok _ ->
+        failwith
+            "ExceptionHandlingTests: RA parser returns Error for empty RaceKey: Should return Error for empty required field RaceKey"
     | Error err -> Assert.Contains("RaceKey", sprintf "%A" err)
 
 [<Fact>]
@@ -78,7 +80,9 @@ let ``SE parser returns Error for empty RaceKey`` () =
     Array.Copy(encodeShiftJis "SE", 0, data, 0, 2)
 
     match SE.parse data with
-    | Ok _ -> failwith "Should return Error for empty required field RaceKey"
+    | Ok _ ->
+        failwith
+            "ExceptionHandlingTests: SE parser returns Error for empty RaceKey: Should return Error for empty required field RaceKey"
     | Error err -> Assert.Contains("RaceKey", sprintf "%A" err)
 
 [<Fact>]
@@ -89,7 +93,9 @@ let ``SE parser returns Error for empty HorseId`` () =
     // HorseId is all spaces
 
     match SE.parse data with
-    | Ok _ -> failwith "Should return Error for empty required field HorseId"
+    | Ok _ ->
+        failwith
+            "ExceptionHandlingTests: SE parser returns Error for empty HorseId: Should return Error for empty required field HorseId"
     | Error err -> Assert.Contains("HorseId", sprintf "%A" err)
 
 [<Fact>]
@@ -101,7 +107,9 @@ let ``SE parser returns Error for empty HorseName`` () =
     // HorseName at offset 28 is all spaces - should return Error
 
     match SE.parse data with
-    | Ok _ -> failwith "Should return Error for empty required field HorseName"
+    | Ok _ ->
+        failwith
+            "ExceptionHandlingTests: SE parser returns Error for empty HorseName: Should return Error for empty required field HorseName"
     | Error err -> Assert.Contains("HorseName", sprintf "%A" err)
 
 [<Fact>]
@@ -110,7 +118,9 @@ let ``O1 parser returns Error for empty RaceKey`` () =
     Array.Copy(encodeShiftJis "O1", 0, data, 0, 2)
 
     match O1.parse data with
-    | Ok _ -> failwith "Should return Error for empty required field RaceKey"
+    | Ok _ ->
+        failwith
+            "ExceptionHandlingTests: O1 parser returns Error for empty RaceKey: Should return Error for empty required field RaceKey"
     | Error err -> Assert.Contains("RaceKey", sprintf "%A" err)
 
 [<Fact>]
@@ -119,7 +129,9 @@ let ``H1 parser returns Error for empty RaceKey`` () =
     Array.Copy(encodeShiftJis "H1", 0, data, 0, 2)
 
     match H1.parse data with
-    | Ok _ -> failwith "Should return Error for empty required field RaceKey"
+    | Ok _ ->
+        failwith
+            "ExceptionHandlingTests: H1 parser returns Error for empty RaceKey: Should return Error for empty required field RaceKey"
     | Error err -> Assert.Contains("RaceKey", sprintf "%A" err)
 
 [<Fact>]
@@ -128,7 +140,9 @@ let ``WF parser returns Error for empty RaceKey`` () =
     Array.Copy(encodeShiftJis "WF", 0, data, 0, 2)
 
     match WF.parse data with
-    | Ok _ -> failwith "Should return Error for empty required field RaceKey"
+    | Ok _ ->
+        failwith
+            "ExceptionHandlingTests: WF parser returns Error for empty RaceKey: Should return Error for empty required field RaceKey"
     | Error err -> Assert.Contains("RaceKey", sprintf "%A" err)
 
 [<Fact>]
@@ -137,7 +151,9 @@ let ``UM parser returns Error for empty HorseId`` () =
     Array.Copy(encodeShiftJis "UM", 0, data, 0, 2)
 
     match UM.parse data with
-    | Ok _ -> failwith "Should return Error for empty required field HorseId"
+    | Ok _ ->
+        failwith
+            "ExceptionHandlingTests: UM parser returns Error for empty HorseId: Should return Error for empty required field HorseId"
     | Error err -> Assert.Contains("HorseId", sprintf "%A" err)
 
 [<Fact>]
@@ -147,7 +163,9 @@ let ``UM parser returns Error for empty HorseName`` () =
     Array.Copy(encodeShiftJis "2020105678", 0, data, 2, 10) // HorseId
 
     match UM.parse data with
-    | Ok _ -> failwith "Should return Error for empty required field HorseName"
+    | Ok _ ->
+        failwith
+            "ExceptionHandlingTests: UM parser returns Error for empty HorseName: Should return Error for empty required field HorseName"
     | Error err -> Assert.Contains("HorseName", sprintf "%A" err)
 
 // ============================================================================
@@ -169,7 +187,9 @@ let ``RA parser returns Error for null-filled data`` () =
     Array.Copy(encodeShiftJis "RA", 0, data, 0, 2)
 
     match RA.parse data with
-    | Ok _ -> failwith "Should return Error for null-filled data"
+    | Ok _ ->
+        failwith
+            "ExceptionHandlingTests: RA parser returns Error for null-filled data: Should return Error for null-filled data"
     | Error _ -> Assert.True(true)
 
 [<Fact>]
@@ -178,7 +198,9 @@ let ``SE parser returns Error for null-filled data`` () =
     Array.Copy(encodeShiftJis "SE", 0, data, 0, 2)
 
     match SE.parse data with
-    | Ok _ -> failwith "Should return Error for null-filled data"
+    | Ok _ ->
+        failwith
+            "ExceptionHandlingTests: SE parser returns Error for null-filled data: Should return Error for null-filled data"
     | Error _ -> Assert.True(true)
 
 // ============================================================================
@@ -204,7 +226,9 @@ let ``RA parser returns Error when only RaceKey provided`` () =
     // RaceName is empty - should return Error
 
     match RA.parse data with
-    | Ok _ -> failwith "Should return Error when required fields missing"
+    | Ok _ ->
+        failwith
+            "ExceptionHandlingTests: RA parser returns Error when only RaceKey provided: Should return Error when required fields missing"
     | Error err -> Assert.Contains("RaceName", sprintf "%A" err)
 
 [<Fact>]
@@ -215,7 +239,9 @@ let ``SE parser returns Error when only RaceKey provided`` () =
     // HorseId and HorseName are empty - should return Error
 
     match SE.parse data with
-    | Ok _ -> failwith "Should return Error when required fields missing"
+    | Ok _ ->
+        failwith
+            "ExceptionHandlingTests: SE parser returns Error when only RaceKey provided: Should return Error when required fields missing"
     | Error err -> Assert.Contains("HorseId", sprintf "%A" err)
 
 // ============================================================================
@@ -269,7 +295,10 @@ let ``SE parser returns None for all optional fields when empty`` () =
         Assert.Equal(None, record.RunningStyle)
         Assert.Equal(None, record.Time)
         Assert.Equal(None, record.TrainerName)
-    | Error err -> failwithf "Should parse successfully: %A" err
+    | Error err ->
+        failwithf
+            "ExceptionHandlingTests: SE parser returns None for all optional fields when empty: Should parse successfully: %A"
+            err
 
 [<Fact>]
 let ``O1 parser returns None for all optional fields when empty`` () =
@@ -283,4 +312,7 @@ let ``O1 parser returns None for all optional fields when empty`` () =
         Assert.Equal(None, record.Odds)
         Assert.Equal(None, record.Popularity)
         Assert.Equal(None, record.UpdateTime)
-    | Error err -> failwithf "Should parse successfully: %A" err
+    | Error err ->
+        failwithf
+            "ExceptionHandlingTests: O1 parser returns None for all optional fields when empty: Should parse successfully: %A"
+            err

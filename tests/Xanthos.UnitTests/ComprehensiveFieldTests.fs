@@ -251,7 +251,10 @@ let ``TK record validates all HairColorCode values`` () =
 
         match TK.parse data with
         | Ok record -> Assert.Equal(expected, record.HairColor)
-        | Error err -> failwithf "Should parse successfully: %A" err)
+        | Error err ->
+            failwithf
+                "ComprehensiveFieldTests: TK record validates all HairColorCode values: Should parse successfully: %A"
+                err)
 
 [<Fact>]
 let ``RA record validates all TrackSurfaceCode values`` () =
@@ -271,7 +274,10 @@ let ``RA record validates all TrackSurfaceCode values`` () =
 
         match RA.parse data with
         | Ok record -> Assert.Equal(expected, record.TrackSurface)
-        | Error err -> failwithf "Should parse successfully: %A" err)
+        | Error err ->
+            failwithf
+                "ComprehensiveFieldTests: RA record validates all TrackSurfaceCode values: Should parse successfully: %A"
+                err)
 
 [<Fact>]
 let ``RA record validates all TrackConditionCode values`` () =
@@ -313,7 +319,8 @@ let ``RA record validates all GradeCode values`` () =
 
         match RA.parse data with
         | Ok record -> Assert.Equal(expected, record.Grade)
-        | Error _ -> failwith "Should parse successfully")
+        | Error _ ->
+            failwith "ComprehensiveFieldTests: RA record validates all GradeCode values: Should parse successfully")
 
 // ============================================================================
 // Boundary Value Tests for All Field Types
@@ -337,7 +344,8 @@ let ``SE record handles boundary weight values`` () =
 
         match SE.parse data with
         | Ok record -> Assert.Equal(expected, record.Weight)
-        | Error _ -> failwith "Should parse successfully")
+        | Error _ ->
+            failwith "ComprehensiveFieldTests: SE record handles boundary weight values: Should parse successfully")
 
 [<Fact>]
 let ``O1 record handles boundary odds values`` () =
@@ -356,7 +364,8 @@ let ``O1 record handles boundary odds values`` () =
 
         match O1.parse data with
         | Ok record -> Assert.Equal(expected, record.Odds)
-        | Error _ -> failwith "Should parse successfully")
+        | Error _ ->
+            failwith "ComprehensiveFieldTests: O1 record handles boundary odds values: Should parse successfully")
 
 [<Fact>]
 let ``H1 record handles boundary payoff values`` () =
@@ -376,4 +385,5 @@ let ``H1 record handles boundary payoff values`` () =
 
         match H1.parse data with
         | Ok record -> Assert.Equal(expected, record.Payoff)
-        | Error _ -> failwith "Should parse successfully")
+        | Error _ ->
+            failwith "ComprehensiveFieldTests: H1 record handles boundary payoff values: Should parse successfully")

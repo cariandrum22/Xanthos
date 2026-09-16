@@ -8,7 +8,7 @@ open Xanthos
 open Xanthos.Cli.Types
 open Xanthos.Cli.Execution
 
-exception private CommandFailure of JvError
+exception private CommandFailureException of JvError
 
 /// Internal host boundary. Production has one COM factory and never falls back.
 type internal Dependencies =
@@ -46,11 +46,11 @@ type internal CommandRunner(dependencies: Dependencies) =
     let require =
         function
         | Ok value -> value
-        | Error error -> raise (CommandFailure error)
+        | Error error -> raise (CommandFailureException error)
 
     let invalid api message =
         raise (
-            CommandFailure
+            CommandFailureException
                 { Api = api
                   Code = None
                   Kind = JvErrorKind.InvalidInput
@@ -136,7 +136,7 @@ type internal CommandRunner(dependencies: Dependencies) =
                     printfn "EVIDENCE:VERSION=%s" (JvLink.getVersion session |> require)
                     action session
                 with
-                | CommandFailure e -> report e
+                | CommandFailureException e -> report e
                 | ex ->
                     exitCode <- 2
                     printfn "Command failed: %s" ex.Message
@@ -176,8 +176,7 @@ type internal CommandRunner(dependencies: Dependencies) =
                         // A malformed ID must not become a path component outside the capture directory.
                         RecordBytes.ascii "" "RecordId" 1 2 result.Data
                         |> Result.toOption
-                        |> Option.filter (fun id ->
-                            id.Length = 2 && id |> Seq.forall (fun c -> Char.IsAsciiLetterOrDigit c))
+                        |> Option.filter (fun id -> id.Length = 2 && id |> Seq.forall Char.IsAsciiLetterOrDigit)
                         |> Option.defaultValue "UNKNOWN"
 
                 count <- count + 1
@@ -362,10 +361,10 @@ type internal CommandRunner(dependencies: Dependencies) =
                 while not token.IsCancellationRequested
                       && (args.Duration |> Option.forall (fun span -> timer.Elapsed < span)) do
                     lock gate (fun () -> overflow)
-                    |> Option.iter (fun e -> raise (CommandFailure e))
+                    |> Option.iter (fun e -> raise (CommandFailureException e))
 
                     JvLink.subscriptionError subscription
-                    |> Option.iter (fun e -> raise (CommandFailure e))
+                    |> Option.iter (fun e -> raise (CommandFailureException e))
 
                     let mutable evt = Unchecked.defaultof<JvEvent>
 
@@ -396,7 +395,7 @@ type internal CommandRunner(dependencies: Dependencies) =
                     accepting <- false
                     overflow)
                 |> Option.orElseWith (fun () -> JvLink.subscriptionError subscription)
-                |> Option.iter (fun e -> raise (CommandFailure e))
+                |> Option.iter (fun e -> raise (CommandFailureException e))
             with _ ->
                 bodyFailed <- true
                 reraise ()

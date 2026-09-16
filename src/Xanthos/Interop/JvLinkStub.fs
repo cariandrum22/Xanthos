@@ -180,10 +180,7 @@ type JvLinkStub(responses: seq<Result<JvReadOutcome, ComError>>, ?totalSize: int
                 // Auto-initialise for permissive behaviour in tests
                 initialized <- true
 
-            if not openSession then
-                Ok completedPayloads
-            else
-                Ok completedPayloads
+            Ok completedPayloads
 
         /// <inheritdoc />
         member _.Skip() =

@@ -43,7 +43,7 @@ module Text =
              Encoding.GetEncoding(932))
 
     /// <summary>Strict UTF-8 encoding for fallback decoding.</summary>
-    let private utf8Strict = lazy (new UTF8Encoding(false, true))
+    let private utf8Strict = lazy (UTF8Encoding(false, true))
 
     /// <summary>Whether text caching is disabled via XANTHOS_DISABLE_TEXT_CACHE environment variable.</summary>
     let private cacheDisabled =

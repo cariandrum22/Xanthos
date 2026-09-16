@@ -4,7 +4,7 @@ open System
 open Xanthos
 
 /// Interpreted values retain their exact fixed-width source representation.
-type Sourced<'value> = { Raw: string; Value: 'value }
+type Sourced<'T> = { Raw: string; Value: 'T }
 
 /// Select from the requested dataspec, not the record creation date.
 [<RequireQualifiedAccess>]

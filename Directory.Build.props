@@ -1,6 +1,7 @@
 <Project>
   <PropertyGroup>
     <VersionPrefix>0.3.1</VersionPrefix>
+    <WarningsAsErrors>$(WarningsAsErrors);FS3569</WarningsAsErrors>
 
     <!-- Enable cross-compilation of Windows targets on non-Windows systems -->
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
