@@ -1,0 +1,32 @@
+name: Release verification
+description: Record release evidence and remaining native SDK limitations.
+title: 'Release verification: v'
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Identify the candidate version, commit and verification scope.
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Record Windows/JV-Link/.NET versions and architecture, CI links and counts, actual COM outcomes, accepted limitations and publication evidence. Keep deferred checks explicitly unverified and private captures local.
+      placeholder: |
+        Environment and candidate:
+        Required Fast/Coverage profiles on Linux, macOS and Windows:
+        SDK-free WindowsManaged and managed Stress evidence:
+        Actual COM verification (see CONTRIBUTING.md and tests/Xanthos.ComTests/README.md):
+        Deferred checks and accepted SDK limitations:
+        Package/version and publication verification:
+    validations:
+      required: true
+  - type: textarea
+    id: expected-outcome
+    attributes:
+      label: Expected outcome
+      description: State release acceptance criteria, blockers and the publication decision. Update with release/package links when verified.
+    validations:
+      required: true

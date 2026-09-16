@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-09-16
+
+### Added
+
+- Add structured issue forms, a pull request template and automatic contribution metadata validation.
+- Add a managed line coverage badge from verified Linux Coverage suites, with source commit/run provenance and automatic generated-file refreshes on develop.
+
+### Fixed
+
+- Decode documented CP932 aliases in official record text, including roman numerals in BT lineage descriptions, while preserving original bytes and rejecting malformed sequences on all supported platforms.
+- Build parser and text test fixtures directly with the CP932 provider so isolated and coverage runs do not depend on other tests registering code pages first.
+- Make repeated watch-event subscription tests wait for acknowledged delivery before unsubscribing, and verify that disposed subscribers receive no later events.
+
 ## [0.3.0] - 2026-09-14
 
 ### Added
@@ -126,7 +139,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Error catalog generated from JV-Link specifications
 - API documentation with fsdocs
 
-[Unreleased]: https://github.com/cariandrum22/Xanthos/compare/v0.3.0...develop
+[Unreleased]: https://github.com/cariandrum22/Xanthos/compare/v0.3.1...develop
+[0.3.1]: https://github.com/cariandrum22/Xanthos/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/cariandrum22/Xanthos/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/cariandrum22/Xanthos/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/cariandrum22/Xanthos/releases/tag/v0.1.0

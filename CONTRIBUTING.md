@@ -240,32 +240,60 @@ pwsh scripts/run-test-profile.ps1 -Profile Coverage -RunId local-coverage-01
 4. Update CHANGELOG.md (if applicable)
 5. For COM-related changes: Run manual COM verification on Windows
 
-### PR Template
+### Titles and Descriptions
 
-```markdown
-## Summary
+Use a Conventional Commit title, such as `fix(records): decode CP932 aliases`.
+Release PRs use `release: vX.Y.Z`. Supported types are the commit types above,
+plus `revert` and `release`; breaking changes may include `!`.
 
-Brief description of changes
+The [PR template](.github/pull_request_template.md) requires these headings in order:
 
-## Type of Change
+- `## Summary`: the concrete problem and resulting behavior.
+- `## Changes`: implementation, compatibility and documentation changes.
+- `## Validation`: commands and outcomes, CI links, and remaining gaps. Explain
+  tests that were not run; keep actual COM results separate from managed/Stub tests.
+- `## Related issues`: closing or related references, or `None` for standalone work.
 
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Breaking change
-- [ ] Documentation
+Fill every section; template comments and placeholders do not count. Preserve
+unchecked tasks until verified. Additional subsections are welcome. These rules
+also apply to PRs created or edited through `gh` or the API.
 
-## Testing
+### Issues
 
-- [ ] Added/updated unit tests
-- [ ] Added/updated E2E tests
-- [ ] Existing tests pass
+Choose a [bug, enhancement, question or release verification form](.github/ISSUE_TEMPLATE).
+Use a descriptive title and complete `### Summary`, `### Details` and
+`### Expected outcome`, in that order. Include reproduction/environment details
+for bugs and acceptance criteria for proposed work. Do not publish service keys,
+licensed records or private machine logs; use synthetic examples and public links.
 
-## Checklist
+When reorganizing historical descriptions, preserve technical content, links,
+recorded outcomes and unfinished checks. A merged PR is not evidence that an
+unrecorded test passed. Leave comments, reviews and discussion history intact.
 
-- [ ] Code is formatted
-- [ ] Documentation updated
-- [ ] CHANGELOG.md updated
+### Format Checks
+
+The `Contribution format` workflow validates PR titles and issue/PR descriptions
+on creation, edits and reopening, and rechecks PRs when commits change. It reads
+event JSON as data with a read-only token; it does not post comments or edit issues.
+Issue events use a separate `Issue format` check so their results do not replace
+the PR's `Contribution format` result. Superseded runs for the same item are canceled.
+Issue forms require GUI input, while workflow failures report invalid CLI/API
+submissions after creation. Templates and issue-event automation take effect when
+merged into the default branch (`develop`). To enforce the PR check at merge time,
+maintainers can require `Contribution format` in the branch ruleset.
+
+Run the dependency-free checker locally with Python 3.10 or newer (optional for
+library development; CI uses the Python supplied by its Ubuntu runner):
+
+```bash
+python3 -m unittest discover -s scripts -p test_contribution_format.py -v
+python3 scripts/contribution_format.py --kind pull_request --title 'fix: describe the change' --body-file pr.md
+python3 scripts/contribution_format.py --kind issue --title 'Describe the problem' --body-file issue.md
 ```
+
+On Windows, use your installed Python command, such as `py -3`, in place of
+`python3`. Exit codes are 0 for valid metadata, 1 for format violations, and 2 for
+invalid command arguments or unreadable input.
 
 ### Merge Strategy
 
@@ -361,32 +389,12 @@ preparation into `develop`, then merge `develop` into `main` before tagging.
 
 ### Release Verification Evidence
 
-For each release, create a GitHub Issue or Gist with:
-
-```markdown
-# Release Verification - v{VERSION}
-
-## Environment
-- Windows: {version}
-- JV-Link: {version}
-- .NET: {version}
-
-## CI Status
-- [ ] All workflows passing
-
-## Manual COM Verification
-- [ ] CLI E2E (COM mode): {pass/fail}
-- [ ] Fixture capture: {file count} files
-- [ ] JVGets mode: {pass/fail}
-
-## Notes
-{Any issues or observations}
-
-Verified by: {name}
-Date: {date}
-```
-
-Link the verification evidence in the release notes.
+For each release, use the [release verification form](.github/ISSUE_TEMPLATE/release-verification.yml).
+Identify the version and source commit, environment, required profile results,
+actual COM results, deferred checks and accepted SDK limitations. Use the current
+[COM test guide](tests/Xanthos.ComTests/README.md) for native verification.
+Record publication/package checks when completed and link this evidence from
+the release notes. Keep unperformed verification explicitly pending.
 
 ## Questions & Support
 

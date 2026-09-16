@@ -1,0 +1,25 @@
+name: Question
+description: Ask about supported behavior or how to use Xanthos.
+labels: [question]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: State the question briefly.
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Explain what you tried, relevant versions and documentation consulted. Omit service keys and licensed records.
+    validations:
+      required: true
+  - type: textarea
+    id: expected-outcome
+    attributes:
+      label: Expected outcome
+      description: Describe the clarification or example you need.
+    validations:
+      required: true

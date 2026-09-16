@@ -1,6 +1,7 @@
 # Xanthos
 
 [![CI][badge-ci]][link-ci]
+[![Managed line coverage][badge-coverage]][link-coverage]
 [![NuGet][badge-nuget]][link-nuget]
 [![.NET][badge-dotnet]][link-dotnet]
 [![License: MIT][badge-license]][link-license]
@@ -365,6 +366,15 @@ MIT License - see [LICENSE](https://github.com/cariandrum22/Xanthos/blob/develop
 
 ## Contributing
 
+The coverage badge reports the union of production source lines exercised by the
+Linux UnitTests, PropertyTests and FunctionalScenarioTests Coverage suites. A line
+is counted once and is covered when any suite executes it; percentages are not
+averaged. This is portable managed coverage, not evidence of native COM execution.
+The linked JSON records the measured commit and CI run. After all required checks
+pass on a develop push, CI refreshes only the generated badge files if that source
+commit is still the branch tip. These bot commits do not rerun CI. Main receives
+the recorded snapshot through the normal release PR; CI never writes to main.
+
 Contributions are welcome. Please:
 
 1. Fork & clone.
@@ -373,11 +383,13 @@ Contributions are welcome. Please:
 4. Ensure all tests pass in stub mode.
 
 [badge-ci]: https://github.com/cariandrum22/Xanthos/actions/workflows/ci.yml/badge.svg
+[badge-coverage]: .github/badges/coverage.svg
 [badge-dotnet]: https://img.shields.io/badge/.NET-10.0-512BD4
 [badge-license]: https://img.shields.io/badge/License-MIT-yellow.svg
 [badge-nuget]: https://img.shields.io/nuget/v/Xanthos.svg
 [dotnet-10-downloads]: https://dotnet.microsoft.com/download/dotnet/10.0
 [link-ci]: https://github.com/cariandrum22/Xanthos/actions/workflows/ci.yml
+[link-coverage]: .github/badges/coverage.json
 [link-dotnet]: https://dotnet.microsoft.com/
 [link-license]: https://opensource.org/licenses/MIT
 [link-nuget]: https://www.nuget.org/packages/Xanthos
