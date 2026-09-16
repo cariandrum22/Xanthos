@@ -101,6 +101,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7.0.1
 
+      - name: Test release metadata checks
+        run: python3 -m unittest discover -s scripts -p test_release_notes.py -v
+
+      - name: Check release note format
+        run: python3 scripts/release_notes.py --check-all
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v6.0.0
         with:

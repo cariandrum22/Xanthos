@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Update CI, release, managed verification and documentation workflows to stable GitHub Actions that use Node.js 24.
+- Publish reviewed release notes in a consistent format and require a GitHub-verified signed tag pointing to the exact source commit before NuGet publication.
 
 ### Fixed
 
