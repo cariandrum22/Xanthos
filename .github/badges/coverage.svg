@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="170" height="20" role="img" aria-label="managed lines: 89.9% (7307/8132)">
-  <title>managed lines: 89.9% (7307/8132)</title><desc>Xanthos; source 97b766ae7b03233ee4f4b6127b9c43bbc3161a03; https://github.com/cariandrum22/Xanthos/actions/runs/35046144769; excludes native COM execution.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="170" height="20" role="img" aria-label="managed lines: 89.9% (7313/8132)">
+  <title>managed lines: 89.9% (7313/8132)</title><desc>Xanthos; source 9628909fe71d9b2efe209f93000fb9c9ea712b4f; https://github.com/cariandrum22/Xanthos/actions/runs/35049488927; excludes native COM execution.</desc>
   <linearGradient id="s" x2="0" y2="100%"><stop offset="0" stop-color="#bbb" stop-opacity=".1"/><stop offset="1" stop-opacity=".1"/></linearGradient>
   <clipPath id="r"><rect width="170" height="20" rx="3"/></clipPath>
   <g clip-path="url(#r)"><path fill="#555" d="M0 0h110v20H0z"/><path fill="#4c1" d="M110 0h60v20h-60z"/><path fill="url(#s)" d="M0 0h170v20H0z"/></g>

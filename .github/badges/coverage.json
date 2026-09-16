@@ -1,9 +1,9 @@
 {
   "assembly": "Xanthos",
-  "commit": "97b766ae7b03233ee4f4b6127b9c43bbc3161a03",
-  "runUrl": "https://github.com/cariandrum22/Xanthos/actions/runs/35046144769",
+  "commit": "9628909fe71d9b2efe209f93000fb9c9ea712b4f",
+  "runUrl": "https://github.com/cariandrum22/Xanthos/actions/runs/35049488927",
   "reports": 3,
-  "coveredLines": 7307,
+  "coveredLines": 7313,
   "totalLines": 8132,
   "percentage": "89.9",
   "scope": "Portable managed line union; native COM execution excluded.",
