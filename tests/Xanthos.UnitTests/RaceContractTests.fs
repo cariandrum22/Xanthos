@@ -150,7 +150,10 @@ module RaceContractTests =
         let parsed =
             match Records.parse data |> value with
             | Records.Record.RA r -> r
-            | other -> failwithf "%A" other
+            | other ->
+                failwithf
+                    "RaceContractTests: Every RA leaf and repeated element matches the independent spreadsheet: %A"
+                    other
 
         Assert.Equal(record, parsed)
         Assert.Equal(61, mappings.Length)

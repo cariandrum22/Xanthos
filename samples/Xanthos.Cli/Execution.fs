@@ -158,7 +158,7 @@ let runVersion ctx =
 
 let runDownload ctx args =
     withService ctx (fun service ->
-        let _ = printEvidence ctx service
+        printEvidence ctx service |> ignore
 
         // When --max-records is set, use StreamPayloads (lazy seq) so that JV-Link
         // stops reading after N records instead of fetching all 1000+ files first.
@@ -217,7 +217,7 @@ let runDownload ctx args =
 
 let runRealtime ctx args =
     withService ctx (fun service ->
-        let _ = printEvidence ctx service
+        printEvidence ctx service |> ignore
 
         if args.Continuous then
             write ctx "Starting continuous realtime streaming for %s (key=%s)..." args.Spec args.Key
@@ -313,7 +313,7 @@ let runRealtime ctx args =
 
 let runSetSaveFlag ctx value =
     withService ctx (fun service ->
-        let _ = printEvidence ctx service
+        printEvidence ctx service |> ignore
 
         match service.SetSaveDownloadsEnabled value with
         | Ok() ->
@@ -331,7 +331,7 @@ let runGetSaveFlag ctx =
 
 let runSetSavePath ctx path =
     withService ctx (fun service ->
-        let _ = printEvidence ctx service
+        printEvidence ctx service |> ignore
 
         match service.SetSavePath path with
         | Ok() ->
@@ -349,7 +349,7 @@ let runGetSavePath ctx =
 
 let runSetServiceKey ctx key =
     withService ctx (fun service ->
-        let _ = printEvidence ctx service
+        printEvidence ctx service |> ignore
 
         match service.SetServiceKey key with
         | Ok() ->
@@ -374,7 +374,7 @@ let runGetServiceKey ctx =
 
 let runSetPayoffDialog ctx value =
     withService ctx (fun service ->
-        let _ = printEvidence ctx service
+        printEvidence ctx service |> ignore
 
         match service.SetPayoffDialogSuppressed value with
         | Ok() ->
@@ -392,7 +392,7 @@ let runGetPayoffDialog ctx =
 
 let runSetParentHwnd ctx hwnd =
     withService ctx (fun service ->
-        let _ = printEvidence ctx service
+        printEvidence ctx service |> ignore
 
         match service.SetParentWindowHandle hwnd with
         | Ok() ->
@@ -410,7 +410,7 @@ let runGetParentHwnd ctx =
 
 let runCourseFile ctx key =
     withService ctx (fun service ->
-        let _ = printEvidence ctx service
+        printEvidence ctx service |> ignore
 
         match service.GetCourseDiagram key with
         | Ok diagram ->
@@ -423,7 +423,7 @@ let runCourseFile ctx key =
 
 let runCourseFile2 ctx (args: CourseFile2Args) =
     withService ctx (fun service ->
-        let _ = printEvidence ctx service
+        printEvidence ctx service |> ignore
 
         match service.GetCourseDiagramBasic(args.Key, args.OutputPath) with
         | Ok diagram ->
@@ -433,7 +433,7 @@ let runCourseFile2 ctx (args: CourseFile2Args) =
 
 let runSilksFile ctx args =
     withService ctx (fun service ->
-        let _ = printEvidence ctx service
+        printEvidence ctx service |> ignore
 
         match service.GenerateSilksFile(args.Pattern, args.OutputPath) with
         | Ok silks ->
@@ -444,7 +444,7 @@ let runSilksFile ctx args =
 
 let runSilksBinary ctx pattern =
     withService ctx (fun service ->
-        let _ = printEvidence ctx service
+        printEvidence ctx service |> ignore
 
         match service.GetSilksBinary pattern with
         | Ok silks ->
@@ -455,7 +455,7 @@ let runSilksBinary ctx pattern =
 
 let runMovieCheck ctx key =
     withService ctx (fun service ->
-        let _ = printEvidence ctx service
+        printEvidence ctx service |> ignore
 
         match service.CheckMovieAvailability key with
         | Ok availability ->
@@ -465,7 +465,7 @@ let runMovieCheck ctx key =
 
 let runMovieCheckWithType ctx args =
     withService ctx (fun service ->
-        let _ = printEvidence ctx service
+        printEvidence ctx service |> ignore
 
         let movieType = MovieType.fromCode args.MovieTypeCode
 
@@ -477,7 +477,7 @@ let runMovieCheckWithType ctx args =
 
 let runMoviePlay ctx key =
     withService ctx (fun service ->
-        let _ = printEvidence ctx service
+        printEvidence ctx service |> ignore
 
         match service.PlayMovie key with
         | Ok() ->
@@ -487,7 +487,7 @@ let runMoviePlay ctx key =
 
 let runMoviePlayWithType ctx args =
     withService ctx (fun service ->
-        let _ = printEvidence ctx service
+        printEvidence ctx service |> ignore
 
         let movieType = MovieType.fromCode args.MovieTypeCode
 
@@ -499,7 +499,7 @@ let runMoviePlayWithType ctx args =
 
 let runMovieOpen ctx args =
     withService ctx (fun service ->
-        let _ = printEvidence ctx service
+        printEvidence ctx service |> ignore
 
         let movieType = MovieType.fromCode args.MovieOpenType
 
@@ -516,7 +516,7 @@ let runMovieOpen ctx args =
 
 let runStatus ctx =
     withService ctx (fun service ->
-        let _ = printEvidence ctx service
+        printEvidence ctx service |> ignore
 
         match service.GetStatus() with
         | Ok count ->
@@ -526,7 +526,7 @@ let runStatus ctx =
 
 let runSkip ctx =
     withService ctx (fun service ->
-        let _ = printEvidence ctx service
+        printEvidence ctx service |> ignore
 
         match service.SkipCurrentFile() with
         | Ok() ->
@@ -536,7 +536,7 @@ let runSkip ctx =
 
 let runCancel ctx =
     withService ctx (fun service ->
-        let _ = printEvidence ctx service
+        printEvidence ctx service |> ignore
 
         match service.CancelDownload() with
         | Ok() ->
@@ -546,7 +546,7 @@ let runCancel ctx =
 
 let runDeleteFile ctx name =
     withService ctx (fun service ->
-        let _ = printEvidence ctx service
+        printEvidence ctx service |> ignore
 
         match service.DeleteFile name with
         | Ok() ->
@@ -556,7 +556,7 @@ let runDeleteFile ctx name =
 
 let runTotalReadSize ctx =
     withService ctx (fun service ->
-        let _ = printEvidence ctx service
+        printEvidence ctx service |> ignore
 
         match service.GetTotalReadFileSizeBytes() with
         | Ok size ->
@@ -566,7 +566,7 @@ let runTotalReadSize ctx =
 
 let runCurrentReadSize ctx =
     withService ctx (fun service ->
-        let _ = printEvidence ctx service
+        printEvidence ctx service |> ignore
 
         match service.GetCurrentReadFileSize() with
         | Ok size ->
@@ -576,7 +576,7 @@ let runCurrentReadSize ctx =
 
 let runCurrentFileTimestamp ctx =
     withService ctx (fun service ->
-        let _ = printEvidence ctx service
+        printEvidence ctx service |> ignore
 
         match service.GetCurrentFileTimestamp() with
         | Ok timestamp ->
@@ -618,7 +618,7 @@ let private fetchRealtimeWithSeparateSession (ctx: ExecutionContext) (req: Watch
 
 let runWatchEvents ctx args =
     withService ctx (fun watchService ->
-        let _ = printEvidence ctx watchService
+        printEvidence ctx watchService |> ignore
 
         match watchService.StartWatchEvents() with
         | Ok() ->
@@ -662,7 +662,7 @@ let runWatchEvents ctx args =
 
 let runSetUiProperties ctx =
     withService ctx (fun service ->
-        let _ = printEvidence ctx service
+        printEvidence ctx service |> ignore
 
         match service.ShowConfigurationDialog() with
         | Ok() ->
@@ -747,7 +747,7 @@ let runCaptureFixtures ctx args =
         | Ok service ->
 
             use service = service
-            let _ = printEvidence ctx service
+            printEvidence ctx service |> ignore
             write ctx "Starting fixture capture..."
             write ctx "Output directory: %s" args.FixturesOutputDir
             write ctx "Specs: %s" (String.concat ", " args.Specs)
@@ -943,7 +943,7 @@ let runCaptureFixtures ctx args =
             write ctx "--------------------"
 
             for (category, types) in categoryMap do
-                let capturedInCategory = types |> List.filter (fun t -> capturedSet.Contains t)
+                let capturedInCategory = types |> List.filter capturedSet.Contains
                 let pct = float capturedInCategory.Length / float types.Length * 100.0
 
                 let status =

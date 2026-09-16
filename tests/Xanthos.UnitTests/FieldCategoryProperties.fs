@@ -13,22 +13,29 @@ open Xanthos.Data
 /// of the examples executed below. These are field-type representatives; the
 /// spreadsheet contract tests separately verify every mapped field position.
 module internal FieldCategories =
-    let rec leaves (t: Type) =
+    let leaves (root: Type) =
         seq {
-            if t.IsArray then
-                if t <> typeof<byte[]> then
-                    yield! leaves (t.GetElementType())
-            elif t.IsGenericType && t.GetGenericTypeDefinition() = typedefof<Sourced<_>> then
-                yield (t.GetGenericArguments()[0]).ToString()
-            elif t = typeof<string> then
-                yield "string"
-            elif t = typeof<OfficialCode> then
-                yield "OfficialCode"
-            elif FSharpType.IsRecord t then
-                for field in FSharpType.GetRecordFields t do
-                    yield! leaves field.PropertyType
-            else
-                yield t.ToString()
+            let pending = Collections.Generic.Stack<Type>()
+            pending.Push root
+
+            while pending.Count > 0 do
+                let t = pending.Pop()
+
+                if t.IsArray then
+                    if t <> typeof<byte[]> then
+                        pending.Push(t.GetElementType())
+                elif t.IsGenericType && t.GetGenericTypeDefinition() = typedefof<Sourced<_>> then
+                    yield (t.GetGenericArguments()[0]).ToString()
+                elif t = typeof<string> then
+                    yield "string"
+                elif t = typeof<OfficialCode> then
+                    yield "OfficialCode"
+                elif FSharpType.IsRecord t then
+                    // Reverse the push order to preserve the record's declaration order.
+                    for field in FSharpType.GetRecordFields t |> Array.rev do
+                        pending.Push field.PropertyType
+                else
+                    yield t.ToString()
         }
 
     let reader (raw: string) =
@@ -81,7 +88,7 @@ module internal FieldCategories =
             hit category
 
         let invalid category operation =
-            Assert.Throws<ReadFailure>(Action operation) |> ignore
+            Assert.Throws<ReadFailureException>(Action operation) |> ignore
             hit category
 
         let samples id path values = samples id path values hit

@@ -556,7 +556,7 @@ let ``MovieType isWorkoutType for CustomMovieType depends on code prefix`` () =
 
     let nonWorkoutResult =
         nonWorkoutCodes
-        |> List.forall (fun code -> not (MovieType.isWorkoutType (CustomMovieType code)))
+        |> List.forall (CustomMovieType >> MovieType.isWorkoutType >> not)
 
     workoutResult && nonWorkoutResult
 

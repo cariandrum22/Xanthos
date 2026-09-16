@@ -37,8 +37,11 @@ let ``extractBytes returns error when offset plus length exceeds data`` () =
     | Error(RecordTooShort(expected, actual)) ->
         Assert.Equal(8, expected)
         Assert.Equal(5, actual)
-    | Ok _ -> failwith "Should have returned error"
-    | Error _ -> failwith "Wrong error type"
+    | Ok _ ->
+        failwith
+            "EdgeCaseTests: extractBytes returns error when offset plus length exceeds data: Should have returned error"
+    | Error _ ->
+        failwith "EdgeCaseTests: extractBytes returns error when offset plus length exceeds data: Wrong error type"
 
 [<Fact>]
 let ``parseInt returns None for empty string`` () =
@@ -132,7 +135,7 @@ let ``TK parser returns error when record is too short`` () =
     match TK.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
     | Ok _ -> failwith "Should have returned error for short record"
-    | Error _ -> failwith "Wrong error type"
+    | Error _ -> failwith "EdgeCaseTests: TK parser returns error when record is too short: Wrong error type"
 
 [<Fact>]
 let ``RA parser returns error when record is too short`` () =
@@ -141,8 +144,8 @@ let ``RA parser returns error when record is too short`` () =
 
     match RA.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
-    | Ok _ -> failwith "Should have returned error"
-    | Error _ -> failwith "Wrong error type"
+    | Ok _ -> failwith "EdgeCaseTests: RA parser returns error when record is too short: Should have returned error"
+    | Error _ -> failwith "EdgeCaseTests: RA parser returns error when record is too short: Wrong error type"
 
 [<Fact>]
 let ``SE parser returns error when record is too short`` () =
@@ -151,8 +154,8 @@ let ``SE parser returns error when record is too short`` () =
 
     match SE.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
-    | Ok _ -> failwith "Should have returned error"
-    | Error _ -> failwith "Wrong error type"
+    | Ok _ -> failwith "EdgeCaseTests: SE parser returns error when record is too short: Should have returned error"
+    | Error _ -> failwith "EdgeCaseTests: SE parser returns error when record is too short: Wrong error type"
 
 [<Fact>]
 let ``HR parser returns error when record is too short`` () =
@@ -161,8 +164,8 @@ let ``HR parser returns error when record is too short`` () =
 
     match HR.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
-    | Ok _ -> failwith "Should have returned error"
-    | Error _ -> failwith "Wrong error type"
+    | Ok _ -> failwith "EdgeCaseTests: HR parser returns error when record is too short: Should have returned error"
+    | Error _ -> failwith "EdgeCaseTests: HR parser returns error when record is too short: Wrong error type"
 
 [<Fact>]
 let ``O1 parser returns error when record is too short`` () =
@@ -171,8 +174,8 @@ let ``O1 parser returns error when record is too short`` () =
 
     match O1.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
-    | Ok _ -> failwith "Should have returned error"
-    | Error _ -> failwith "Wrong error type"
+    | Ok _ -> failwith "EdgeCaseTests: O1 parser returns error when record is too short: Should have returned error"
+    | Error _ -> failwith "EdgeCaseTests: O1 parser returns error when record is too short: Wrong error type"
 
 [<Fact>]
 let ``H1 parser returns error when record is too short`` () =
@@ -181,8 +184,8 @@ let ``H1 parser returns error when record is too short`` () =
 
     match H1.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
-    | Ok _ -> failwith "Should have returned error"
-    | Error _ -> failwith "Wrong error type"
+    | Ok _ -> failwith "EdgeCaseTests: H1 parser returns error when record is too short: Should have returned error"
+    | Error _ -> failwith "EdgeCaseTests: H1 parser returns error when record is too short: Wrong error type"
 
 [<Fact>]
 let ``WF parser returns error when record is too short`` () =
@@ -191,8 +194,8 @@ let ``WF parser returns error when record is too short`` () =
 
     match WF.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
-    | Ok _ -> failwith "Should have returned error"
-    | Error _ -> failwith "Wrong error type"
+    | Ok _ -> failwith "EdgeCaseTests: WF parser returns error when record is too short: Should have returned error"
+    | Error _ -> failwith "EdgeCaseTests: WF parser returns error when record is too short: Wrong error type"
 
 [<Fact>]
 let ``UM parser returns error when record is too short`` () =
@@ -201,8 +204,8 @@ let ``UM parser returns error when record is too short`` () =
 
     match UM.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
-    | Ok _ -> failwith "Should have returned error"
-    | Error _ -> failwith "Wrong error type"
+    | Ok _ -> failwith "EdgeCaseTests: UM parser returns error when record is too short: Should have returned error"
+    | Error _ -> failwith "EdgeCaseTests: UM parser returns error when record is too short: Wrong error type"
 
 // ============================================================================
 // Record Parser Error Handling Tests - Invalid Code Values
@@ -256,7 +259,10 @@ let ``UM parser handles invalid hair color code gracefully`` () =
     | Ok record ->
         Assert.Equal(horseId, record.HorseId)
         Assert.Equal(None, record.HairColor) // Should be None for invalid code
-    | Error err -> failwithf "Should parse successfully with None for invalid code: %A" err
+    | Error err ->
+        failwithf
+            "EdgeCaseTests: UM parser handles invalid hair color code gracefully: Should parse successfully with None for invalid code: %A"
+            err
 
 // ============================================================================
 // Record Parser Error Handling Tests - Boundary Values
@@ -348,7 +354,10 @@ let ``RA parser handles empty optional fields`` () =
         Assert.Equal("2024050512345678", record.RaceKey)
         Assert.Equal(None, record.Distance)
         Assert.Equal(None, record.Grade)
-    | Error err -> failwithf "Should parse with empty optional fields: %A" err
+    | Error err ->
+        failwithf
+            "EdgeCaseTests: RA parser handles empty optional fields: Should parse with empty optional fields: %A"
+            err
 
 [<Fact>]
 let ``SE parser handles all optional fields as None`` () =
@@ -377,8 +386,8 @@ let ``O2 parser returns error when record is too short`` () =
 
     match Xanthos.Legacy.Records.O2.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
-    | Ok _ -> failwith "Should have returned error"
-    | Error _ -> failwith "Wrong error type"
+    | Ok _ -> failwith "EdgeCaseTests: O2 parser returns error when record is too short: Should have returned error"
+    | Error _ -> failwith "EdgeCaseTests: O2 parser returns error when record is too short: Wrong error type"
 
 [<Fact>]
 let ``O3 parser returns error when record is too short`` () =
@@ -387,8 +396,8 @@ let ``O3 parser returns error when record is too short`` () =
 
     match Xanthos.Legacy.Records.O3.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
-    | Ok _ -> failwith "Should have returned error"
-    | Error _ -> failwith "Wrong error type"
+    | Ok _ -> failwith "EdgeCaseTests: O3 parser returns error when record is too short: Should have returned error"
+    | Error _ -> failwith "EdgeCaseTests: O3 parser returns error when record is too short: Wrong error type"
 
 [<Fact>]
 let ``O4 parser returns error when record is too short`` () =
@@ -397,8 +406,8 @@ let ``O4 parser returns error when record is too short`` () =
 
     match Xanthos.Legacy.Records.O4.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
-    | Ok _ -> failwith "Should have returned error"
-    | Error _ -> failwith "Wrong error type"
+    | Ok _ -> failwith "EdgeCaseTests: O4 parser returns error when record is too short: Should have returned error"
+    | Error _ -> failwith "EdgeCaseTests: O4 parser returns error when record is too short: Wrong error type"
 
 [<Fact>]
 let ``O5 parser returns error when record is too short`` () =
@@ -407,8 +416,8 @@ let ``O5 parser returns error when record is too short`` () =
 
     match Xanthos.Legacy.Records.O5.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
-    | Ok _ -> failwith "Should have returned error"
-    | Error _ -> failwith "Wrong error type"
+    | Ok _ -> failwith "EdgeCaseTests: O5 parser returns error when record is too short: Should have returned error"
+    | Error _ -> failwith "EdgeCaseTests: O5 parser returns error when record is too short: Wrong error type"
 
 [<Fact>]
 let ``O6 parser returns error when record is too short`` () =
@@ -417,8 +426,8 @@ let ``O6 parser returns error when record is too short`` () =
 
     match Xanthos.Legacy.Records.O6.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
-    | Ok _ -> failwith "Should have returned error"
-    | Error _ -> failwith "Wrong error type"
+    | Ok _ -> failwith "EdgeCaseTests: O6 parser returns error when record is too short: Should have returned error"
+    | Error _ -> failwith "EdgeCaseTests: O6 parser returns error when record is too short: Wrong error type"
 
 // ============================================================================
 // Additional Record Parser Error Handling Tests - Payoff Data (H5, H6)
@@ -431,8 +440,8 @@ let ``H5 parser returns error when record is too short`` () =
 
     match Xanthos.Legacy.Records.H5.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
-    | Ok _ -> failwith "Should have returned error"
-    | Error _ -> failwith "Wrong error type"
+    | Ok _ -> failwith "EdgeCaseTests: H5 parser returns error when record is too short: Should have returned error"
+    | Error _ -> failwith "EdgeCaseTests: H5 parser returns error when record is too short: Wrong error type"
 
 [<Fact>]
 let ``H6 parser returns error when record is too short`` () =
@@ -441,8 +450,8 @@ let ``H6 parser returns error when record is too short`` () =
 
     match Xanthos.Legacy.Records.H6.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
-    | Ok _ -> failwith "Should have returned error"
-    | Error _ -> failwith "Wrong error type"
+    | Ok _ -> failwith "EdgeCaseTests: H6 parser returns error when record is too short: Should have returned error"
+    | Error _ -> failwith "EdgeCaseTests: H6 parser returns error when record is too short: Wrong error type"
 
 // ============================================================================
 // Additional Record Parser Error Handling Tests - Real-time Updates
@@ -455,8 +464,8 @@ let ``JC parser returns error when record is too short`` () =
 
     match Xanthos.Legacy.Records.JC.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
-    | Ok _ -> failwith "Should have returned error"
-    | Error _ -> failwith "Wrong error type"
+    | Ok _ -> failwith "EdgeCaseTests: JC parser returns error when record is too short: Should have returned error"
+    | Error _ -> failwith "EdgeCaseTests: JC parser returns error when record is too short: Wrong error type"
 
 [<Fact>]
 let ``TC parser returns error when record is too short`` () =
@@ -465,8 +474,8 @@ let ``TC parser returns error when record is too short`` () =
 
     match Xanthos.Legacy.Records.TC.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
-    | Ok _ -> failwith "Should have returned error"
-    | Error _ -> failwith "Wrong error type"
+    | Ok _ -> failwith "EdgeCaseTests: TC parser returns error when record is too short: Should have returned error"
+    | Error _ -> failwith "EdgeCaseTests: TC parser returns error when record is too short: Wrong error type"
 
 [<Fact>]
 let ``CC parser returns error when record is too short`` () =
@@ -475,8 +484,8 @@ let ``CC parser returns error when record is too short`` () =
 
     match Xanthos.Legacy.Records.CC.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
-    | Ok _ -> failwith "Should have returned error"
-    | Error _ -> failwith "Wrong error type"
+    | Ok _ -> failwith "EdgeCaseTests: CC parser returns error when record is too short: Should have returned error"
+    | Error _ -> failwith "EdgeCaseTests: CC parser returns error when record is too short: Wrong error type"
 
 [<Fact>]
 let ``WE parser returns error when record is too short`` () =
@@ -485,8 +494,8 @@ let ``WE parser returns error when record is too short`` () =
 
     match Xanthos.Legacy.Records.WE.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
-    | Ok _ -> failwith "Should have returned error"
-    | Error _ -> failwith "Wrong error type"
+    | Ok _ -> failwith "EdgeCaseTests: WE parser returns error when record is too short: Should have returned error"
+    | Error _ -> failwith "EdgeCaseTests: WE parser returns error when record is too short: Wrong error type"
 
 [<Fact>]
 let ``AV parser returns error when record is too short`` () =
@@ -495,8 +504,8 @@ let ``AV parser returns error when record is too short`` () =
 
     match Xanthos.Legacy.Records.AV.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
-    | Ok _ -> failwith "Should have returned error"
-    | Error _ -> failwith "Wrong error type"
+    | Ok _ -> failwith "EdgeCaseTests: AV parser returns error when record is too short: Should have returned error"
+    | Error _ -> failwith "EdgeCaseTests: AV parser returns error when record is too short: Wrong error type"
 
 // ============================================================================
 // Additional Record Parser Error Handling Tests - Master Data
@@ -509,8 +518,8 @@ let ``KS parser returns error when record is too short`` () =
 
     match Xanthos.Legacy.Records.KS.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
-    | Ok _ -> failwith "Should have returned error"
-    | Error _ -> failwith "Wrong error type"
+    | Ok _ -> failwith "EdgeCaseTests: KS parser returns error when record is too short: Should have returned error"
+    | Error _ -> failwith "EdgeCaseTests: KS parser returns error when record is too short: Wrong error type"
 
 [<Fact>]
 let ``CH parser returns error when record is too short`` () =
@@ -519,8 +528,8 @@ let ``CH parser returns error when record is too short`` () =
 
     match Xanthos.Legacy.Records.CH.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
-    | Ok _ -> failwith "Should have returned error"
-    | Error _ -> failwith "Wrong error type"
+    | Ok _ -> failwith "EdgeCaseTests: CH parser returns error when record is too short: Should have returned error"
+    | Error _ -> failwith "EdgeCaseTests: CH parser returns error when record is too short: Wrong error type"
 
 [<Fact>]
 let ``BR parser returns error when record is too short`` () =
@@ -529,8 +538,8 @@ let ``BR parser returns error when record is too short`` () =
 
     match Xanthos.Legacy.Records.BR.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
-    | Ok _ -> failwith "Should have returned error"
-    | Error _ -> failwith "Wrong error type"
+    | Ok _ -> failwith "EdgeCaseTests: BR parser returns error when record is too short: Should have returned error"
+    | Error _ -> failwith "EdgeCaseTests: BR parser returns error when record is too short: Wrong error type"
 
 [<Fact>]
 let ``BN parser returns error when record is too short`` () =
@@ -539,8 +548,8 @@ let ``BN parser returns error when record is too short`` () =
 
     match Xanthos.Legacy.Records.BN.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
-    | Ok _ -> failwith "Should have returned error"
-    | Error _ -> failwith "Wrong error type"
+    | Ok _ -> failwith "EdgeCaseTests: BN parser returns error when record is too short: Should have returned error"
+    | Error _ -> failwith "EdgeCaseTests: BN parser returns error when record is too short: Wrong error type"
 
 [<Fact>]
 let ``RC parser returns error when record is too short`` () =
@@ -549,8 +558,8 @@ let ``RC parser returns error when record is too short`` () =
 
     match Xanthos.Legacy.Records.RC.parse data with
     | Error(ValidationError msg) -> Assert.Contains("too short", msg)
-    | Ok _ -> failwith "Should have returned error"
-    | Error _ -> failwith "Wrong error type"
+    | Ok _ -> failwith "EdgeCaseTests: RC parser returns error when record is too short: Should have returned error"
+    | Error _ -> failwith "EdgeCaseTests: RC parser returns error when record is too short: Wrong error type"
 
 // ============================================================================
 // Additional Boundary Value Tests - Odds Parsers
@@ -570,7 +579,7 @@ let ``O2 parser handles maximum place odds value`` () =
     | Ok record ->
         Assert.Equal(Some 999.9M, record.OddsMin)
         Assert.Equal(Some 999.9M, record.OddsMax)
-    | Error _ -> failwith "Should handle maximum odds"
+    | Error _ -> failwith "EdgeCaseTests: O2 parser handles maximum place odds value: Should handle maximum odds"
 
 [<Fact>]
 let ``O4 parser handles zero odds value`` () =
@@ -608,7 +617,10 @@ let ``KS parser handles empty optional fields`` () =
         Assert.Equal(None, record.BelongsTo)
         Assert.Equal(None, record.InitialYear)
         Assert.Equal(None, record.BirthDate)
-    | Error err -> failwithf "Should parse with empty optional fields: %A" err
+    | Error err ->
+        failwithf
+            "EdgeCaseTests: KS parser handles empty optional fields: Should parse with empty optional fields: %A"
+            err
 
 [<Fact>]
 let ``CH parser handles empty optional fields`` () =
@@ -628,7 +640,10 @@ let ``CH parser handles empty optional fields`` () =
         Assert.Equal(None, record.BelongsTo)
         Assert.Equal(None, record.InitialYear)
         Assert.Equal(None, record.BirthDate)
-    | Error err -> failwithf "Should parse with empty optional fields: %A" err
+    | Error err ->
+        failwithf
+            "EdgeCaseTests: CH parser handles empty optional fields: Should parse with empty optional fields: %A"
+            err
 
 // ============================================================================
 // Branch Coverage Improvement Tests - Option Field Variations
@@ -649,7 +664,10 @@ let ``RC parser handles empty optional fields returning None`` () =
         Assert.Equal(None, record.RaceCondition)
         Assert.Equal(None, record.Distance) // Empty int should be None
         Assert.Equal(None, record.TrackSurface)
-    | Error err -> failwithf "Should parse with empty optional fields: %A" err
+    | Error err ->
+        failwithf
+            "EdgeCaseTests: RC parser handles empty optional fields returning None: Should parse with empty optional fields: %A"
+            err
 
 [<Fact>]
 let ``RC parser handles all optional fields with valid values`` () =
@@ -703,7 +721,10 @@ let ``BR parser handles empty optional fields returning None`` () =
         Assert.Equal(None, record.BirthYear)
         Assert.Equal(None, record.FatherName) // Empty text should be None
         Assert.Equal(None, record.MotherName)
-    | Error err -> failwithf "Should parse with empty optional fields: %A" err
+    | Error err ->
+        failwithf
+            "EdgeCaseTests: BR parser handles empty optional fields returning None: Should parse with empty optional fields: %A"
+            err
 
 [<Fact>]
 let ``BR parser handles all optional fields with valid values`` () =
@@ -725,7 +746,10 @@ let ``BR parser handles all optional fields with valid values`` () =
         Assert.True(record.FatherName.IsSome)
         Assert.True(record.MotherName.IsSome)
         Assert.True(record.MotherFatherName.IsSome)
-    | Error err -> failwithf "Should parse with all fields: %A" err
+    | Error err ->
+        failwithf
+            "EdgeCaseTests: BR parser handles all optional fields with valid values: Should parse with all fields: %A"
+            err
 
 [<Fact>]
 let ``BN parser handles empty optional fields returning None`` () =
@@ -741,7 +765,10 @@ let ``BN parser handles empty optional fields returning None`` () =
         Assert.Equal(None, record.Sex)
         Assert.Equal(None, record.HairColor)
         Assert.Equal(None, record.BirthYear)
-    | Error err -> failwithf "Should parse with empty optional fields: %A" err
+    | Error err ->
+        failwithf
+            "EdgeCaseTests: BN parser handles empty optional fields returning None: Should parse with empty optional fields: %A"
+            err
 
 [<Fact>]
 let ``BN parser handles all optional fields with valid values`` () =
@@ -760,7 +787,10 @@ let ``BN parser handles all optional fields with valid values`` () =
         Assert.Equal(Some SexCode.Female, record.Sex)
         Assert.Equal(Some HairColorCode.DarkBay, record.HairColor)
         Assert.Equal(Some 2018, record.BirthYear)
-    | Error err -> failwithf "Should parse with all fields: %A" err
+    | Error err ->
+        failwithf
+            "EdgeCaseTests: BN parser handles all optional fields with valid values: Should parse with all fields: %A"
+            err
 
 [<Fact>]
 let ``AV parser handles empty optional fields`` () =
@@ -775,7 +805,10 @@ let ``AV parser handles empty optional fields`` () =
         Assert.Equal(None, record.OldTrackCondition)
         Assert.Equal(None, record.NewTrackCondition)
         Assert.Equal(None, record.UpdateTime)
-    | Error err -> failwithf "Should parse with empty optional fields: %A" err
+    | Error err ->
+        failwithf
+            "EdgeCaseTests: AV parser handles empty optional fields: Should parse with empty optional fields: %A"
+            err
 
 [<Fact>]
 let ``AV parser handles all fields with valid values`` () =
@@ -792,7 +825,8 @@ let ``AV parser handles all fields with valid values`` () =
         Assert.Equal(Some TrackConditionCode.Good, record.OldTrackCondition)
         Assert.Equal(Some TrackConditionCode.Yielding, record.NewTrackCondition)
         Assert.True(record.UpdateTime.IsSome)
-    | Error err -> failwithf "Should parse with all fields: %A" err
+    | Error err ->
+        failwithf "EdgeCaseTests: AV parser handles all fields with valid values: Should parse with all fields: %A" err
 
 [<Fact>]
 let ``WE parser handles empty optional fields`` () =
@@ -807,7 +841,10 @@ let ``WE parser handles empty optional fields`` () =
         Assert.Equal(None, record.OldWeather)
         Assert.Equal(None, record.NewWeather)
         Assert.Equal(None, record.UpdateTime)
-    | Error err -> failwithf "Should parse with empty optional fields: %A" err
+    | Error err ->
+        failwithf
+            "EdgeCaseTests: WE parser handles empty optional fields: Should parse with empty optional fields: %A"
+            err
 
 [<Fact>]
 let ``WE parser handles all fields with valid values`` () =
@@ -824,7 +861,8 @@ let ``WE parser handles all fields with valid values`` () =
         Assert.True(record.OldWeather.IsSome)
         Assert.True(record.NewWeather.IsSome)
         Assert.True(record.UpdateTime.IsSome)
-    | Error err -> failwithf "Should parse with all fields: %A" err
+    | Error err ->
+        failwithf "EdgeCaseTests: WE parser handles all fields with valid values: Should parse with all fields: %A" err
 
 [<Fact>]
 let ``TC parser handles empty optional fields`` () =
@@ -838,7 +876,10 @@ let ``TC parser handles empty optional fields`` () =
         Assert.Equal("2024050512345678", record.RaceKey)
         Assert.Equal(None, record.HorseNumber)
         Assert.Equal(None, record.TrainingType)
-    | Error err -> failwithf "Should parse with empty optional fields: %A" err
+    | Error err ->
+        failwithf
+            "EdgeCaseTests: TC parser handles empty optional fields: Should parse with empty optional fields: %A"
+            err
 
 [<Fact>]
 let ``JC parser handles empty optional fields`` () =
@@ -852,7 +893,10 @@ let ``JC parser handles empty optional fields`` () =
         Assert.Equal("2024050512345678", record.RaceKey)
         Assert.Equal(None, record.HorseNumber)
         Assert.Equal(None, record.OldJockeyName)
-    | Error err -> failwithf "Should parse with empty optional fields: %A" err
+    | Error err ->
+        failwithf
+            "EdgeCaseTests: JC parser handles empty optional fields: Should parse with empty optional fields: %A"
+            err
 
 [<Fact>]
 let ``CC parser handles empty optional fields`` () =
@@ -866,7 +910,10 @@ let ``CC parser handles empty optional fields`` () =
         Assert.Equal("2024050512345678", record.RaceKey)
         Assert.Equal(None, record.OldTrackSurface)
         Assert.Equal(None, record.OldDistance)
-    | Error err -> failwithf "Should parse with empty optional fields: %A" err
+    | Error err ->
+        failwithf
+            "EdgeCaseTests: CC parser handles empty optional fields: Should parse with empty optional fields: %A"
+            err
 
 // ============================================================================
 // Odds Record Branch Coverage Tests
@@ -900,7 +947,7 @@ let ``O3 parser handles empty odds fields`` () =
     | Ok record ->
         Assert.Equal("2024050512345678", record.RaceKey)
         Assert.Equal(None, record.Odds)
-    | Error err -> failwithf "Should parse with empty odds: %A" err
+    | Error err -> failwithf "EdgeCaseTests: O3 parser handles empty odds fields: Should parse with empty odds: %A" err
 
 [<Fact>]
 let ``O4 parser handles empty odds fields`` () =
@@ -915,7 +962,7 @@ let ``O4 parser handles empty odds fields`` () =
     | Ok record ->
         Assert.Equal("2024050512345678", record.RaceKey)
         Assert.Equal(None, record.Odds)
-    | Error err -> failwithf "Should parse with empty odds: %A" err
+    | Error err -> failwithf "EdgeCaseTests: O4 parser handles empty odds fields: Should parse with empty odds: %A" err
 
 [<Fact>]
 let ``O5 parser handles empty odds fields`` () =
@@ -931,7 +978,7 @@ let ``O5 parser handles empty odds fields`` () =
         Assert.Equal("2024050512345678", record.RaceKey)
         Assert.Equal(None, record.OddsMin)
         Assert.Equal(None, record.OddsMax)
-    | Error err -> failwithf "Should parse with empty odds: %A" err
+    | Error err -> failwithf "EdgeCaseTests: O5 parser handles empty odds fields: Should parse with empty odds: %A" err
 
 [<Fact>]
 let ``O6 parser handles empty odds fields`` () =
@@ -945,7 +992,7 @@ let ``O6 parser handles empty odds fields`` () =
     | Ok record ->
         Assert.Equal("2024050512345678", record.RaceKey)
         Assert.Equal(None, record.Popularity)
-    | Error err -> failwithf "Should parse with empty odds: %A" err
+    | Error err -> failwithf "EdgeCaseTests: O6 parser handles empty odds fields: Should parse with empty odds: %A" err
 
 [<Fact>]
 let ``H5 parser handles empty optional fields`` () =
@@ -973,7 +1020,8 @@ let ``H6 parser handles empty optional fields`` () =
         Assert.Equal("2024050512345678", record.RaceKey)
         Assert.Equal(None, record.Payoff)
         Assert.Equal(None, record.Popularity)
-    | Error err -> failwithf "Should parse with empty fields: %A" err
+    | Error err ->
+        failwithf "EdgeCaseTests: H6 parser handles empty optional fields: Should parse with empty fields: %A" err
 
 [<Fact>]
 let ``HR parser handles empty optional fields`` () =
@@ -987,7 +1035,8 @@ let ``HR parser handles empty optional fields`` () =
         Assert.Equal("2024050512345678", record.RaceKey)
         Assert.Equal(None, record.BetType)
         Assert.Equal(None, record.Payoff)
-    | Error err -> failwithf "Should parse with empty fields: %A" err
+    | Error err ->
+        failwithf "EdgeCaseTests: HR parser handles empty optional fields: Should parse with empty fields: %A" err
 
 [<Fact>]
 let ``HR parser handles all optional fields with values`` () =
@@ -1004,4 +1053,7 @@ let ``HR parser handles all optional fields with values`` () =
         Assert.Equal(Some 1, record.BetType)
         Assert.Equal(Some 5, record.HorseNumber1)
         Assert.Equal(Some 12345, record.Payoff)
-    | Error err -> failwithf "Should parse with all fields: %A" err
+    | Error err ->
+        failwithf
+            "EdgeCaseTests: HR parser handles all optional fields with values: Should parse with all fields: %A"
+            err

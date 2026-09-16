@@ -24,7 +24,12 @@ module ScenarioTests =
         let output = ResizeArray<string>()
 
         let deps =
-            Host.dependencies (fun () -> failwith "Unexpected COM connection") output.Add CancellationToken.None
+            Host.dependencies
+                (fun () ->
+                    failwith
+                        "ScenarioTests: Injected writer captures configuration errors before connecting: Unexpected COM connection")
+                output.Add
+                CancellationToken.None
 
         let code =
             Xanthos.Cli.Program.runWith deps [| "--com"; "--sid"; "invalid sid"; "version" |]

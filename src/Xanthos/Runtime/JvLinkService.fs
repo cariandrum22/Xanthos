@@ -106,7 +106,7 @@ type JvLinkService
     /// Uses Wait(0) for immediate (non-blocking) acquisition attempt.
     /// If the semaphore cannot be acquired immediately, another operation is in progress
     /// and we return an error rather than blocking.
-    let guardOperation (operationName: string) (f: unit -> Result<'a, XanthosError>) : Result<'a, XanthosError> =
+    let guardOperation (operationName: string) (f: unit -> Result<'T, XanthosError>) : Result<'T, XanthosError> =
         if not (operationLock.Wait(0)) then
             logger.Warn(
                 $"Rejecting {operationName} - another operation is already in progress. "
@@ -130,8 +130,8 @@ type JvLinkService
     /// If the lock cannot be acquired immediately, yields an error and terminates.
     let guardOperationSeq
         (operationName: string)
-        (f: unit -> seq<Result<'a, XanthosError>>)
-        : seq<Result<'a, XanthosError>> =
+        (f: unit -> seq<Result<'T, XanthosError>>)
+        : seq<Result<'T, XanthosError>> =
         seq {
             if not (operationLock.Wait(0)) then
                 logger.Warn(
@@ -193,6 +193,87 @@ type JvLinkService
     let mutable poisoned = false
     let mutable poisonReason: string option = None
 
+    [<TailCall>]
+    let rec executeComAttempt policy name (call: unit -> Result<'T, ComError>) attemptNo totalDelayMs =
+        let work () =
+            try
+                call ()
+            with ex ->
+                logger.Error($"JV-Link call {name} threw {ex.GetType().Name}: {ex.Message}")
+                Error(Unexpected ex.Message)
+
+        let task: Task<Result<'T, ComError>> =
+            match comDispatcher with
+            | Some dispatcher -> dispatcher.InvokeAsync(name, work)
+            | None -> Task.Run<Result<'T, ComError>>(fun () -> work ())
+
+        let mayWaitForUser =
+            comDispatcher.IsSome
+            && List.contains name [ "JVOpen"; "JVRTOpen"; "JVSetUIProperties"; "JVMVPlay"; "JVMVPlayWithType" ]
+
+        let completedTask =
+            if mayWaitForUser then
+                // SDK dialogs are completed by the user, including refusal.
+                // A timer cannot safely cancel an in-progress native COM call.
+                task :> Task
+            else
+                Task.WhenAny(task, Task.Delay(policy.Timeout)).Result
+
+        if obj.ReferenceEquals(completedTask, task) then
+            let result =
+                try
+                    task.Result
+                with ex ->
+                    logger.Error($"JV-Link call {name} result retrieval failed: {ex.GetType().Name} {ex.Message}")
+
+                    Error(Unexpected ex.Message)
+
+            match result with
+            | Ok value -> Ok value
+            | Error(CommunicationFailure(code, message) as err) when attemptNo < policy.MaxRetries ->
+                logger.Warn(
+                    $"JV-Link call {name} failed with code {code}: {message}. Retrying ({attemptNo + 2}/{policy.MaxRetries + 1})."
+                )
+
+                let delay = policy.Backoff attemptNo
+                scheduler.Sleep delay
+                executeComAttempt policy name call (attemptNo + 1) (totalDelayMs + int delay.TotalMilliseconds)
+            | Error err ->
+                if attemptNo > 0 then
+                    logger.Error(
+                        $"JV-Link call {name} failed after {attemptNo + 1} attempt(s), cumulative retry delay={totalDelayMs} ms. Last error={describeError (InteropError err)}"
+                    )
+
+                Error err
+        else
+            // CRITICAL: The original COM call is still running on the STA thread.
+            // All COM calls (including Cancel/Close) go through the same STA dispatcher
+            // via Dispatcher.Invoke. If the original call is truly hung, any subsequent
+            // calls will queue behind it and never execute.
+            //
+            // There is NO way to recover a hung STA thread without terminating it,
+            // which would leave COM resources in an undefined state.
+            //
+            // The ONLY safe recovery is to dispose the entire JvLinkService/client
+            // and create a new instance.
+            let reason =
+                $"JV-Link call {name} timed out after {policy.Timeout.TotalMilliseconds} ms"
+
+            poisoned <- true
+            poisonReason <- Some reason
+
+            logger.Error(
+                $"{reason}. The STA thread is blocked. This JvLinkService instance is now unusable - "
+                + "dispose it and create a new instance to recover."
+            )
+
+            Error(
+                CommunicationFailure(
+                    -999,
+                    $"Timeout after {int policy.Timeout.TotalMilliseconds} ms - service must be recreated"
+                )
+            )
+
     /// Executes a COM call with timeout and retry control.
     /// Dispatches to STA thread if the COM client provides a dispatcher; otherwise runs via Task.Run (for stubs).
     /// Returns immediately with an error if the service is poisoned.
@@ -207,7 +288,7 @@ type JvLinkService
     /// mid-execution. UI-capable calls wait for the user's decision without a timeout. Other calls
     /// may time out and poison the service; this does not abort the native call. Check cancellation between COM calls
     /// rather than expecting cancellation to interrupt an in-progress COM operation.
-    let executeCom policy name (call: unit -> Result<'a, ComError>) : Result<'a, ComError> =
+    let executeCom policy name (call: unit -> Result<'T, ComError>) : Result<'T, ComError> =
         // Fail fast if poisoned
         if poisoned then
             let reason = defaultArg poisonReason "unknown"
@@ -215,94 +296,12 @@ type JvLinkService
             Error(CommunicationFailure(-999, $"Service is poisoned - {reason}"))
         else
 
-            let rec loop attemptNo totalDelayMs =
-                let work () =
-                    try
-                        call ()
-                    with ex ->
-                        logger.Error($"JV-Link call {name} threw {ex.GetType().Name}: {ex.Message}")
-                        Error(Unexpected ex.Message)
+            executeComAttempt policy name call 0 0
 
-                let task: Task<Result<'a, ComError>> =
-                    match comDispatcher with
-                    | Some dispatcher -> dispatcher.InvokeAsync(name, work)
-                    | None -> Task.Run<Result<'a, ComError>>(fun () -> work ())
-
-                let mayWaitForUser =
-                    comDispatcher.IsSome
-                    && List.contains name [ "JVOpen"; "JVRTOpen"; "JVSetUIProperties"; "JVMVPlay"; "JVMVPlayWithType" ]
-
-                let completedTask =
-                    if mayWaitForUser then
-                        // SDK dialogs are completed by the user, including refusal.
-                        // A timer cannot safely cancel an in-progress native COM call.
-                        task :> Task
-                    else
-                        Task.WhenAny(task, Task.Delay(policy.Timeout)).Result
-
-                if obj.ReferenceEquals(completedTask, task) then
-                    let result =
-                        try
-                            task.Result
-                        with ex ->
-                            logger.Error(
-                                $"JV-Link call {name} result retrieval failed: {ex.GetType().Name} {ex.Message}"
-                            )
-
-                            Error(Unexpected ex.Message)
-
-                    match result with
-                    | Ok value -> Ok value
-                    | Error(CommunicationFailure(code, message) as err) when attemptNo < policy.MaxRetries ->
-                        logger.Warn(
-                            $"JV-Link call {name} failed with code {code}: {message}. Retrying ({attemptNo + 2}/{policy.MaxRetries + 1})."
-                        )
-
-                        let delay = policy.Backoff attemptNo
-                        scheduler.Sleep delay
-                        loop (attemptNo + 1) (totalDelayMs + int delay.TotalMilliseconds)
-                    | Error err ->
-                        if attemptNo > 0 then
-                            logger.Error(
-                                $"JV-Link call {name} failed after {attemptNo + 1} attempt(s), cumulative retry delay={totalDelayMs} ms. Last error={describeError (InteropError err)}"
-                            )
-
-                        Error err
-                else
-                    // CRITICAL: The original COM call is still running on the STA thread.
-                    // All COM calls (including Cancel/Close) go through the same STA dispatcher
-                    // via Dispatcher.Invoke. If the original call is truly hung, any subsequent
-                    // calls will queue behind it and never execute.
-                    //
-                    // There is NO way to recover a hung STA thread without terminating it,
-                    // which would leave COM resources in an undefined state.
-                    //
-                    // The ONLY safe recovery is to dispose the entire JvLinkService/client
-                    // and create a new instance.
-                    let reason =
-                        $"JV-Link call {name} timed out after {policy.Timeout.TotalMilliseconds} ms"
-
-                    poisoned <- true
-                    poisonReason <- Some reason
-
-                    logger.Error(
-                        $"{reason}. The STA thread is blocked. This JvLinkService instance is now unusable - "
-                        + "dispose it and create a new instance to recover."
-                    )
-
-                    Error(
-                        CommunicationFailure(
-                            -999,
-                            $"Timeout after {int policy.Timeout.TotalMilliseconds} ms - service must be recreated"
-                        )
-                    )
-
-            loop 0 0
-
-    let runCom name (call: unit -> Result<'a, ComError>) : Result<'a, XanthosError> =
+    let runCom name (call: unit -> Result<'T, ComError>) : Result<'T, XanthosError> =
         executeCom defaultRetryPolicy name call |> Errors.mapComError
 
-    let runComAsync name (call: unit -> Result<'a, ComError>) : Task<Result<'a, XanthosError>> =
+    let runComAsync name (call: unit -> Result<'T, ComError>) : Task<Result<'T, XanthosError>> =
         Task.FromResult(runCom name call)
 
     /// Closes the JV-Link session safely.
@@ -415,14 +414,16 @@ type JvLinkService
     let readRetryBackoff attempt =
         TimeSpan.FromMilliseconds(500. * float (attempt + 1))
 
-    let rec readAll (token: CancellationToken) acc (count: int64) =
-        /// Attempts to read with retries for recoverable errors.
-        let rec tryRead retryAttempt =
-            token.ThrowIfCancellationRequested()
+    /// Attempts to read with bounded retries for recoverable errors.
+    let tryRead (token: CancellationToken) =
+        token.ThrowIfCancellationRequested()
+        let mutable outcome = readWithTimeout ()
+        let mutable retryAttempt = 0
+        let mutable retrying = true
 
-            match readWithTimeout () with
+        while retrying do
+            match outcome with
             | Error err when isRecoverableReadError err && retryAttempt < readRetryMax ->
-                // Retry with backoff for recoverable errors
                 let delay = readRetryBackoff retryAttempt
 
                 logger.Warn(
@@ -430,10 +431,16 @@ type JvLinkService
                 )
 
                 scheduler.SleepWithCancellation(delay, token)
-                tryRead (retryAttempt + 1)
-            | other -> other
+                token.ThrowIfCancellationRequested()
+                retryAttempt <- retryAttempt + 1
+                outcome <- readWithTimeout ()
+            | _ -> retrying <- false
 
-        match tryRead 0 with
+        outcome
+
+    [<TailCall>]
+    let rec readAll (token: CancellationToken) acc (count: int64) =
+        match tryRead token with
         | Error err when isRecoverableReadError err ->
             // Max retries exhausted - skip and continue with next file
             logger.Warn(
@@ -504,19 +511,19 @@ type JvLinkService
     let watchingFlag = ref 0
 
     [<Literal>]
-    let WatchState_Stopped = 0
+    let WatchStateStopped = 0
 
     [<Literal>]
-    let WatchState_Starting = 1
+    let WatchStateStarting = 1
 
     [<Literal>]
-    let WatchState_Running = 2
+    let WatchStateRunning = 2
 
     [<Literal>]
-    let WatchState_Stopping = 3
+    let WatchStateStopping = 3
 
     [<Literal>]
-    let WatchState_StopFailed = 4
+    let WatchStateStopFailed = 4
 
     let mutable disposed = false
 
@@ -636,6 +643,68 @@ type JvLinkService
     let guardedWithInitialisation operationName work =
         guardOperation operationName (fun () -> withInitialisation work)
 
+    [<TailCall>]
+    let rec tryReadStreamWithRetry retryAttempt =
+        match readWithTimeout () with
+        | Error err when isRecoverableReadError err && retryAttempt < readRetryMax ->
+            let delay = readRetryBackoff retryAttempt
+
+            logger.Warn(
+                $"JV-Link stream read error (attempt {retryAttempt + 1}/{readRetryMax + 1}): {describeError (InteropError err)}. Retrying in {delay.TotalMilliseconds} ms."
+            )
+
+            scheduler.Sleep(delay)
+            tryReadStreamWithRetry (retryAttempt + 1)
+        | other -> other
+
+    let readPayloadStream () =
+        seq {
+            let mutable reading = true
+
+            while reading do
+                match tryReadStreamWithRetry 0 with
+                | Ok EndOfStream -> reading <- false
+                | Ok FileBoundary -> ()
+                | Ok DownloadPending -> scheduler.Sleep(polling.DownloadPendingDelay)
+                | Ok(Payload payload) -> yield Ok payload
+                | Error err when isRecoverableReadError err ->
+                    logger.Warn(
+                        $"JV-Link stream read error after {readRetryMax + 1} attempts: {describeError (InteropError err)}. Skipping current file."
+                    )
+
+                    match skipWithTimeout () with
+                    | Ok() -> logger.Debug("JV-Link skip succeeded; continuing stream.")
+                    | Error skipErr ->
+                        logger.Error(
+                            $"JV-Link skip failed: {describeError (InteropError skipErr)}. Terminating stream."
+                        )
+
+                        reading <- false
+                        yield Error(InteropError skipErr)
+                | Error err ->
+                    logger.Error($"JV-Link stream read failed: {describeError (InteropError err)}. Terminating stream.")
+                    reading <- false
+                    yield Error(InteropError err)
+        }
+
+    [<TailCall>]
+    let rec readWorkoutVideos acc =
+        match runCom "JVMVRead" (fun () -> client.MovieRead()) with
+        | Error err -> Error err
+        | Ok MovieEnd -> Ok(List.rev acc)
+        | Ok(MovieRecord listing) -> readWorkoutVideos (listing :: acc)
+
+    [<TailCall>]
+    let rec claimWatchStop () =
+        let state = System.Threading.Volatile.Read(&watchingFlag.contents)
+
+        if state = WatchStateStopped || state = WatchStateStopping then
+            state
+        elif System.Threading.Interlocked.CompareExchange(watchingFlag, WatchStateStopping, state) = state then
+            state
+        else
+            claimWatchStop ()
+
     /// Initializes the owned client without opening a data session.
     member _.Initialize() = guardOperation "Initialize" initialize
 
@@ -731,57 +800,7 @@ type JvLinkService
                         // Session is now open - MUST close in finally block
                         try
                             if hasData then
-                                // Retry helper for recoverable errors (same logic as readAll)
-                                let rec tryReadWithRetry retryAttempt =
-                                    match readWithTimeout () with
-                                    | Error err when isRecoverableReadError err && retryAttempt < readRetryMax ->
-                                        let delay = readRetryBackoff retryAttempt
-
-                                        logger.Warn(
-                                            $"JV-Link stream read error (attempt {retryAttempt + 1}/{readRetryMax + 1}): {describeError (InteropError err)}. Retrying in {delay.TotalMilliseconds} ms."
-                                        )
-
-                                        scheduler.Sleep(delay)
-                                        tryReadWithRetry (retryAttempt + 1)
-                                    | other -> other
-
-                                let rec loop () =
-                                    seq {
-                                        match tryReadWithRetry 0 with
-                                        | Ok EndOfStream -> () // Terminate on EndOfStream
-                                        | Ok FileBoundary -> yield! loop ()
-                                        | Ok DownloadPending ->
-                                            scheduler.Sleep(polling.DownloadPendingDelay)
-                                            yield! loop ()
-                                        | Ok(Payload payload) ->
-                                            yield Ok payload
-                                            yield! loop ()
-                                        | Error err when isRecoverableReadError err ->
-                                            // Max retries exhausted - skip and continue
-                                            logger.Warn(
-                                                $"JV-Link stream read error after {readRetryMax + 1} attempts: {describeError (InteropError err)}. Skipping current file."
-                                            )
-
-                                            match skipWithTimeout () with
-                                            | Ok() ->
-                                                logger.Debug("JV-Link skip succeeded; continuing stream.")
-                                                yield! loop ()
-                                            | Error skipErr ->
-                                                logger.Error(
-                                                    $"JV-Link skip failed: {describeError (InteropError skipErr)}. Terminating stream."
-                                                )
-
-                                                yield Error(InteropError skipErr)
-                                        | Error err ->
-                                            // Fatal error - terminate stream
-                                            logger.Error(
-                                                $"JV-Link stream read failed: {describeError (InteropError err)}. Terminating stream."
-                                            )
-
-                                            yield Error(InteropError err)
-                                    }
-
-                                yield! loop ()
+                                yield! readPayloadStream ()
                         // else: no data available, yield nothing but still close
                         finally
                             closeQuietly ()
@@ -824,6 +843,8 @@ type JvLinkService
     /// <param name="request">The JV-Link open request specifying dataspec and time range.</param>
     /// <param name="pollInterval">Interval between polls when waiting for downloads (default: 500ms)</param>
     /// <param name="cancellationToken">Token to request cancellation of the stream</param>
+    // FSharpLint 0.27 recognises Task/Async only; this method returns an asynchronous stream.
+    // fsharplint:disable-next-line SynchronousFunctionNames
     member _.StreamPayloadsAsync
         (request: JvOpenRequest, ?pollInterval: TimeSpan, ?cancellationToken: CancellationToken)
         : IAsyncEnumerable<Result<JvPayload, XanthosError>> =
@@ -995,6 +1016,8 @@ type JvLinkService
     /// <summary>
     /// Asynchronously streams payloads from a JV-Link session (`JVOpen`), with cancellation support.
     /// </summary>
+    // FSharpLint 0.27 recognises Task/Async only; this method returns an asynchronous stream.
+    // fsharplint:disable-next-line SynchronousFunctionNames
     member this.StreamPayloadsAsync
         (
             spec: string,
@@ -1057,57 +1080,7 @@ type JvLinkService
                             // Session is now open - MUST close in finally block
                             try
                                 if hasData then
-                                    // Retry helper for recoverable errors (same logic as readAll)
-                                    let rec tryReadWithRetry retryAttempt =
-                                        match readWithTimeout () with
-                                        | Error err when isRecoverableReadError err && retryAttempt < readRetryMax ->
-                                            let delay = readRetryBackoff retryAttempt
-
-                                            logger.Warn(
-                                                $"JV-Link stream read error (attempt {retryAttempt + 1}/{readRetryMax + 1}): {describeError (InteropError err)}. Retrying in {delay.TotalMilliseconds} ms."
-                                            )
-
-                                            scheduler.Sleep(delay)
-                                            tryReadWithRetry (retryAttempt + 1)
-                                        | other -> other
-
-                                    let rec loop () =
-                                        seq {
-                                            match tryReadWithRetry 0 with
-                                            | Ok EndOfStream -> () // Terminate on EndOfStream
-                                            | Ok FileBoundary -> yield! loop ()
-                                            | Ok DownloadPending ->
-                                                scheduler.Sleep(polling.DownloadPendingDelay)
-                                                yield! loop ()
-                                            | Ok(Payload payload) ->
-                                                yield Ok payload
-                                                yield! loop ()
-                                            | Error err when isRecoverableReadError err ->
-                                                // Max retries exhausted - skip and continue
-                                                logger.Warn(
-                                                    $"JV-Link stream read error after {readRetryMax + 1} attempts: {describeError (InteropError err)}. Skipping current file."
-                                                )
-
-                                                match skipWithTimeout () with
-                                                | Ok() ->
-                                                    logger.Debug("JV-Link skip succeeded; continuing stream.")
-                                                    yield! loop ()
-                                                | Error skipErr ->
-                                                    logger.Error(
-                                                        $"JV-Link skip failed: {describeError (InteropError skipErr)}. Terminating stream."
-                                                    )
-
-                                                    yield Error(InteropError skipErr)
-                                            | Error err ->
-                                                // Fatal error - terminate stream
-                                                logger.Error(
-                                                    $"JV-Link stream read failed: {describeError (InteropError err)}. Terminating stream."
-                                                )
-
-                                                yield Error(InteropError err)
-                                        }
-
-                                    yield! loop ()
+                                    yield! readPayloadStream ()
                             // else: no data available, yield nothing but still close
                             finally
                                 closeQuietly ()
@@ -1134,6 +1107,8 @@ type JvLinkService
     /// on how long a hung COM call can block before the service becomes poisoned.
     /// </para>
     /// </remarks>
+    // FSharpLint 0.27 recognises Task/Async only; this method returns an asynchronous stream.
+    // fsharplint:disable-next-line SynchronousFunctionNames
     member _.StreamRealtimeAsync
         (spec: string, key: string, ?pollInterval: TimeSpan, ?cancellationToken: CancellationToken)
         : IAsyncEnumerable<Result<JvPayload, XanthosError>> =
@@ -1340,6 +1315,8 @@ type JvLinkService
     /// <summary>
     /// Backwards-compatible alias for <see cref="StreamRealtimeAsync" />.
     /// </summary>
+    // FSharpLint 0.27 recognises Task/Async only; this method returns an asynchronous stream.
+    // fsharplint:disable-next-line SynchronousFunctionNames
     member this.StreamRealtimePayloadsAsync
         (spec: string, key: string, ?pollInterval: TimeSpan, ?cancellationToken: CancellationToken)
         =
@@ -1638,12 +1615,6 @@ type JvLinkService
             guardedWithInitialisation "FetchWorkoutVideos" (fun () ->
                 let mutable opened = false
 
-                let rec readAll acc =
-                    match runCom "JVMVRead" (fun () -> client.MovieRead()) with
-                    | Error err -> Error err
-                    | Ok MovieEnd -> Ok(List.rev acc)
-                    | Ok(MovieRecord listing) -> readAll (listing :: acc)
-
                 let outcome =
                     result {
                         do!
@@ -1651,7 +1622,7 @@ type JvLinkService
                                 client.MovieOpen(MovieType.toCode movieType, Text.normalizeJvText searchKey))
 
                         opened <- true
-                        return! readAll []
+                        return! readWorkoutVideos []
                     }
 
                 if opened then
@@ -1697,11 +1668,11 @@ type JvLinkService
         // Atomically try to transition from Stopped (0) to Starting (1).
         // If already Starting (1) or Running (2), return immediately (idempotent).
         let previousState =
-            System.Threading.Interlocked.CompareExchange(watchingFlag, WatchState_Starting, WatchState_Stopped)
+            System.Threading.Interlocked.CompareExchange(watchingFlag, WatchStateStarting, WatchStateStopped)
 
-        if previousState = WatchState_Starting || previousState = WatchState_Running then
+        if previousState = WatchStateStarting || previousState = WatchStateRunning then
             Ok()
-        elif previousState <> WatchState_Stopped then
+        elif previousState <> WatchStateStopped then
             Error(
                 InteropError(InvalidState "Watch shutdown is pending or failed; retry StopWatchEvents before starting.")
             )
@@ -1762,9 +1733,9 @@ type JvLinkService
                 // If StopWatchEvents was called during Starting phase, the flag will already
                 // be Stopped (0) and we should clean up instead of forcing Running.
                 let transitionResult =
-                    System.Threading.Interlocked.CompareExchange(watchingFlag, WatchState_Running, WatchState_Starting)
+                    System.Threading.Interlocked.CompareExchange(watchingFlag, WatchStateRunning, WatchStateStarting)
 
-                if transitionResult = WatchState_Starting then
+                if transitionResult = WatchStateStarting then
                     // Successful transition - no cancellation occurred
                     logger.Info("JV-Link watch events started.")
                     Ok()
@@ -1778,17 +1749,15 @@ type JvLinkService
                     | Ok() ->
                         stopEventConsumer ()
 
-                        System.Threading.Interlocked.Exchange(watchingFlag, WatchState_Stopped)
-                        |> ignore
+                        System.Threading.Interlocked.Exchange(watchingFlag, WatchStateStopped) |> ignore
                     | Error _ ->
-                        System.Threading.Interlocked.Exchange(watchingFlag, WatchState_StopFailed)
+                        System.Threading.Interlocked.Exchange(watchingFlag, WatchStateStopFailed)
                         |> ignore
 
                     closed
             | Error err ->
                 // Reset flag to Stopped (0) on failure so caller can retry
-                System.Threading.Interlocked.Exchange(watchingFlag, WatchState_Stopped)
-                |> ignore
+                System.Threading.Interlocked.Exchange(watchingFlag, WatchStateStopped) |> ignore
 
                 Error err
 
@@ -1796,20 +1765,10 @@ type JvLinkService
     /// Stops JV-Link watch event notifications.
     /// </summary>
     member _.StopWatchEvents() : Result<unit, XanthosError> =
-        let rec claim () =
-            let state = System.Threading.Volatile.Read(&watchingFlag.contents)
-
-            if state = WatchState_Stopped || state = WatchState_Stopping then
-                state
-            elif System.Threading.Interlocked.CompareExchange(watchingFlag, WatchState_Stopping, state) = state then
-                state
-            else
-                claim ()
-
-        match claim () with
-        | state when state = WatchState_Stopped -> Ok()
-        | state when state = WatchState_Starting -> Ok() // Startup owns the eventual close.
-        | state when state = WatchState_Stopping -> Error(InteropError(InvalidState "Watch shutdown is in progress."))
+        match claimWatchStop () with
+        | state when state = WatchStateStopped -> Ok()
+        | state when state = WatchStateStarting -> Ok() // Startup owns the eventual close.
+        | state when state = WatchStateStopping -> Error(InteropError(InvalidState "Watch shutdown is in progress."))
         | _ ->
             let result = runCom "JVWatchEventClose" (fun () -> client.WatchEventClose())
 
@@ -1817,12 +1776,11 @@ type JvLinkService
             | Ok() ->
                 stopEventConsumer ()
 
-                System.Threading.Interlocked.Exchange(watchingFlag, WatchState_Stopped)
-                |> ignore
+                System.Threading.Interlocked.Exchange(watchingFlag, WatchStateStopped) |> ignore
 
                 logger.Info("JV-Link watch events stopped.")
             | Error err ->
-                System.Threading.Interlocked.Exchange(watchingFlag, WatchState_StopFailed)
+                System.Threading.Interlocked.Exchange(watchingFlag, WatchStateStopFailed)
                 |> ignore
 
                 logger.Error($"JV-Link watch event stop failed: {describeError err}")
@@ -1970,8 +1928,8 @@ type JvLinkService
                 disposed <- true
                 // Stop watch events if Starting (1) or Running (2) (ignore result as we're disposing)
                 if
-                    System.Threading.Interlocked.CompareExchange(watchingFlag, WatchState_Stopped, WatchState_Stopped)
-                    <> WatchState_Stopped
+                    System.Threading.Interlocked.CompareExchange(watchingFlag, WatchStateStopped, WatchStateStopped)
+                    <> WatchStateStopped
                 then
                     this.StopWatchEvents() |> ignore
 

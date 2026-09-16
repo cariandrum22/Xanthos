@@ -109,7 +109,10 @@ module SpecialRegistrationTests =
         let dispatched =
             match Records.parse data |> value with
             | Records.Record.TK record -> record
-            | other -> failwithf "%A" other
+            | other ->
+                failwithf
+                    "SpecialRegistrationTests: All top level TK fields follow spreadsheet offsets through both public functions: %A"
+                    other
 
         Assert.Equal(record, dispatched)
         Assert.Equal(36, (fields record).Length)

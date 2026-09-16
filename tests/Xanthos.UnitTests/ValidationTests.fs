@@ -18,7 +18,9 @@ let ``normalizeDataspec should accept valid 4-character dataspec`` () =
 let ``normalizeDataspec should accept valid 8-character dataspec`` () =
     match normalizeDataspec "RACEodds" with
     | Ok normalized -> Assert.Equal("RACEODDS", normalized)
-    | Error _ -> failwith "Should succeed with valid dataspec"
+    | Error _ ->
+        failwith
+            "ValidationTests: normalizeDataspec should accept valid 8-character dataspec: Should succeed with valid dataspec"
 
 [<Fact>]
 let ``normalizeDataspec should normalize to uppercase`` () =
@@ -148,7 +150,7 @@ let ``parseOpenOption should fail with non-numeric string`` () =
 let ``parseOpenOption should fail with empty string`` () =
     match parseOpenOption (Some "") with
     | Error _ -> () // Expected
-    | Ok _ -> failwith "Should fail with empty string"
+    | Ok _ -> failwith "ValidationTests: parseOpenOption should fail with empty string: Should fail with empty string"
 
 // ============================================================================
 // parseFromTime Tests
@@ -215,7 +217,9 @@ let ``parseFromTime should fail with invalid date`` () =
 let ``parseFromTime should fail with non-numeric string`` () =
     match parseFromTime (Some "abcdefgh") with
     | Error _ -> () // Expected
-    | Ok _ -> failwith "Should fail with non-numeric string"
+    | Ok _ ->
+        failwith
+            "ValidationTests: parseFromTime should fail with non-numeric string: Should fail with non-numeric string"
 
 // ============================================================================
 // buildOpenRequest Integration Tests
@@ -310,7 +314,10 @@ let ``parseFromTime yyyyMMdd should work under Thai Buddhist calendar culture`` 
             Assert.Equal(2024, dt.Year)
             Assert.Equal(5, dt.Month)
             Assert.Equal(5, dt.Day)
-        | Error e -> failwithf "Should parse under Thai culture: %A" e
+        | Error e ->
+            failwithf
+                "ValidationTests: parseFromTime yyyyMMdd should work under Thai Buddhist calendar culture: Should parse under Thai culture: %A"
+                e
     finally
         System.Threading.Thread.CurrentThread.CurrentCulture <- originalCulture
 

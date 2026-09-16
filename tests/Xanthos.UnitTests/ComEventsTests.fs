@@ -52,7 +52,7 @@ module StubEventTests =
         let client = stub :> IJvLinkClient
 
         // Don't call Init
-        let result = client.WatchEvent(fun _ -> ())
+        let result = client.WatchEvent(ignore)
 
         Assert.True(Result.isError result)
 
@@ -714,7 +714,7 @@ module EventQueueOverflowTests =
         let service = new JvLinkService(stub, createConfig (), eventQueueCapacity = 1)
         let mutable exceptionOccurred = false
 
-        use sub = service.WatchEvents.Subscribe(fun _ -> ())
+        use sub = service.WatchEvents.Subscribe(ignore)
 
         service.StartWatchEvents() |> ignore
 

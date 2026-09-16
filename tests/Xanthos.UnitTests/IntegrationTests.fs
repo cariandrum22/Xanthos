@@ -203,7 +203,8 @@ let ``Parse horse master data with race records`` () =
         Assert.Equal(horseId, um.HorseId)
         // SE record should have correct race key
         Assert.Equal(raceKey, se.RaceKey)
-    | _ -> failwith "Both records should parse successfully"
+    | _ ->
+        failwith "IntegrationTests: Parse horse master data with race records: Both records should parse successfully"
 
 [<Fact>]
 let ``Handle record type identification`` () =

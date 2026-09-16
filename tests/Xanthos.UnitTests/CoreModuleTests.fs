@@ -124,7 +124,7 @@ module RunnerIdTests =
     let ``create should trim whitespace`` () =
         match RunnerId.create $"  {validRunnerId}  " with
         | Ok id -> Assert.Equal(validRunnerId, RunnerId.value id)
-        | Error err -> failwithf "Expected Ok, got %A" err
+        | Error err -> failwithf "RunnerIdTests: create should trim whitespace: Expected Ok, got %A" err
 
     [<Fact>]
     let ``create should fail for empty string`` () =
@@ -137,28 +137,33 @@ module RunnerIdTests =
     let ``create should fail for whitespace only`` () =
         match RunnerId.create "   " with
         | Error(ValidationError msg) -> Assert.Contains("empty", msg)
-        | Error other -> failwithf "Expected ValidationError, got %A" other
+        | Error other ->
+            failwithf "RunnerIdTests: create should fail for whitespace only: Expected ValidationError, got %A" other
         | Ok _ -> failwith "Should fail for whitespace only"
 
     [<Fact>]
     let ``create should fail for null`` () =
         match RunnerId.create null with
         | Error(ValidationError msg) -> Assert.Contains("empty", msg)
-        | Error other -> failwithf "Expected ValidationError, got %A" other
+        | Error other -> failwithf "RunnerIdTests: create should fail for null: Expected ValidationError, got %A" other
         | Ok _ -> failwith "Should fail for null"
 
     [<Fact>]
     let ``create should fail for non-digit characters`` () =
         match RunnerId.create "123456789A" with
         | Error(ValidationError msg) -> Assert.Contains("digits", msg)
-        | Error other -> failwithf "Expected ValidationError, got %A" other
+        | Error other ->
+            failwithf
+                "RunnerIdTests: create should fail for non-digit characters: Expected ValidationError, got %A"
+                other
         | Ok _ -> failwith "Should fail for non-digit characters"
 
     [<Fact>]
     let ``create should fail for wrong length`` () =
         match RunnerId.create "12345" with
         | Error(ValidationError msg) -> Assert.Contains("10 characters", msg)
-        | Error other -> failwithf "Expected ValidationError, got %A" other
+        | Error other ->
+            failwithf "RunnerIdTests: create should fail for wrong length: Expected ValidationError, got %A" other
         | Ok _ -> failwith "Should fail for wrong length"
 
     [<Fact>]
@@ -185,53 +190,60 @@ module RaceIdTests =
     let ``create should succeed with valid date only`` () =
         match RaceId.create validRaceId with
         | Ok id -> Assert.Equal(validRaceId, RaceId.value id)
-        | Error err -> failwithf "Expected Ok, got %A" err
+        | Error err -> failwithf "RaceIdTests: create should succeed with valid date only: Expected Ok, got %A" err
 
     [<Fact>]
     let ``create should succeed with full race key`` () =
         match RaceId.create validFullRaceId with
         | Ok id -> Assert.Equal(validFullRaceId, RaceId.value id)
-        | Error err -> failwithf "Expected Ok, got %A" err
+        | Error err -> failwithf "RaceIdTests: create should succeed with full race key: Expected Ok, got %A" err
 
     [<Fact>]
     let ``create should trim whitespace`` () =
         match RaceId.create $"  {validRaceId}  " with
         | Ok id -> Assert.Equal(validRaceId, RaceId.value id)
-        | Error err -> failwithf "Expected Ok, got %A" err
+        | Error err -> failwithf "RaceIdTests: create should trim whitespace: Expected Ok, got %A" err
 
     [<Fact>]
     let ``create should fail for empty string`` () =
         match RaceId.create "" with
         | Error(ValidationError msg) -> Assert.Contains("empty", msg)
-        | Error other -> failwithf "Expected ValidationError, got %A" other
-        | Ok _ -> failwith "Should fail for empty string"
+        | Error other ->
+            failwithf "RaceIdTests: create should fail for empty string: Expected ValidationError, got %A" other
+        | Ok _ -> failwith "RaceIdTests: create should fail for empty string: Should fail for empty string"
 
     [<Fact>]
     let ``create should fail for whitespace only`` () =
         match RaceId.create "   " with
         | Error(ValidationError msg) -> Assert.Contains("empty", msg)
-        | Error other -> failwithf "Expected ValidationError, got %A" other
-        | Ok _ -> failwith "Should fail for whitespace only"
+        | Error other ->
+            failwithf "RaceIdTests: create should fail for whitespace only: Expected ValidationError, got %A" other
+        | Ok _ -> failwith "RaceIdTests: create should fail for whitespace only: Should fail for whitespace only"
 
     [<Fact>]
     let ``create should fail for too short value`` () =
         match RaceId.create "2024010" with // Only 7 characters
         | Error(ValidationError msg) -> Assert.Contains("at least 8 characters", msg)
-        | Error other -> failwithf "Expected ValidationError, got %A" other
+        | Error other ->
+            failwithf "RaceIdTests: create should fail for too short value: Expected ValidationError, got %A" other
         | Ok _ -> failwith "Should fail for too short value"
 
     [<Fact>]
     let ``create should fail for invalid date`` () =
         match RaceId.create "20241301" with // Invalid month 13
         | Error(ValidationError msg) -> Assert.Contains("valid date", msg)
-        | Error other -> failwithf "Expected ValidationError, got %A" other
+        | Error other ->
+            failwithf "RaceIdTests: create should fail for invalid date: Expected ValidationError, got %A" other
         | Ok _ -> failwith "Should fail for invalid date"
 
     [<Fact>]
     let ``create should fail for non-alphanumeric suffix`` () =
         match RaceId.create "20240101@@@" with
         | Error(ValidationError msg) -> Assert.Contains("alphanumeric", msg)
-        | Error other -> failwithf "Expected ValidationError, got %A" other
+        | Error other ->
+            failwithf
+                "RaceIdTests: create should fail for non-alphanumeric suffix: Expected ValidationError, got %A"
+                other
         | Ok _ -> failwith "Should fail for non-alphanumeric suffix"
 
     [<Fact>]
@@ -461,7 +473,10 @@ module RecordParserTests =
             Assert.Contains("too short", msg)
             Assert.Contains("100", msg)
             Assert.Contains("50", msg)
-        | other -> failwithf "Expected ValidationError, got %A" other
+        | other ->
+            failwithf
+                "CoreModuleTests: toXanthosError should convert RecordTooShort: Expected ValidationError, got %A"
+                other
 
     [<Fact>]
     let ``toXanthosError should convert FieldExtractionFailed`` () =
@@ -471,7 +486,10 @@ module RecordParserTests =
         | ValidationError msg ->
             Assert.Contains("TestField", msg)
             Assert.Contains("Some reason", msg)
-        | other -> failwithf "Expected ValidationError, got %A" other
+        | other ->
+            failwithf
+                "CoreModuleTests: toXanthosError should convert FieldExtractionFailed: Expected ValidationError, got %A"
+                other
 
     [<Fact>]
     let ``toXanthosError should convert InvalidFieldValue`` () =
@@ -482,7 +500,10 @@ module RecordParserTests =
             Assert.Contains("TestField", msg)
             Assert.Contains("badvalue", msg)
             Assert.Contains("invalid format", msg)
-        | other -> failwithf "Expected ValidationError, got %A" other
+        | other ->
+            failwithf
+                "CoreModuleTests: toXanthosError should convert InvalidFieldValue: Expected ValidationError, got %A"
+                other
 
     [<Fact>]
     let ``toXanthosError should convert UnknownRecordType`` () =
@@ -492,7 +513,10 @@ module RecordParserTests =
         | ValidationError msg ->
             Assert.Contains("Unknown record type", msg)
             Assert.Contains("XX", msg)
-        | other -> failwithf "Expected ValidationError, got %A" other
+        | other ->
+            failwithf
+                "CoreModuleTests: toXanthosError should convert UnknownRecordType: Expected ValidationError, got %A"
+                other
 
     [<Fact>]
     let ``toXanthosError should convert CodeTableLookupFailed`` () =
@@ -502,7 +526,10 @@ module RecordParserTests =
         | ValidationError msg ->
             Assert.Contains("SexCode", msg)
             Assert.Contains("99", msg)
-        | other -> failwithf "Expected ValidationError, got %A" other
+        | other ->
+            failwithf
+                "CoreModuleTests: toXanthosError should convert CodeTableLookupFailed: Expected ValidationError, got %A"
+                other
 
     [<Fact>]
     let ``extractBytes should succeed for valid range`` () =
@@ -510,7 +537,7 @@ module RecordParserTests =
 
         match extractBytes data 1 3 with
         | Ok bytes -> Assert.Equal<byte[]>([| 2uy; 3uy; 4uy |], bytes)
-        | Error err -> failwithf "Expected Ok, got %A" err
+        | Error err -> failwithf "CoreModuleTests: extractBytes should succeed for valid range: Expected Ok, got %A" err
 
     [<Fact>]
     let ``extractBytes should fail when range exceeds data length`` () =
@@ -625,7 +652,8 @@ module RecordParserTests =
 
         match getRequiredText fields "Name" with
         | Ok value -> Assert.Equal("TestValue", value)
-        | Error err -> failwithf "Expected Ok, got %A" err
+        | Error err ->
+            failwithf "CoreModuleTests: getRequiredText should succeed for valid field: Expected Ok, got %A" err
 
     [<Fact>]
     let ``getRequiredText should fail for missing field`` () =
@@ -634,7 +662,7 @@ module RecordParserTests =
         match getRequiredText fields "Name" with
         | Error(InvalidFieldValue _) -> ()
         | Error other -> failwithf "Expected InvalidFieldValue, got %A" other
-        | Ok _ -> failwith "Should fail"
+        | Ok _ -> failwith "CoreModuleTests: getRequiredText should fail for missing field: Should fail"
 
     [<Fact>]
     let ``getInt should return value for IntValue field`` () =
@@ -736,7 +764,7 @@ module ErrorsModuleTests =
         match mapComError result with
         | Error(InteropError(InvalidInput msg)) -> Assert.Equal("test", msg)
         | Error other -> failwithf "Expected InteropError InvalidInput, got %A" other
-        | Ok _ -> failwith "Should be Error"
+        | Ok _ -> failwith "CoreModuleTests: mapComError should preserve InvalidInput error: Should be Error"
 
     [<Fact>]
     let ``validation should create ValidationError`` () =
@@ -744,7 +772,10 @@ module ErrorsModuleTests =
 
         match error with
         | ValidationError msg -> Assert.Equal("test message", msg)
-        | other -> failwithf "Expected ValidationError, got %A" other
+        | other ->
+            failwithf
+                "CoreModuleTests: validation should create ValidationError: Expected ValidationError, got %A"
+                other
 
 [<Fact>]
 let ``UnexpectedError should create UnexpectedError`` () =
@@ -807,7 +838,7 @@ module TextModuleTests =
     let ``decodeShiftJisBstrBytesIfNeeded should decode low-byte-per-char Shift-JIS stuffing`` () =
         let expected = "東京芝/芝1200m"
         let bytes = (fixtureEncoding ()).GetBytes(expected)
-        let stuffed = bytes |> Array.map char |> (fun chars -> new string (chars))
+        let stuffed = bytes |> Array.map char |> (fun chars -> String(chars))
         let result = decodeShiftJisBstrBytesIfNeeded stuffed
         Assert.Equal(expected, result)
 
@@ -816,7 +847,7 @@ module TextModuleTests =
         let expected = "東京芝/芝1200m"
         let bytes = (fixtureEncoding ()).GetBytes(expected)
         let stuffedBytes = Array.concat [ bytes; [| 0uy; 0x80uy; 0xFFuy; 0uy |] ]
-        let stuffed = stuffedBytes |> Array.map char |> (fun chars -> new string (chars))
+        let stuffed = stuffedBytes |> Array.map char |> (fun chars -> String(chars))
         let result = decodeShiftJisBstrBytesIfNeeded stuffed
         Assert.Equal(expected, result)
 
@@ -841,9 +872,7 @@ module TextModuleTests =
         let bytes = (fixtureEncoding ()).GetBytes(expected)
 
         let stuffed =
-            bytes
-            |> Array.map (fun b -> char (int b <<< 8))
-            |> fun chars -> new string (chars)
+            bytes |> Array.map (fun b -> char (int b <<< 8)) |> (fun chars -> String(chars))
 
         let result = decodeShiftJisBstrBytesIfNeeded stuffed
         Assert.Equal(expected, result)
@@ -1009,7 +1038,7 @@ module RecordParsingBranchTests =
         match parseField data spec with
         | Ok(TextValue value) -> Assert.Equal("テスト", value.Trim())
         | Ok other -> failwithf "Expected TextValue, got %A" other
-        | Error err -> failwithf "Expected Ok, got %A" err
+        | Error err -> failwithf "CoreModuleTests: parseField should handle Text encoding: Expected Ok, got %A" err
 
     [<Fact>]
     let ``parseField should handle TextRaw encoding`` () =
@@ -1018,8 +1047,9 @@ module RecordParsingBranchTests =
 
         match parseField data spec with
         | Ok(TextValue value) -> Assert.Equal("raw text", value)
-        | Ok other -> failwithf "Expected TextValue, got %A" other
-        | Error err -> failwithf "Expected Ok, got %A" err
+        | Ok other ->
+            failwithf "CoreModuleTests: parseField should handle TextRaw encoding: Expected TextValue, got %A" other
+        | Error err -> failwithf "CoreModuleTests: parseField should handle TextRaw encoding: Expected Ok, got %A" err
 
     [<Fact>]
     let ``parseField should handle Integer encoding`` () =
@@ -1029,7 +1059,7 @@ module RecordParsingBranchTests =
         match parseField data spec with
         | Ok(IntValue(Some 42)) -> ()
         | Ok other -> failwithf "Expected IntValue Some 42, got %A" other
-        | Error err -> failwithf "Expected Ok, got %A" err
+        | Error err -> failwithf "CoreModuleTests: parseField should handle Integer encoding: Expected Ok, got %A" err
 
     [<Fact>]
     let ``parseField should handle Decimal encoding`` () =
@@ -1039,7 +1069,7 @@ module RecordParsingBranchTests =
         match parseField data spec with
         | Ok(DecimalValue(Some 123.45M)) -> ()
         | Ok other -> failwithf "Expected DecimalValue Some 123.45, got %A" other
-        | Error err -> failwithf "Expected Ok, got %A" err
+        | Error err -> failwithf "CoreModuleTests: parseField should handle Decimal encoding: Expected Ok, got %A" err
 
     [<Fact>]
     let ``parseField should handle Date encoding`` () =
@@ -1052,7 +1082,7 @@ module RecordParsingBranchTests =
             Assert.Equal(1, date.Month)
             Assert.Equal(15, date.Day)
         | Ok other -> failwithf "Expected DateValue Some, got %A" other
-        | Error err -> failwithf "Expected Ok, got %A" err
+        | Error err -> failwithf "CoreModuleTests: parseField should handle Date encoding: Expected Ok, got %A" err
 
     [<Fact>]
     let ``parseField should handle Flag encoding`` () =
@@ -1062,7 +1092,7 @@ module RecordParsingBranchTests =
         match parseField data spec with
         | Ok(BoolValue true) -> ()
         | Ok other -> failwithf "Expected BoolValue true, got %A" other
-        | Error err -> failwithf "Expected Ok, got %A" err
+        | Error err -> failwithf "CoreModuleTests: parseField should handle Flag encoding: Expected Ok, got %A" err
 
     [<Fact>]
     let ``parseField should handle Bytes encoding`` () =
@@ -1072,7 +1102,7 @@ module RecordParsingBranchTests =
         match parseField data spec with
         | Ok(BytesValue bytes) -> Assert.Equal<byte[]>([| 1uy; 2uy; 3uy |], bytes)
         | Ok other -> failwithf "Expected BytesValue, got %A" other
-        | Error err -> failwithf "Expected Ok, got %A" err
+        | Error err -> failwithf "CoreModuleTests: parseField should handle Bytes encoding: Expected Ok, got %A" err
 
     [<Fact>]
     let ``parseField should handle Code encoding`` () =
@@ -1082,7 +1112,7 @@ module RecordParsingBranchTests =
         match parseField data spec with
         | Ok(CodeValue "1") -> ()
         | Ok other -> failwithf "Expected CodeValue 1, got %A" other
-        | Error err -> failwithf "Expected Ok, got %A" err
+        | Error err -> failwithf "CoreModuleTests: parseField should handle Code encoding: Expected Ok, got %A" err
 
     [<Fact>]
     let ``parseFields should parse multiple fields`` () =
@@ -1105,7 +1135,7 @@ module RecordParsingBranchTests =
             match getInt fields "Count" with
             | Some count -> Assert.Equal(42, count)
             | None -> failwith "Count should exist"
-        | Error err -> failwithf "Expected Ok, got %A" err
+        | Error err -> failwithf "CoreModuleTests: parseFields should parse multiple fields: Expected Ok, got %A" err
 
     [<Fact>]
     let ``parseFields should fail on first error`` () =
@@ -1115,8 +1145,9 @@ module RecordParsingBranchTests =
 
         match parseFields data specs with
         | Error(RecordTooShort _) -> ()
-        | Error other -> failwithf "Expected RecordTooShort, got %A" other
-        | Ok _ -> failwith "Should fail"
+        | Error other ->
+            failwithf "CoreModuleTests: parseFields should fail on first error: Expected RecordTooShort, got %A" other
+        | Ok _ -> failwith "CoreModuleTests: parseFields should fail on first error: Should fail"
 
     [<Fact>]
     let ``parseDecimal should return None for non-numeric`` () =

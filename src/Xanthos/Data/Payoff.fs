@@ -3,15 +3,15 @@ namespace Xanthos.Data
 open Xanthos
 
 /// The eight betting products represented by standard payoff and vote records.
-type BetValues<'value> =
-    { Win: 'value
-      Place: 'value
-      BracketQuinella: 'value
-      Quinella: 'value
-      Wide: 'value
-      Exacta: 'value
-      Trio: 'value
-      Trifecta: 'value }
+type BetValues<'T> =
+    { Win: 'T
+      Place: 'T
+      BracketQuinella: 'T
+      Quinella: 'T
+      Wide: 'T
+      Exacta: 'T
+      Trio: 'T
+      Trifecta: 'T }
 
 type Payout =
     { Combination: string

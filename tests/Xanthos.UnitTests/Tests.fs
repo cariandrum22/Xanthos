@@ -61,7 +61,7 @@ let ``JvLinkStub returns queued payloads in order`` () =
 
     match client.Read() with
     | Ok(Payload payload) -> Assert.Equal<byte[]>([| 1uy; 2uy |], payload.Data)
-    | other -> failwithf "unexpected result %A" other
+    | other -> failwithf "Tests: JvLinkStub returns queued payloads in order: unexpected result %A" other
 
     match client.Read() with
     | Ok EndOfStream -> ()
@@ -135,7 +135,7 @@ let ``interpret maps auth failure`` () =
 let ``interpret maps maintenance error`` () =
     match interpret "JVOpen" -504 with
     | Error(InvalidState _) -> assertCatalogEntry "JVOpen" -504 JvErrorCategory.Maintenance
-    | other -> failwithf "unexpected mapping %A" other
+    | other -> failwithf "Tests: interpret maps maintenance error: unexpected mapping %A" other
 
 [<Fact>]
 let ``interpret maps dataspec errors to InvalidInput`` () =
@@ -182,7 +182,8 @@ let ``FetchPayloads retries when stub reports download pending`` () =
     let config =
         match JvLinkConfig.create "SID" None None None with
         | Ok cfg -> cfg
-        | Error err -> failwithf "unexpected config error %A" err
+        | Error err ->
+            failwithf "Tests: FetchPayloads retries when stub reports download pending: unexpected config error %A" err
 
     let service = new JvLinkService(stubClient :> IJvLinkClient, config)
 
@@ -206,7 +207,7 @@ let ``FetchPayloads ignores file boundary markers`` () =
     let config =
         match JvLinkConfig.create "SID" None None None with
         | Ok cfg -> cfg
-        | Error err -> failwithf "unexpected config error %A" err
+        | Error err -> failwithf "Tests: FetchPayloads ignores file boundary markers: unexpected config error %A" err
 
     let service = new JvLinkService(stubClient :> IJvLinkClient, config)
 
@@ -228,7 +229,7 @@ let ``JvLinkService exposes control operations`` () =
     let config =
         match JvLinkConfig.create "SID" None None None with
         | Ok cfg -> cfg
-        | Error err -> failwithf "unexpected config error %A" err
+        | Error err -> failwithf "Tests: JvLinkService exposes control operations: unexpected config error %A" err
 
     let client = stubClient :> IJvLinkClient
 
@@ -271,7 +272,7 @@ let ``Realtime payloads can be streamed via stub`` () =
     let config =
         match JvLinkConfig.create "SID" None None None with
         | Ok cfg -> cfg
-        | Error err -> failwithf "unexpected config error %A" err
+        | Error err -> failwithf "Tests: Realtime payloads can be streamed via stub: unexpected config error %A" err
 
     let service = new JvLinkService(stubClient :> IJvLinkClient, config)
 
@@ -313,7 +314,7 @@ let ``WatchEvent parsing normalizes raw keys`` () =
 
     match jockey.Event with
     | WatchEventType.JockeyChange -> ()
-    | other -> failwithf "unexpected event type %A" other
+    | other -> failwithf "Tests: WatchEvent parsing normalizes raw keys: unexpected event type %A" other
 
     Assert.Equal(DateTime(2024, 1, 1) |> Some, jockey.MeetingDate)
     Assert.Equal<string option>(Some "99", jockey.CourseCode)
@@ -325,7 +326,7 @@ let ``WatchEvent parsing normalizes raw keys`` () =
     | Some req ->
         Assert.Equal("0B16", req.Dataspec)
         Assert.Equal(jockey.RawKey, req.Key)
-    | None -> failwith "Expected realtime request"
+    | None -> failwith "Tests: WatchEvent parsing normalizes raw keys: Expected realtime request"
 
 [<Fact>]
 let ``Watch events stream publishes notifications`` () =
@@ -334,7 +335,7 @@ let ``Watch events stream publishes notifications`` () =
     let config =
         match JvLinkConfig.create "SID" None None None with
         | Ok cfg -> cfg
-        | Error err -> failwithf "unexpected config error %A" err
+        | Error err -> failwithf "Tests: Watch events stream publishes notifications: unexpected config error %A" err
 
     use service = new JvLinkService(stubClient :> IJvLinkClient, config)
 
@@ -368,8 +369,8 @@ let ``Watch events stream publishes notifications`` () =
         | Some req ->
             Assert.Equal("0B12", req.Dataspec)
             Assert.Equal(evt.RawKey, req.Key)
-        | None -> failwith "Expected realtime request"
-    | Error err -> failwithf "unexpected error %A" err
+        | None -> failwith "Tests: Watch events stream publishes notifications: Expected realtime request"
+    | Error err -> failwithf "Tests: Watch events stream publishes notifications: unexpected error %A" err
 
     match service.StopWatchEvents() with
     | Ok() -> ()
@@ -382,7 +383,8 @@ let ``Stopping watch events prevents further callbacks`` () =
     let config =
         match JvLinkConfig.create "SID" None None None with
         | Ok cfg -> cfg
-        | Error err -> failwithf "unexpected config error %A" err
+        | Error err ->
+            failwithf "Tests: Stopping watch events prevents further callbacks: unexpected config error %A" err
 
     let service = new JvLinkService(stubClient :> IJvLinkClient, config)
 
@@ -391,13 +393,13 @@ let ``Stopping watch events prevents further callbacks`` () =
 
     match service.StartWatchEvents() with
     | Ok() -> ()
-    | Error err -> failwithf "start watch events failed %A" err
+    | Error err -> failwithf "Tests: Stopping watch events prevents further callbacks: start watch events failed %A" err
 
     stubClient.RaiseEvent "0B1620240101990101"
 
     match service.StopWatchEvents() with
     | Ok() -> ()
-    | Error err -> failwithf "stop watch events failed %A" err
+    | Error err -> failwithf "Tests: Stopping watch events prevents further callbacks: stop watch events failed %A" err
 
     stubClient.RaiseEvent "0B1620240101990102"
 
@@ -411,7 +413,8 @@ let ``Course diagram retrieval returns stubbed values`` () =
     let config =
         match JvLinkConfig.create "SID" None None None with
         | Ok cfg -> cfg
-        | Error err -> failwithf "unexpected config error %A" err
+        | Error err ->
+            failwithf "Tests: Course diagram retrieval returns stubbed values: unexpected config error %A" err
 
     let service = new JvLinkService(stubClient :> IJvLinkClient, config)
 
@@ -439,7 +442,8 @@ let ``Course diagram garbled explanation is suppressed`` () =
     let config =
         match JvLinkConfig.create "SID" None None None with
         | Ok cfg -> cfg
-        | Error err -> failwithf "unexpected config error %A" err
+        | Error err ->
+            failwithf "Tests: Course diagram garbled explanation is suppressed: unexpected config error %A" err
 
     let service = new JvLinkService(stubClient :> IJvLinkClient, config)
 
@@ -447,7 +451,7 @@ let ``Course diagram garbled explanation is suppressed`` () =
     | Ok diagram ->
         Assert.Equal("C:\\course.gif", diagram.FilePath)
         Assert.Equal<string option>(None, diagram.Explanation)
-    | Error err -> failwithf "CourseDiagram error %A" err
+    | Error err -> failwithf "Tests: Course diagram garbled explanation is suppressed: CourseDiagram error %A" err
 
 [<Fact>]
 let ``Silks file generation returns requested path`` () =
@@ -461,7 +465,7 @@ let ``Silks file generation returns requested path`` () =
     let config =
         match JvLinkConfig.create "SID" None None None with
         | Ok cfg -> cfg
-        | Error err -> failwithf "unexpected config error %A" err
+        | Error err -> failwithf "Tests: Silks file generation returns requested path: unexpected config error %A" err
 
     let service = new JvLinkService(stubClient :> IJvLinkClient, config)
     let inputPattern = "ｽｲｿﾞｸ,赤山形一本輪,水色袖"
@@ -488,7 +492,7 @@ let ``Silks binary retrieval returns image bytes`` () =
     let config =
         match JvLinkConfig.create "SID" None None None with
         | Ok cfg -> cfg
-        | Error err -> failwithf "unexpected config error %A" err
+        | Error err -> failwithf "Tests: Silks binary retrieval returns image bytes: unexpected config error %A" err
 
     let service = new JvLinkService(stubClient :> IJvLinkClient, config)
     let inputPattern = "水色,赤山形一本輪,水色袖"
@@ -514,7 +518,8 @@ let ``Control properties flow through runtime service`` () =
     let config =
         match JvLinkConfig.create "SID" None None None with
         | Ok cfg -> cfg
-        | Error err -> failwithf "unexpected config error %A" err
+        | Error err ->
+            failwithf "Tests: Control properties flow through runtime service: unexpected config error %A" err
 
     let service = new JvLinkService(stubClient :> IJvLinkClient, config)
 
@@ -552,7 +557,8 @@ let ``Control properties flow through runtime service`` () =
 
     match service.GetSaveDownloadsEnabled() with
     | Ok value -> Assert.True(value)
-    | Error err -> failwithf "GetSaveDownloadsEnabled failed %A" err
+    | Error err ->
+        failwithf "Tests: Control properties flow through runtime service: GetSaveDownloadsEnabled failed %A" err
 
     match service.SetPayoffDialogSuppressed true with
     | Ok() -> ()
@@ -646,7 +652,8 @@ let ``Movie availability delegates to stub responders`` () =
     let config =
         match JvLinkConfig.create "SID" None None None with
         | Ok cfg -> cfg
-        | Error err -> failwithf "unexpected config error %A" err
+        | Error err ->
+            failwithf "Tests: Movie availability delegates to stub responders: unexpected config error %A" err
 
     let service = new JvLinkService(stubClient :> IJvLinkClient, config)
 
@@ -677,7 +684,7 @@ let ``Movie playback delegates to stub responders`` () =
     let config =
         match JvLinkConfig.create "SID" None None None with
         | Ok cfg -> cfg
-        | Error err -> failwithf "unexpected config error %A" err
+        | Error err -> failwithf "Tests: Movie playback delegates to stub responders: unexpected config error %A" err
 
     let service = new JvLinkService(stubClient :> IJvLinkClient, config)
 
@@ -699,7 +706,8 @@ let ``Workout video listings can be fetched via service`` () =
     let config =
         match JvLinkConfig.create "SID" None None None with
         | Ok cfg -> cfg
-        | Error err -> failwithf "unexpected config error %A" err
+        | Error err ->
+            failwithf "Tests: Workout video listings can be fetched via service: unexpected config error %A" err
 
     let service = new JvLinkService(stubClient :> IJvLinkClient, config)
 
@@ -723,7 +731,8 @@ let ``StreamRealtimePayloads yields lazy realtime sequence`` () =
     let config =
         match JvLinkConfig.create "SID" None None None with
         | Ok cfg -> cfg
-        | Error err -> failwithf "unexpected config error %A" err
+        | Error err ->
+            failwithf "Tests: StreamRealtimePayloads yields lazy realtime sequence: unexpected config error %A" err
 
     let service = new JvLinkService(stubClient :> IJvLinkClient, config)
 
@@ -756,7 +765,10 @@ let ``StreamRealtimeAsync reads pre-enqueued data then terminates on EndOfStream
         let config =
             match JvLinkConfig.create "SID" None None None with
             | Ok cfg -> cfg
-            | Error err -> failwithf "unexpected config error %A" err
+            | Error err ->
+                failwithf
+                    "Tests: StreamRealtimeAsync reads pre-enqueued data then terminates on EndOfStream: unexpected config error %A"
+                    err
 
         let service = new JvLinkService(stubClient :> IJvLinkClient, config)
 
@@ -778,7 +790,10 @@ let ``StreamRealtimeAsync reads pre-enqueued data then terminates on EndOfStream
 
         match enumerator.Current with
         | Ok payload -> Assert.Equal<byte[]>([| 42uy |], payload.Data)
-        | Error err -> failwithf "unexpected realtime error %A" err
+        | Error err ->
+            failwithf
+                "Tests: StreamRealtimeAsync reads pre-enqueued data then terminates on EndOfStream: unexpected realtime error %A"
+                err
 
         // Second MoveNextAsync should return false (EndOfStream terminates the stream)
         let! hasSecond = enumerator.MoveNextAsync().AsTask()
@@ -895,7 +910,10 @@ module StreamRealtimeBoundaryTests =
         let config =
             match JvLinkConfig.create "SID" None None None with
             | Ok cfg -> cfg
-            | Error err -> failwithf "unexpected config error %A" err
+            | Error err ->
+                failwithf
+                    "Tests: StreamRealtimePayloads handles consecutive FileBoundary without yielding payloads between: unexpected config error %A"
+                    err
 
         let service = new JvLinkService(stubClient :> IJvLinkClient, config)
 
@@ -927,7 +945,10 @@ module StreamRealtimeBoundaryTests =
         let config =
             match JvLinkConfig.create "SID" None None None with
             | Ok cfg -> cfg
-            | Error err -> failwithf "unexpected config error %A" err
+            | Error err ->
+                failwithf
+                    "Tests: StreamRealtimePayloads backs off during prolonged DownloadPending and eventually yields payload: unexpected config error %A"
+                    err
 
         let service = new JvLinkService(stubClient :> IJvLinkClient, config)
 

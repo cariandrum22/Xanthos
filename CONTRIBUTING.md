@@ -155,6 +155,20 @@ Check code quality with FSharpLint:
 dotnet fsharplint lint Xanthos.sln
 ```
 
+CI requires this command to succeed without warnings. Fix diagnostics in the
+source; do not accept them through a warning baseline or `continue-on-error`.
+Recursive functions should use compiler-checked `[<TailCall>]` declarations at
+module or class scope, or iterative traversal where recursion is not tail-safe.
+`FS3569` is treated as a build error.
+
+Four asynchronous stream methods retain a narrowly scoped
+`SynchronousFunctionNames` exception: FSharpLint 0.27's
+[type classifier](https://github.com/fsprojects/FSharpLint/blob/v0.27.0/src/FSharpLint.Core/Rules/NamingHelper.fs)
+recognises `Task` and `Async`, but not `IAsyncEnumerable`.
+Each exception is documented beside the declaration and should be removed when
+the tool recognises asynchronous streams. Keep public API names stable; any
+additional suppression requires a concrete false-positive explanation.
+
 ### Naming Conventions
 
 - **Modules/Types**: PascalCase (`JvLinkService`, `ComError`)

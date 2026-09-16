@@ -14,13 +14,23 @@ let ``interpret should map not initialized codes to NotInitialized`` (methodName
 let ``interpret should map registry invalid codes`` (methodName: string, code: int) =
     match ErrorCodes.interpret methodName code with
     | Error(ComError.RegistryInvalid _) -> ()
-    | other -> failwithf "Unexpected mapping for %s code %d: %A" methodName code other
+    | other ->
+        failwithf
+            "ErrorCodesBoundaryTests: interpret should map registry invalid codes: Unexpected mapping for %s code %d: %A"
+            methodName
+            code
+            other
 
 [<Theory; InlineData("JVOpen", -401); InlineData("JVGets", -401)>]
 let ``interpret should map internal errors to Unexpected`` (methodName: string, code: int) =
     match ErrorCodes.interpret methodName code with
     | Error(ComError.Unexpected _) -> ()
-    | other -> failwithf "Unexpected mapping for %s code %d: %A" methodName code other
+    | other ->
+        failwithf
+            "ErrorCodesBoundaryTests: interpret should map internal errors to Unexpected: Unexpected mapping for %s code %d: %A"
+            methodName
+            code
+            other
 
 [<Theory; InlineData("JVOpen", -3); InlineData("JVGets", -3)>]
 let ``interpret should map download category to CommunicationFailure when not special-cased``
@@ -28,4 +38,9 @@ let ``interpret should map download category to CommunicationFailure when not sp
     =
     match ErrorCodes.interpret methodName code with
     | Error(ComError.CommunicationFailure(c, _)) when c = code -> ()
-    | other -> failwithf "Unexpected mapping for %s code %d: %A" methodName code other
+    | other ->
+        failwithf
+            "ErrorCodesBoundaryTests: interpret should map download category to CommunicationFailure when not special-cased: Unexpected mapping for %s code %d: %A"
+            methodName
+            code
+            other

@@ -13,7 +13,7 @@ let isPrintable (c: char) =
 [<ReplayProperty(EndSize = 100, MaxTest = 200)>]
 let ``ShiftJIS encode/decode round-trips for printable ASCII`` (chars: char list) =
     let filtered = chars |> List.filter isPrintable |> Array.ofList
-    let text = new string (filtered)
+    let text = String(filtered)
     let encoded = Text.encodeShiftJis text
     let decoded = Text.decodeShiftJis encoded
     decoded = text

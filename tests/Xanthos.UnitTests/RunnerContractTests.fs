@@ -164,7 +164,10 @@ module RunnerContractTests =
         let dispatched =
             match Records.parse data |> value with
             | Records.Record.SE r -> r
-            | other -> failwithf "%A" other
+            | other ->
+                failwithf
+                    "RunnerContractTests: Every nonreserved SE field and all three opponents follow the spreadsheet: %A"
+                    other
 
         Assert.Equal(record, dispatched)
         Assert.Equal(65, mappings.Length)

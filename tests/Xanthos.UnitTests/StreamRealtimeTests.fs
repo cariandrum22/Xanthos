@@ -73,7 +73,10 @@ let ``StreamRealtimePayloads retries after DownloadPending before yielding paylo
     while payload.IsNone && enumerator.MoveNext() do
         match enumerator.Current with
         | Ok data -> payload <- Some(Text.decodeShiftJis data.Data)
-        | Error err -> failwithf "Unexpected realtime error %A" err
+        | Error err ->
+            failwithf
+                "StreamRealtimeTests: StreamRealtimePayloads retries after DownloadPending before yielding payload: Unexpected realtime error %A"
+                err
 
     Assert.Equal(Some "hello", payload)
 

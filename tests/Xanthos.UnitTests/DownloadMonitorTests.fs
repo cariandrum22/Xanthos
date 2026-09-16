@@ -43,7 +43,8 @@ let ``waitForCompletion should return TimedOut on timeout`` () =
     match result with
     | Ok(TimedOut partialCount) -> Assert.Equal(0, partialCount)
     | Ok(Completed _) -> failwith "Expected timeout, but got completed"
-    | Error e -> failwithf "Unexpected error %A" e
+    | Error e ->
+        failwithf "DownloadMonitorTests: waitForCompletion should return TimedOut on timeout: Unexpected error %A" e
 
 [<Fact>]
 let ``waitForCompletion should propagate JVStatus error`` () =

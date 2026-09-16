@@ -153,7 +153,10 @@ module ConsentTests =
 
         let config =
             JvLinkConfig.create "UNKNOWN" None None None
-            |> Result.defaultWith (fun e -> failwithf "%A" e)
+            |> Result.defaultWith (fun e ->
+                failwithf
+                    "ConsentTests: Explicit cancellation is retained while the native consent call completes: %A"
+                    e)
 
         let service = new JvLinkService(client, config)
 

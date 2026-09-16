@@ -436,7 +436,8 @@ let ``parseOdds should fail for invalid JSON`` () =
 
     match parseOdds payload with
     | Error _ -> () // Expected
-    | Ok _ -> failwith "Should have failed with invalid JSON"
+    | Ok _ ->
+        failwith "SerializationTests: parseOdds should fail for invalid JSON: Should have failed with invalid JSON"
 
 [<Fact>]
 let ``parseOdds should fail when root is not an array`` () =
@@ -447,7 +448,9 @@ let ``parseOdds should fail when root is not an array`` () =
 
     match parseOdds payload with
     | Error _ -> () // Expected
-    | Ok _ -> failwith "Should have failed with non-array JSON"
+    | Ok _ ->
+        failwith
+            "SerializationTests: parseOdds should fail when root is not an array: Should have failed with non-array JSON"
 
 [<Fact>]
 let ``parseOdds should fail when raceId is missing`` () =

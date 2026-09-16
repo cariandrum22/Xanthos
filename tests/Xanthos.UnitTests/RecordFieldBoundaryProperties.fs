@@ -13,7 +13,7 @@ module RecordFieldBoundaryProperties =
 
     let private detail =
         function
-        | ReadFailure error -> error
+        | ReadFailureException error -> error
         | other -> raise other
 
     [<Theory; InlineData(104729); InlineData(130363); InlineData(155921)>]
@@ -36,7 +36,8 @@ module RecordFieldBoundaryProperties =
                 invalid[width - 1] <- byte 'X'
 
                 let error =
-                    Assert.Throws<ReadFailure>(fun () -> Reader("ZZ", invalid).Number "Value" 1 width scale |> ignore)
+                    Assert.Throws<ReadFailureException>(fun () ->
+                        Reader("ZZ", invalid).Number "Value" 1 width scale |> ignore)
 
                 let failure = detail error
                 Assert.Equal("ZZ", failure.RecordId)
@@ -56,7 +57,7 @@ module RecordFieldBoundaryProperties =
         broken[width - 1] <- 0x82uy
 
         let failure =
-            Assert.Throws<ReadFailure>(fun () -> Reader("ZZ", broken).Text "Name" 1 width |> ignore)
+            Assert.Throws<ReadFailureException>(fun () -> Reader("ZZ", broken).Text "Name" 1 width |> ignore)
             |> detail
 
         Assert.Equal("Name", failure.Field)
@@ -72,7 +73,7 @@ module RecordFieldBoundaryProperties =
         Assert.Equal(None, ((reader "00000000").Date "Date" 1).Value)
 
         for invalid in [ "20230229"; "20261301"; "        " ] do
-            Assert.Throws<ReadFailure>(fun () -> (reader invalid).Date "Date" 1 |> ignore)
+            Assert.Throws<ReadFailureException>(fun () -> (reader invalid).Date "Date" 1 |> ignore)
             |> ignore
 
         Assert.Equal(Some(TimeOnly(23, 59)), ((reader "2359").ClockTime "Time" 1).Value)
@@ -81,7 +82,7 @@ module RecordFieldBoundaryProperties =
             Assert.Equal(None, ((reader missing).ClockTime "Time" 1).Value)
 
         for invalid in [ "2400"; "1260" ] do
-            Assert.Throws<ReadFailure>(fun () -> (reader invalid).ClockTime "Time" 1 |> ignore)
+            Assert.Throws<ReadFailureException>(fun () -> (reader invalid).ClockTime "Time" 1 |> ignore)
             |> ignore
 
         let announcement = (reader "02292359").Announcement "Announcement" 1

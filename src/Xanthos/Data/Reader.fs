@@ -3,7 +3,7 @@ namespace Xanthos.Data
 open System
 open Xanthos
 
-exception internal ReadFailure of RecordParseError
+exception internal ReadFailureException of RecordParseError
 
 /// Internal synchronous reader. Only the public boundary converts failures to Result.
 type internal Reader(id: string, data: byte[], ?narrowedFields: (int * int * int) list) =
@@ -28,14 +28,14 @@ type internal Reader(id: string, data: byte[], ?narrowedFields: (int * int * int
     let get =
         function
         | Ok value -> value
-        | Error error -> raise (ReadFailure error)
+        | Error error -> raise (ReadFailureException error)
 
     member _.Fail name position length message =
         let position, length = locate position length
         let raw = RecordBytes.field id name position length data |> Result.defaultValue [||]
 
         raise (
-            ReadFailure
+            ReadFailureException
                 { RecordId = id
                   Field = name
                   Position = position
@@ -211,7 +211,7 @@ module internal Reader =
                         try
                             Ok(operation (Reader(id, data, narrowed)) header)
                         with
-                        | ReadFailure error -> Error error
+                        | ReadFailureException error -> Error error
                         | ex -> fail "Record" 1 length ex.Message))
 
     let parse id length categories operation data =

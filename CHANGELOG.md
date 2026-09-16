@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Update CI, release, managed verification and documentation workflows to stable GitHub Actions that use Node.js 24.
+
+### Fixed
+
+- Resolve FSharpLint findings in the library, CLI and tests, including ambiguous test failures, redundant expressions and recursive traversal. Require a successful lint exit in CI and compiler validation of annotated tail calls.
+
 ## [0.3.1] - 2026-09-16
 
 ### Added

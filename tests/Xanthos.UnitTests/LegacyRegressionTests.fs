@@ -5,6 +5,7 @@ open System.Threading
 open Xunit
 open Xanthos
 open Xanthos.Core
+open Xanthos.Core.Errors
 open Xanthos.Interop
 open Xanthos.Runtime
 
@@ -15,6 +16,8 @@ type private LegacyClient() =
     member _.Emit key = callback key
     member val OnRead: unit -> Result<JvReadOutcome, ComError> = (fun () -> Ok EndOfStream) with get, set
     member val OnClose: unit -> Result<unit, ComError> = (fun () -> Ok()) with get, set
+    member val OnDataClose: unit -> unit = ignore with get, set
+    member val OnSkip: unit -> Result<unit, ComError> = (fun () -> Ok()) with get, set
     member val OnDispose: unit -> unit = ignore with get, set
 
     interface IJvLinkClient with
@@ -38,9 +41,9 @@ type private LegacyClient() =
 
         member this.Read() = this.OnRead()
         member _.Gets(_, _, _) = Ok 0
-        member _.Close() = ()
+        member this.Close() = this.OnDataClose()
         member _.Status() = Ok 0
-        member _.Skip() = Ok()
+        member this.Skip() = this.OnSkip()
         member _.Cancel() = Ok()
         member _.DeleteFile(_) = Ok()
         member _.SetSaveFlag(_) = Ok()
@@ -120,6 +123,134 @@ module LegacyRegressionTests =
           SavePath = None
           ServiceKey = None
           UseJvGets = None }
+
+    let private request =
+        { Spec = "RACE"
+          FromTime = DateTime(1986, 1, 1)
+          Option = 1 }
+
+    let private stream realtime (service: JvLinkService) =
+        if realtime then
+            service.StreamRealtimePayloads("0B12", "20260916")
+        else
+            service.StreamPayloads request
+
+    [<Theory; InlineData(false); InlineData(true); Trait("Category", "Contract")>]
+    let ``Synchronous streams close on early disposal and reopen on each enumeration`` realtime =
+        let mutable reads = 0
+        let mutable closes = 0
+        let client = new LegacyClient(OnDataClose = (fun () -> closes <- closes + 1))
+
+        client.OnRead <-
+            fun () ->
+                reads <- reads + 1
+
+                Ok(
+                    Payload
+                        { Timestamp = None
+                          Data = [| byte reads |] }
+                )
+
+        use service = new JvLinkService(client, config)
+        let payloads = stream realtime service
+        Assert.Equal(0, reads)
+
+        let readFirst () =
+            use iterator = payloads.GetEnumerator()
+            Assert.True(iterator.MoveNext())
+            iterator.Current |> ok
+
+        Assert.Equal<byte[]>([| 1uy |], (readFirst ()).Data)
+        Assert.Equal(1, reads)
+        Assert.Equal(1, closes)
+        Assert.Equal(0, service.GetStatus() |> ok)
+        Assert.Equal<byte[]>([| 2uy |], (readFirst ()).Data)
+        Assert.Equal(2, reads)
+        Assert.Equal(2, closes)
+
+    [<Theory; InlineData("stored"); InlineData("realtime"); InlineData("fetch"); Trait("Category", "Contract")>]
+    let ``Read recovery stops at the retry limit and closes after skip failure`` mode =
+        let mutable reads = 0
+        let mutable skips = 0
+        let mutable closes = 0
+        let delays = ResizeArray<TimeSpan>()
+        let skipError = InvalidState "cannot skip damaged file"
+        let client = new LegacyClient(OnDataClose = (fun () -> closes <- closes + 1))
+
+        client.OnRead <-
+            fun () ->
+                reads <- reads + 1
+
+                if reads = 1 then
+                    Ok(Payload { Timestamp = None; Data = [| 1uy |] })
+                elif reads <= 4 then
+                    Error(CommunicationFailure(-402, "damaged file"))
+                else
+                    Ok(Payload { Timestamp = None; Data = [| 2uy |] })
+
+        client.OnSkip <-
+            fun () ->
+                skips <- skips + 1
+                Error skipError
+
+        let scheduler =
+            { new IWaitScheduler with
+                member _.Sleep delay = delays.Add delay
+
+                member _.SleepWithCancellation(delay, token) =
+                    token.ThrowIfCancellationRequested()
+                    delays.Add delay
+
+                member _.Delay(delay, token) =
+                    System.Threading.Tasks.Task.Delay(delay, token) }
+
+        use service = new JvLinkService(client, config, waitScheduler = scheduler)
+
+        if mode = "fetch" then
+            Assert.Equal<Result<JvPayload list, XanthosError>>(
+                Error(InteropError skipError),
+                service.FetchPayloads request
+            )
+        else
+            let results = stream (mode = "realtime") service |> Seq.toList
+            Assert.Equal(2, results.Length)
+            Assert.Equal<byte[]>([| 1uy |], (results[0] |> ok).Data)
+            Assert.Equal<Result<JvPayload, XanthosError>>(Error(InteropError skipError), results[1])
+
+        Assert.Equal(4, reads)
+        Assert.Equal(1, skips)
+        Assert.Equal(1, closes)
+
+        Assert.Equal<TimeSpan list>(
+            [ TimeSpan.FromMilliseconds 500.; TimeSpan.FromMilliseconds 1000. ],
+            List.ofSeq delays
+        )
+
+    [<Fact; Trait("Category", "Contract")>]
+    let ``Fetch cancellation during retry delay prevents another read and closes the session`` () =
+        use cancellation = new CancellationTokenSource()
+        let mutable reads = 0
+        let mutable closes = 0
+        let client = new LegacyClient(OnDataClose = (fun () -> closes <- closes + 1))
+
+        client.OnRead <-
+            fun () ->
+                reads <- reads + 1
+                Error(CommunicationFailure(-402, "damaged file"))
+
+        let scheduler =
+            { new IWaitScheduler with
+                member _.Sleep _ = ()
+                member _.SleepWithCancellation(_, _) = cancellation.Cancel()
+
+                member _.Delay(delay, token) =
+                    System.Threading.Tasks.Task.Delay(delay, token) }
+
+        use service = new JvLinkService(client, config, waitScheduler = scheduler)
+        let result = service.FetchPayloads(request, cancellationToken = cancellation.Token)
+        Assert.Equal<Result<JvPayload list, XanthosError>>(Error Cancelled, result)
+        Assert.Equal(1, reads)
+        Assert.Equal(1, closes)
 
     [<Fact; Trait("Category", "Contract")>]
     let ``Availability cleanup failure returns false and service disposal retains body exception`` () =

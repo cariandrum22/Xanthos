@@ -25,14 +25,14 @@ type PlacePayoutRule =
     | Unknown of string
 
 /// The seven betting products in H1; trifecta data is supplied separately in H6.
-type SevenBetValues<'value> =
-    { Win: 'value
-      Place: 'value
-      BracketQuinella: 'value
-      Quinella: 'value
-      Wide: 'value
-      Exacta: 'value
-      Trio: 'value }
+type SevenBetValues<'T> =
+    { Win: 'T
+      Place: 'T
+      BracketQuinella: 'T
+      Quinella: 'T
+      Wide: 'T
+      Exacta: 'T
+      Trio: 'T }
 
 module internal BettingReader =
     let sale (reader: Reader) name position =

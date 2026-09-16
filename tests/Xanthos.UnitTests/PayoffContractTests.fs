@@ -119,7 +119,10 @@ module PayoffContractTests =
         let dispatched =
             match Records.parse data |> value with
             | Records.Record.HR r -> r
-            | other -> failwithf "%A" other
+            | other ->
+                failwithf
+                    "PayoffContractTests: All eight HR betting products preserve their full payoff and flag fields: %A"
+                    other
 
         Assert.Equal(record, dispatched)
         Assert.Equal(62, mappings.Length)

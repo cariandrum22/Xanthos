@@ -24,14 +24,14 @@ module Serialization =
         else
             DateTime.SpecifyKind(dt, DateTimeKind.Utc)
 
-    let private collectResults (items: Result<'a, XanthosError> list) =
-        let rec loop acc remaining =
-            match remaining with
-            | [] -> Ok(List.rev acc)
-            | Ok value :: tail -> loop (value :: acc) tail
-            | Error err :: _ -> Error err
+    [<TailCall>]
+    let rec private collectResultsLoop acc remaining =
+        match remaining with
+        | [] -> Ok(List.rev acc)
+        | Ok value :: tail -> collectResultsLoop (value :: acc) tail
+        | Error err :: _ -> Error err
 
-        loop [] items
+    let private collectResults (items: Result<'T, XanthosError> list) = collectResultsLoop [] items
 
     let private getStringProperty (name: string) (element: JsonElement) =
         let mutable property = Unchecked.defaultof<JsonElement>
@@ -379,9 +379,9 @@ module Serialization =
 
     let private parseArray
         (payload: byte[])
-        (parser: JsonElement -> Result<'a, XanthosError>)
+        (parser: JsonElement -> Result<'T, XanthosError>)
         (entityName: string)
-        : Result<'a list, XanthosError> =
+        : Result<'T list, XanthosError> =
         if isNull payload || payload.Length = 0 then
             Ok []
         else

@@ -62,22 +62,41 @@ module RecordOracle =
             Collections.Concurrent.ConcurrentDictionary<string, int array>
          >()
 
-    let rec private offsets layout (f: Field) =
+    let private offsets layout (f: Field) =
         let cache =
             offsetCache.GetValue(layout, fun _ -> Collections.Concurrent.ConcurrentDictionary<string, int array>())
 
-        cache.GetOrAdd(
-            f.Id,
-            fun _ ->
-                let bases =
-                    match f.Parent with
-                    | None -> [| 0 |]
-                    | Some id -> offsets layout (field layout id)
+        // Build uncached ancestors first so nested repeated fields never recurse on the stack.
+        let pending = Collections.Generic.Stack<Field>()
+        let mutable current = Some f
 
-                [| for offset in bases do
-                       for i in 0 .. f.Repeat - 1 do
-                           yield offset + f.Position - 1 + i * f.Length |]
-        )
+        while current.IsSome do
+            let node = current.Value
+
+            if cache.ContainsKey node.Id then
+                current <- None
+            else
+                pending.Push node
+                current <- node.Parent |> Option.map (field layout)
+
+        while pending.Count > 0 do
+            let node = pending.Pop()
+
+            cache.GetOrAdd(
+                node.Id,
+                fun _ ->
+                    let bases =
+                        match node.Parent with
+                        | None -> [| 0 |]
+                        | Some id -> cache[id]
+
+                    [| for offset in bases do
+                           for i in 0 .. node.Repeat - 1 do
+                               yield offset + node.Position - 1 + i * node.Length |]
+            )
+            |> ignore
+
+        cache[f.Id]
 
     let positions layout f = offsets layout f |> Array.toList
 

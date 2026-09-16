@@ -403,7 +403,7 @@ type FixtureCoverageGapTests() =
             printfn "MISSING FIXTURES (need to capture):"
 
             for (category, types) in KnownRecordTypes.byCategory do
-                let missing = types |> List.filter (fun t -> missingTypes.Contains t)
+                let missing = types |> List.filter missingTypes.Contains
 
                 if not missing.IsEmpty then
                     printfn "  %s: %s" category (String.Join(", ", missing))
@@ -417,7 +417,7 @@ type FixtureCoverageGapTests() =
         printfn "CAPTURED BY CATEGORY:"
 
         for (category, types) in KnownRecordTypes.byCategory do
-            let captured = types |> List.filter (fun t -> capturedTypes.Contains t)
+            let captured = types |> List.filter capturedTypes.Contains
             let total = types.Length
             let pct = float captured.Length / float total * 100.0
             printfn "  %s: %d/%d (%.0f%%)" category captured.Length total pct

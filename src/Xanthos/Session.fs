@@ -21,7 +21,7 @@ type Session internal (native: INativeJvLink, ?dispatch: (unit -> obj) -> obj) =
     member internal _.IsDisposed =
         lock operationGate (fun () -> closing || Threading.Volatile.Read(&disposed) <> 0)
 
-    member internal this.Run(api, operation: INativeJvLink -> Result<'a, JvError>) =
+    member internal this.Run(api, operation: INativeJvLink -> Result<'T, JvError>) =
         let error kind message =
             Error
                 { Api = api
@@ -78,13 +78,13 @@ type Session internal (native: INativeJvLink, ?dispatch: (unit -> obj) -> obj) =
             // Legacy operations enter the STA queue before acquiring the session gate.
             // Native reentry still observes Busy; delivery joins remain outside this scope.
             try
-                invoke (fun () -> box (execute ())) :?> Result<'a, JvError>
+                invoke (fun () -> box (execute ())) :?> Result<'T, JvError>
             with
             | :? ObjectDisposedException -> error JvErrorKind.Disposed "Session has been disconnected."
             | ex -> error JvErrorKind.Invocation ex.Message
 
     member internal this.BeginWatch(capacity, callback) =
-        let delivery = new EventDelivery(capacity, callback)
+        let delivery = EventDelivery(capacity, callback)
 
         let result =
             this.Run(

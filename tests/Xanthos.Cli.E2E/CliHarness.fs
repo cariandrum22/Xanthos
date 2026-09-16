@@ -16,6 +16,7 @@ type CliResult =
       LogFile: string }
 
 module Harness =
+    [<TailCall>]
     let rec private findRoot path =
         if File.Exists(Path.Combine(path, "Xanthos.sln")) then
             path

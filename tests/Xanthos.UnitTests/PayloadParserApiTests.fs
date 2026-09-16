@@ -259,7 +259,7 @@ module TypeExtractorTests =
         | Ok records ->
             let unknowns =
                 PayloadParser.filterByType records (function
-                    | UnknownRecord(_, _) -> Some()
+                    | UnknownRecord _ -> Some()
                     | _ -> None)
 
             Assert.Equal(2, unknowns.Length)

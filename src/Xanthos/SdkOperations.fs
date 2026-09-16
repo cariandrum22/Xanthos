@@ -321,15 +321,15 @@ module internal SdkOperations =
 
     let movieRead session = movieReadWithCapacity 4096 session
 
-    let private property<'a> name (session: Session) =
+    let private property<'T> name (session: Session) =
         session.Run(
             name,
             fun native ->
                 native.Get name
                 |> Result.bind (function
-                    | null when typeof<'a> = typeof<string> -> Ok(unbox<'a> (box ""))
-                    | :? 'a as value -> Ok value
-                    | _ -> mismatch name typeof<'a>.Name)
+                    | null when typeof<'T> = typeof<string> -> Ok(unbox<'T> (box ""))
+                    | :? 'T as value -> Ok value
+                    | _ -> mismatch name typeof<'T>.Name)
         )
 
     let getSaveFlag session = property<int> "m_saveflag" session
