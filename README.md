@@ -223,8 +223,11 @@ Fantomas and FSharpLint are provided via dotnet tools:
 ```bash
 dotnet tool restore
 dotnet fantomas .                    # format all F# sources
-dotnet fsharplint lint Xanthos.sln     # run FSharpLint
+python3 scripts/check_fsharplint.py   # reject new findings and incomplete lint runs
 ```
+
+The lint baseline check requires Python 3.10 or newer. See the
+[linting guide](CONTRIBUTING.md#linting) for existing findings and baseline review.
 
 ## Documentation
 

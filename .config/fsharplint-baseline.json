@@ -1,0 +1,1386 @@
+{
+  "schemaVersion": 1,
+  "toolVersion": "0.27.0",
+  "target": "Xanthos.sln",
+  "diagnostics": [
+    {
+      "path": "samples/Xanthos.Cli/Execution.fs",
+      "rule": "FL0034",
+      "message": "If `capturedSet.Contains` has no mutable arguments partially applied then the lambda can be removed.",
+      "source": "let capturedInCategory = types |> List.filter (fun t -> capturedSet.Contains t)",
+      "count": 1
+    },
+    {
+      "path": "samples/Xanthos.Cli/Execution.fs",
+      "rule": "FL0055",
+      "message": "The `ignore` function is usually favoured over `let _ = ...` when ignoring the result of an expression.",
+      "source": "let _ = printEvidence ctx service",
+      "count": 25
+    },
+    {
+      "path": "samples/Xanthos.Cli/Execution.fs",
+      "rule": "FL0055",
+      "message": "The `ignore` function is usually favoured over `let _ = ...` when ignoring the result of an expression.",
+      "source": "let _ = printEvidence ctx watchService",
+      "count": 1
+    },
+    {
+      "path": "samples/Xanthos.Cli/FunctionalExecution.fs",
+      "rule": "FL0034",
+      "message": "If `Char.IsAsciiLetterOrDigit` has no mutable arguments partially applied then the lambda can be removed.",
+      "source": "id.Length = 2 && id |> Seq.forall (fun c -> Char.IsAsciiLetterOrDigit c))",
+      "count": 1
+    },
+    {
+      "path": "samples/Xanthos.Cli/FunctionalExecution.fs",
+      "rule": "FL0037",
+      "message": "Consider changing `CommandFailure` to be suffixed with `Exception`.",
+      "source": "exception private CommandFailure of JvError",
+      "count": 1
+    },
+    {
+      "path": "samples/Xanthos.Cli/Parsing.fs",
+      "rule": "FL0065",
+      "message": "`x::[]` might be able to be refactored into `[x]`.",
+      "source": "| \"--duration\" :: [] -> Error \"watch-events: option '--duration' requires a value.\"",
+      "count": 1
+    },
+    {
+      "path": "samples/Xanthos.Cli/Parsing.fs",
+      "rule": "FL0065",
+      "message": "`x::[]` might be able to be refactored into `[x]`.",
+      "source": "| \"--from\" :: [] -> Error \"capture-fixtures: option '--from' requires a value.\"",
+      "count": 1
+    },
+    {
+      "path": "samples/Xanthos.Cli/Parsing.fs",
+      "rule": "FL0065",
+      "message": "`x::[]` might be able to be refactored into `[x]`.",
+      "source": "| \"--from\" :: [] -> Error \"download: option '--from' requires a value.\"",
+      "count": 1
+    },
+    {
+      "path": "samples/Xanthos.Cli/Parsing.fs",
+      "rule": "FL0065",
+      "message": "`x::[]` might be able to be refactored into `[x]`.",
+      "source": "| \"--key\" :: [] -> Error \"realtime: option '--key' requires a value.\"",
+      "count": 1
+    },
+    {
+      "path": "samples/Xanthos.Cli/Parsing.fs",
+      "rule": "FL0065",
+      "message": "`x::[]` might be able to be refactored into `[x]`.",
+      "source": "| \"--max-records\" :: [] -> Error \"capture-fixtures: option '--max-records' requires a value.\"",
+      "count": 1
+    },
+    {
+      "path": "samples/Xanthos.Cli/Parsing.fs",
+      "rule": "FL0065",
+      "message": "`x::[]` might be able to be refactored into `[x]`.",
+      "source": "| \"--max-records\" :: [] -> Error \"download: option '--max-records' requires a value.\"",
+      "count": 1
+    },
+    {
+      "path": "samples/Xanthos.Cli/Parsing.fs",
+      "rule": "FL0065",
+      "message": "`x::[]` might be able to be refactored into `[x]`.",
+      "source": "| \"--option\" :: [] -> Error \"download: option '--option' requires a value.\"",
+      "count": 1
+    },
+    {
+      "path": "samples/Xanthos.Cli/Parsing.fs",
+      "rule": "FL0065",
+      "message": "`x::[]` might be able to be refactored into `[x]`.",
+      "source": "| \"--output\" :: [] -> Error \"capture-fixtures: option '--output' requires a value.\"",
+      "count": 1
+    },
+    {
+      "path": "samples/Xanthos.Cli/Parsing.fs",
+      "rule": "FL0065",
+      "message": "`x::[]` might be able to be refactored into `[x]`.",
+      "source": "| \"--output\" :: [] -> Error \"download: option '--output' requires a value.\"",
+      "count": 1
+    },
+    {
+      "path": "samples/Xanthos.Cli/Parsing.fs",
+      "rule": "FL0065",
+      "message": "`x::[]` might be able to be refactored into `[x]`.",
+      "source": "| \"--save-path\" :: [] -> Error \"Option '--save-path' requires a value.\"",
+      "count": 1
+    },
+    {
+      "path": "samples/Xanthos.Cli/Parsing.fs",
+      "rule": "FL0065",
+      "message": "`x::[]` might be able to be refactored into `[x]`.",
+      "source": "| \"--service-key\" :: [] -> Error \"Option '--service-key' requires a value.\"",
+      "count": 1
+    },
+    {
+      "path": "samples/Xanthos.Cli/Parsing.fs",
+      "rule": "FL0065",
+      "message": "`x::[]` might be able to be refactored into `[x]`.",
+      "source": "| \"--sid\" :: [] -> Error \"Option '--sid' requires a value.\"",
+      "count": 1
+    },
+    {
+      "path": "samples/Xanthos.Cli/Parsing.fs",
+      "rule": "FL0065",
+      "message": "`x::[]` might be able to be refactored into `[x]`.",
+      "source": "| \"--spec\" :: [] -> Error \"download: option '--spec' requires a value.\"",
+      "count": 1
+    },
+    {
+      "path": "samples/Xanthos.Cli/Parsing.fs",
+      "rule": "FL0065",
+      "message": "`x::[]` might be able to be refactored into `[x]`.",
+      "source": "| \"--spec\" :: [] -> Error \"realtime: option '--spec' requires a value.\"",
+      "count": 1
+    },
+    {
+      "path": "samples/Xanthos.Cli/Parsing.fs",
+      "rule": "FL0065",
+      "message": "`x::[]` might be able to be refactored into `[x]`.",
+      "source": "| \"--specs\" :: [] -> Error \"capture-fixtures: option '--specs' requires a value.\"",
+      "count": 1
+    },
+    {
+      "path": "samples/Xanthos.Cli/Parsing.fs",
+      "rule": "FL0065",
+      "message": "`x::[]` might be able to be refactored into `[x]`.",
+      "source": "| \"--to\" :: [] -> Error \"capture-fixtures: option '--to' requires a value.\"",
+      "count": 1
+    },
+    {
+      "path": "samples/Xanthos.Cli/Parsing.fs",
+      "rule": "FL0085",
+      "message": "The 'loop' function has a \"rec\" keyword, but no [<TailCall>] attribute. Consider adding [<TailCall>] attribute to the function and <WarningsAsErrors>FS3569</WarningsAsErrors> property to project file (but only on .NET 8 and higher). NOTE: As this function is nested, you might need to convert it to private and non-nested (module-level or type-level) in case the version of F# you are using doesn't support adding attributes to nested functions.",
+      "source": "let rec loop (raw: GlobalRawOptions) (tokens: string list) : Result<GlobalRawOptions * string list, string> =",
+      "count": 1
+    },
+    {
+      "path": "samples/Xanthos.Cli/Parsing.fs",
+      "rule": "FL0085",
+      "message": "The 'loop' function has a \"rec\" keyword, but no [<TailCall>] attribute. Consider adding [<TailCall>] attribute to the function and <WarningsAsErrors>FS3569</WarningsAsErrors> property to project file (but only on .NET 8 and higher). NOTE: As this function is nested, you might need to convert it to private and non-nested (module-level or type-level) in case the version of F# you are using doesn't support adding attributes to nested functions.",
+      "source": "let rec loop (raw: WatchRaw) (tokens: string list) : Result<WatchRaw, string> =",
+      "count": 1
+    },
+    {
+      "path": "samples/Xanthos.Cli/Parsing.fs",
+      "rule": "FL0085",
+      "message": "The 'parseCaptureFixturesArgs' function has a \"rec\" keyword, but no [<TailCall>] attribute. Consider adding [<TailCall>] attribute to the function and <WarningsAsErrors>FS3569</WarningsAsErrors> property to project file (but only on .NET 8 and higher).",
+      "source": "let rec parseCaptureFixturesArgs",
+      "count": 1
+    },
+    {
+      "path": "samples/Xanthos.Cli/Parsing.fs",
+      "rule": "FL0085",
+      "message": "The 'parseDownloadArgs' function has a \"rec\" keyword, but no [<TailCall>] attribute. Consider adding [<TailCall>] attribute to the function and <WarningsAsErrors>FS3569</WarningsAsErrors> property to project file (but only on .NET 8 and higher).",
+      "source": "let rec parseDownloadArgs (state: DownloadRaw) (tokens: string list) : Result<DownloadRaw, string> =",
+      "count": 1
+    },
+    {
+      "path": "samples/Xanthos.Cli/Parsing.fs",
+      "rule": "FL0085",
+      "message": "The 'parseRealtimeArgs' function has a \"rec\" keyword, but no [<TailCall>] attribute. Consider adding [<TailCall>] attribute to the function and <WarningsAsErrors>FS3569</WarningsAsErrors> property to project file (but only on .NET 8 and higher).",
+      "source": "let rec parseRealtimeArgs (state: RealtimeRaw) (tokens: string list) : Result<RealtimeRaw, string> =",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Core/Errors.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `a` to PascalCase.",
+      "source": "let mapComError (result: Result<'a, ComError>) = Result.mapError InteropError result",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Core/Errors.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `a` to PascalCase.",
+      "source": "let mapComResult (result: Result<'a, ComError>) = Result.mapError InteropError result",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Core/Records/RecordParser.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `a` to PascalCase.",
+      "source": "member _.Bind(m: Result<'a, XanthosError>, f) = Result.bind f m",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Core/Serialization.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `a` to PascalCase.",
+      "source": "(parser: JsonElement -> Result<'a, XanthosError>)",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Core/Serialization.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `a` to PascalCase.",
+      "source": ": Result<'a list, XanthosError> =",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Core/Serialization.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `a` to PascalCase.",
+      "source": "let private collectResults (items: Result<'a, XanthosError> list) =",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Core/Serialization.fs",
+      "rule": "FL0085",
+      "message": "The 'loop' function has a \"rec\" keyword, but no [<TailCall>] attribute. Consider adding [<TailCall>] attribute to the function and <WarningsAsErrors>FS3569</WarningsAsErrors> property to project file (but only on .NET 8 and higher). NOTE: As this function is nested, you might need to convert it to private and non-nested (module-level or type-level) in case the version of F# you are using doesn't support adding attributes to nested functions.",
+      "source": "let rec loop acc remaining =",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Core/Text.fs",
+      "rule": "FL0014",
+      "message": "Usage of `new` keyword here is redundant.",
+      "source": "let private utf8Strict = lazy (new UTF8Encoding(false, true))",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Data/Betting.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `value` to PascalCase.",
+      "source": "BracketQuinella: 'value",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Data/Betting.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `value` to PascalCase.",
+      "source": "Exacta: 'value",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Data/Betting.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `value` to PascalCase.",
+      "source": "Place: 'value",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Data/Betting.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `value` to PascalCase.",
+      "source": "Quinella: 'value",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Data/Betting.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `value` to PascalCase.",
+      "source": "Trio: 'value }",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Data/Betting.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `value` to PascalCase.",
+      "source": "Wide: 'value",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Data/Betting.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `value` to PascalCase.",
+      "source": "type SevenBetValues<'value> =",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Data/Betting.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `value` to PascalCase.",
+      "source": "{ Win: 'value",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Data/Models.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `value` to PascalCase.",
+      "source": "type Sourced<'value> = { Raw: string; Value: 'value }",
+      "count": 2
+    },
+    {
+      "path": "src/Xanthos/Data/Payoff.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `value` to PascalCase.",
+      "source": "BracketQuinella: 'value",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Data/Payoff.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `value` to PascalCase.",
+      "source": "Exacta: 'value",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Data/Payoff.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `value` to PascalCase.",
+      "source": "Place: 'value",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Data/Payoff.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `value` to PascalCase.",
+      "source": "Quinella: 'value",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Data/Payoff.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `value` to PascalCase.",
+      "source": "Trifecta: 'value }",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Data/Payoff.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `value` to PascalCase.",
+      "source": "Trio: 'value",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Data/Payoff.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `value` to PascalCase.",
+      "source": "Wide: 'value",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Data/Payoff.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `value` to PascalCase.",
+      "source": "type BetValues<'value> =",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Data/Payoff.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `value` to PascalCase.",
+      "source": "{ Win: 'value",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Data/Reader.fs",
+      "rule": "FL0037",
+      "message": "Consider changing `ReadFailure` to be suffixed with `Exception`.",
+      "source": "exception internal ReadFailure of RecordParseError",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/DataSpecs.fs",
+      "rule": "FL0065",
+      "message": "`List.map f (List.map g x)` might be able to be refactored into `List.map (g >> f) x`.",
+      "source": "[ \"TOKU\", \"TK\"",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/EventDelivery.fs",
+      "rule": "FL0014",
+      "message": "Usage of `new` keyword here is redundant.",
+      "source": "new Thread(",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Interop/JvLinkStub.fs",
+      "rule": "FL0065",
+      "message": "`if x then y else y` might be able to be refactored into `y`.",
+      "source": "if not openSession then",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Interop/NativeSessionLifetime.fs",
+      "rule": "FL0085",
+      "message": "The 'unwrap' function has a \"rec\" keyword, but no [<TailCall>] attribute. Consider adding [<TailCall>] attribute to the function and <WarningsAsErrors>FS3569</WarningsAsErrors> property to project file (but only on .NET 8 and higher). NOTE: As this function is nested, you might need to convert it to private and non-nested (module-level or type-level) in case the version of F# you are using doesn't support adding attributes to nested functions.",
+      "source": "let rec unwrap (error: exn) =",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Runtime/DownloadMonitor.fs",
+      "rule": "FL0085",
+      "message": "The 'loop' function has a \"rec\" keyword, but no [<TailCall>] attribute. Consider adding [<TailCall>] attribute to the function and <WarningsAsErrors>FS3569</WarningsAsErrors> property to project file (but only on .NET 8 and higher). NOTE: As this function is nested, you might need to convert it to private and non-nested (module-level or type-level) in case the version of F# you are using doesn't support adding attributes to nested functions.",
+      "source": "let rec loop last =",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Runtime/JvLinkService.fs",
+      "rule": "FL0043",
+      "message": "Consider changing `WatchState_Running` to remove any underscores.",
+      "source": "let WatchState_Running = 2",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Runtime/JvLinkService.fs",
+      "rule": "FL0043",
+      "message": "Consider changing `WatchState_Starting` to remove any underscores.",
+      "source": "let WatchState_Starting = 1",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Runtime/JvLinkService.fs",
+      "rule": "FL0043",
+      "message": "Consider changing `WatchState_StopFailed` to remove any underscores.",
+      "source": "let WatchState_StopFailed = 4",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Runtime/JvLinkService.fs",
+      "rule": "FL0043",
+      "message": "Consider changing `WatchState_Stopped` to remove any underscores.",
+      "source": "let WatchState_Stopped = 0",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Runtime/JvLinkService.fs",
+      "rule": "FL0043",
+      "message": "Consider changing `WatchState_Stopping` to remove any underscores.",
+      "source": "let WatchState_Stopping = 3",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Runtime/JvLinkService.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `a` to PascalCase.",
+      "source": "(f: unit -> seq<Result<'a, XanthosError>>)",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Runtime/JvLinkService.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `a` to PascalCase.",
+      "source": ": seq<Result<'a, XanthosError>> =",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Runtime/JvLinkService.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `a` to PascalCase.",
+      "source": "let executeCom policy name (call: unit -> Result<'a, ComError>) : Result<'a, ComError> =",
+      "count": 2
+    },
+    {
+      "path": "src/Xanthos/Runtime/JvLinkService.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `a` to PascalCase.",
+      "source": "let guardOperation (operationName: string) (f: unit -> Result<'a, XanthosError>) : Result<'a, XanthosError> =",
+      "count": 2
+    },
+    {
+      "path": "src/Xanthos/Runtime/JvLinkService.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `a` to PascalCase.",
+      "source": "let runCom name (call: unit -> Result<'a, ComError>) : Result<'a, XanthosError> =",
+      "count": 2
+    },
+    {
+      "path": "src/Xanthos/Runtime/JvLinkService.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `a` to PascalCase.",
+      "source": "let runComAsync name (call: unit -> Result<'a, ComError>) : Task<Result<'a, XanthosError>> =",
+      "count": 2
+    },
+    {
+      "path": "src/Xanthos/Runtime/JvLinkService.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `a` to PascalCase.",
+      "source": "let task: Task<Result<'a, ComError>> =",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Runtime/JvLinkService.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `a` to PascalCase.",
+      "source": "| None -> Task.Run<Result<'a, ComError>>(fun () -> work ())",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Runtime/JvLinkService.fs",
+      "rule": "FL0085",
+      "message": "The 'claim' function has a \"rec\" keyword, but no [<TailCall>] attribute. Consider adding [<TailCall>] attribute to the function and <WarningsAsErrors>FS3569</WarningsAsErrors> property to project file (but only on .NET 8 and higher). NOTE: As this function is nested, you might need to convert it to private and non-nested (module-level or type-level) in case the version of F# you are using doesn't support adding attributes to nested functions.",
+      "source": "let rec claim () =",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Runtime/JvLinkService.fs",
+      "rule": "FL0085",
+      "message": "The 'loop' function has a \"rec\" keyword, but no [<TailCall>] attribute. Consider adding [<TailCall>] attribute to the function and <WarningsAsErrors>FS3569</WarningsAsErrors> property to project file (but only on .NET 8 and higher). NOTE: As this function is nested, you might need to convert it to private and non-nested (module-level or type-level) in case the version of F# you are using doesn't support adding attributes to nested functions.",
+      "source": "let rec loop () =",
+      "count": 2
+    },
+    {
+      "path": "src/Xanthos/Runtime/JvLinkService.fs",
+      "rule": "FL0085",
+      "message": "The 'loop' function has a \"rec\" keyword, but no [<TailCall>] attribute. Consider adding [<TailCall>] attribute to the function and <WarningsAsErrors>FS3569</WarningsAsErrors> property to project file (but only on .NET 8 and higher). NOTE: As this function is nested, you might need to convert it to private and non-nested (module-level or type-level) in case the version of F# you are using doesn't support adding attributes to nested functions.",
+      "source": "let rec loop attemptNo totalDelayMs =",
+      "count": 2
+    },
+    {
+      "path": "src/Xanthos/Runtime/JvLinkService.fs",
+      "rule": "FL0085",
+      "message": "The 'readAll' function has a \"rec\" keyword, but no [<TailCall>] attribute. Consider adding [<TailCall>] attribute to the function and <WarningsAsErrors>FS3569</WarningsAsErrors> property to project file (but only on .NET 8 and higher). NOTE: As this function is nested, you might need to convert it to private and non-nested (module-level or type-level) in case the version of F# you are using doesn't support adding attributes to nested functions.",
+      "source": "let rec readAll acc =",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Runtime/JvLinkService.fs",
+      "rule": "FL0085",
+      "message": "The 'tryRead' function has a \"rec\" keyword, but no [<TailCall>] attribute. Consider adding [<TailCall>] attribute to the function and <WarningsAsErrors>FS3569</WarningsAsErrors> property to project file (but only on .NET 8 and higher). NOTE: As this function is nested, you might need to convert it to private and non-nested (module-level or type-level) in case the version of F# you are using doesn't support adding attributes to nested functions.",
+      "source": "let rec tryRead retryAttempt =",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Runtime/JvLinkService.fs",
+      "rule": "FL0085",
+      "message": "The 'tryReadWithRetry' function has a \"rec\" keyword, but no [<TailCall>] attribute. Consider adding [<TailCall>] attribute to the function and <WarningsAsErrors>FS3569</WarningsAsErrors> property to project file (but only on .NET 8 and higher). NOTE: As this function is nested, you might need to convert it to private and non-nested (module-level or type-level) in case the version of F# you are using doesn't support adding attributes to nested functions.",
+      "source": "let rec tryReadWithRetry retryAttempt =",
+      "count": 2
+    },
+    {
+      "path": "src/Xanthos/Runtime/JvLinkService.fs",
+      "rule": "FL0095",
+      "message": "This function does not return Async or Task. Consider renaming it to StreamPayloads.",
+      "source": "member _.StreamPayloadsAsync",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Runtime/JvLinkService.fs",
+      "rule": "FL0095",
+      "message": "This function does not return Async or Task. Consider renaming it to StreamPayloads.",
+      "source": "member this.StreamPayloadsAsync",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Runtime/JvLinkService.fs",
+      "rule": "FL0095",
+      "message": "This function does not return Async or Task. Consider renaming it to StreamRealtime.",
+      "source": "member _.StreamRealtimeAsync",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Runtime/JvLinkService.fs",
+      "rule": "FL0095",
+      "message": "This function does not return Async or Task. Consider renaming it to StreamRealtimePayloads.",
+      "source": "member this.StreamRealtimePayloadsAsync",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/SdkOperations.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `a` to PascalCase.",
+      "source": "| :? 'a as value -> Ok value",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/SdkOperations.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `a` to PascalCase.",
+      "source": "| _ -> mismatch name typeof<'a>.Name)",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/SdkOperations.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `a` to PascalCase.",
+      "source": "| null when typeof<'a> = typeof<string> -> Ok(unbox<'a> (box \"\"))",
+      "count": 2
+    },
+    {
+      "path": "src/Xanthos/SdkTypes.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `value` to PascalCase.",
+      "source": "Value: 'value",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/SdkTypes.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `value` to PascalCase.",
+      "source": "type ImageResult<'value> =",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Session.fs",
+      "rule": "FL0014",
+      "message": "Usage of `new` keyword here is redundant.",
+      "source": "let delivery = new EventDelivery(capacity, callback)",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Session.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `a` to PascalCase.",
+      "source": "invoke (fun () -> box (execute ())) :?> Result<'a, JvError>",
+      "count": 1
+    },
+    {
+      "path": "src/Xanthos/Session.fs",
+      "rule": "FL0069",
+      "message": "Consider changing `a` to PascalCase.",
+      "source": "member internal this.Run(api, operation: INativeJvLink -> Result<'a, JvError>) =",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.Cli.E2E/CliHarness.fs",
+      "rule": "FL0085",
+      "message": "The 'findRoot' function has a \"rec\" keyword, but no [<TailCall>] attribute. Consider adding [<TailCall>] attribute to the function and <WarningsAsErrors>FS3569</WarningsAsErrors> property to project file (but only on .NET 8 and higher).",
+      "source": "let rec private findRoot path =",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.Cli.E2E/ConsentTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "|> Result.defaultWith (fun e -> failwithf \"%A\" e)",
+      "count": 2
+    },
+    {
+      "path": "tests/Xanthos.FunctionalScenarioTests/ScenarioTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "Host.dependencies (fun () -> failwith \"Unexpected COM connection\") output.Add CancellationToken.None",
+      "count": 2
+    },
+    {
+      "path": "tests/Xanthos.PropertyTests/Generators.fs",
+      "rule": "FL0014",
+      "message": "Usage of `new` keyword here is redundant.",
+      "source": "|> fun chars -> new string (chars)",
+      "count": 2
+    },
+    {
+      "path": "tests/Xanthos.PropertyTests/Generators.fs",
+      "rule": "FL0085",
+      "message": "The 'loop' function has a \"rec\" keyword, but no [<TailCall>] attribute. Consider adding [<TailCall>] attribute to the function and <WarningsAsErrors>FS3569</WarningsAsErrors> property to project file (but only on .NET 8 and higher). NOTE: As this function is nested, you might need to convert it to private and non-nested (module-level or type-level) in case the version of F# you are using doesn't support adding attributes to nested functions.",
+      "source": "let rec loop () =",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.PropertyTests/PropertyTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error e -> failwithf \"%A\" e",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.PropertyTests/PropertyTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error error -> failwithf \"Valid generated card was rejected: %A\" error",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.PropertyTests/PropertyTests.fs",
+      "rule": "FL0085",
+      "message": "The 'collect' function has a \"rec\" keyword, but no [<TailCall>] attribute. Consider adding [<TailCall>] attribute to the function and <WarningsAsErrors>FS3569</WarningsAsErrors> property to project file (but only on .NET 8 and higher). NOTE: As this function is nested, you might need to convert it to private and non-nested (module-level or type-level) in case the version of F# you are using doesn't support adding attributes to nested functions.",
+      "source": "let rec collect acc =",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.PropertyTests/PropertyTests.fs",
+      "rule": "FL0085",
+      "message": "The 'loop' function has a \"rec\" keyword, but no [<TailCall>] attribute. Consider adding [<TailCall>] attribute to the function and <WarningsAsErrors>FS3569</WarningsAsErrors> property to project file (but only on .NET 8 and higher). NOTE: As this function is nested, you might need to convert it to private and non-nested (module-level or type-level) in case the version of F# you are using doesn't support adding attributes to nested functions.",
+      "source": "let rec loop () =",
+      "count": 2
+    },
+    {
+      "path": "tests/Xanthos.PropertyTests/TextRoundtripTests.fs",
+      "rule": "FL0014",
+      "message": "Usage of `new` keyword here is redundant.",
+      "source": "let text = new string (filtered)",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/ComAbnormalTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error e -> failwithf \"Unexpected error %A\" e",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/ComContractTests.fs",
+      "rule": "FL0065",
+      "message": "`fun _ -> ()` might be able to be refactored into `ignore`.",
+      "source": "match client.WatchEvent(fun _ -> ()) with",
+      "count": 2
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/ComContractTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error e -> failwithf \"Expected 0, got error %A\" e",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/ComContractTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error e -> failwithf \"Expected Ok, got %A\" e",
+      "count": 15
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/ComContractTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| other -> failwithf \"Expected InvalidInput, got %A\" other",
+      "count": 2
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/ComContractTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| other -> failwithf \"Expected InvalidState, got %A\" other",
+      "count": 2
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/ComEventsTests.fs",
+      "rule": "FL0065",
+      "message": "`fun _ -> ()` might be able to be refactored into `ignore`.",
+      "source": "let result = client.WatchEvent(fun _ -> ())",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/ComEventsTests.fs",
+      "rule": "FL0065",
+      "message": "`fun _ -> ()` might be able to be refactored into `ignore`.",
+      "source": "use sub = service.WatchEvents.Subscribe(fun _ -> ())",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/ComprehensiveFieldTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error _ -> failwith \"Should parse successfully\")",
+      "count": 4
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/ComprehensiveFieldTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error err -> failwithf \"Should parse successfully: %A\" err)",
+      "count": 2
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/CoreModuleTests.fs",
+      "rule": "FL0014",
+      "message": "Usage of `new` keyword here is redundant.",
+      "source": "let stuffed = bytes |> Array.map char |> (fun chars -> new string (chars))",
+      "count": 2
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/CoreModuleTests.fs",
+      "rule": "FL0014",
+      "message": "Usage of `new` keyword here is redundant.",
+      "source": "let stuffed = stuffedBytes |> Array.map char |> (fun chars -> new string (chars))",
+      "count": 2
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/CoreModuleTests.fs",
+      "rule": "FL0014",
+      "message": "Usage of `new` keyword here is redundant.",
+      "source": "|> fun chars -> new string (chars)",
+      "count": 2
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/CoreModuleTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error err -> failwithf \"Expected Ok, got %A\" err",
+      "count": 15
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/CoreModuleTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error other -> failwithf \"Expected RecordTooShort, got %A\" other",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/CoreModuleTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error other -> failwithf \"Expected ValidationError, got %A\" other",
+      "count": 9
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/CoreModuleTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Ok _ -> failwith \"Should be Error\"",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/CoreModuleTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Ok _ -> failwith \"Should fail for empty string\"",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/CoreModuleTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Ok _ -> failwith \"Should fail for whitespace only\"",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/CoreModuleTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Ok _ -> failwith \"Should fail\"",
+      "count": 2
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/CoreModuleTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Ok other -> failwithf \"Expected TextValue, got %A\" other",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/CoreModuleTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| other -> failwithf \"Expected ValidationError, got %A\" other",
+      "count": 6
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/DownloadMonitorTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error e -> failwithf \"Unexpected error %A\" e",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/EdgeCaseTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error _ -> failwith \"Should handle maximum odds\"",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/EdgeCaseTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error _ -> failwith \"Wrong error type\"",
+      "count": 26
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/EdgeCaseTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error err -> failwithf \"Should parse successfully with None for invalid code: %A\" err",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/EdgeCaseTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error err -> failwithf \"Should parse with all fields: %A\" err",
+      "count": 5
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/EdgeCaseTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error err -> failwithf \"Should parse with empty fields: %A\" err",
+      "count": 2
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/EdgeCaseTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error err -> failwithf \"Should parse with empty odds: %A\" err",
+      "count": 4
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/EdgeCaseTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error err -> failwithf \"Should parse with empty optional fields: %A\" err",
+      "count": 11
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/EdgeCaseTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Ok _ -> failwith \"Should have returned error\"",
+      "count": 25
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/ErrorCodesBoundaryTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| other -> failwithf \"Unexpected mapping for %s code %d: %A\" methodName code other",
+      "count": 3
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/ExceptionHandlingTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error err -> failwithf \"Should parse successfully: %A\" err",
+      "count": 2
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/ExceptionHandlingTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Ok _ -> failwith \"Should return Error for empty required field HorseId\"",
+      "count": 2
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/ExceptionHandlingTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Ok _ -> failwith \"Should return Error for empty required field HorseName\"",
+      "count": 2
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/ExceptionHandlingTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Ok _ -> failwith \"Should return Error for empty required field RaceKey\"",
+      "count": 5
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/ExceptionHandlingTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Ok _ -> failwith \"Should return Error for null-filled data\"",
+      "count": 2
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/ExceptionHandlingTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Ok _ -> failwith \"Should return Error when required fields missing\"",
+      "count": 2
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/FieldCategoryProperties.fs",
+      "rule": "FL0085",
+      "message": "The 'leaves' function has a \"rec\" keyword, but no [<TailCall>] attribute. Consider adding [<TailCall>] attribute to the function and <WarningsAsErrors>FS3569</WarningsAsErrors> property to project file (but only on .NET 8 and higher).",
+      "source": "let rec leaves (t: Type) =",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/FixtureParserTests.fs",
+      "rule": "FL0034",
+      "message": "If `capturedTypes.Contains` has no mutable arguments partially applied then the lambda can be removed.",
+      "source": "let captured = types |> List.filter (fun t -> capturedTypes.Contains t)",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/FixtureParserTests.fs",
+      "rule": "FL0034",
+      "message": "If `missingTypes.Contains` has no mutable arguments partially applied then the lambda can be removed.",
+      "source": "let missing = types |> List.filter (fun t -> missingTypes.Contains t)",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/IntegrationTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| _ -> failwith \"Both records should parse successfully\"",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/JvLinkServiceErrorTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error err -> failwithf \"Should succeed, got %A\" err",
+      "count": 2
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/JvLinkServiceErrorTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error other -> failwithf \"Expected CommunicationFailure, got %A\" other",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/JvLinkServiceErrorTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error other -> failwithf \"Expected InvalidInput, got %A\" other",
+      "count": 3
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/JvLinkServiceErrorTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error other -> failwithf \"Expected NotInitialized, got %A\" other",
+      "count": 3
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/JvLinkServiceErrorTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error other -> failwithf \"Expected ValidationError, got %A\" other",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/JvLinkServiceErrorTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Ok _ -> failwith \"Second result should be error\"",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/JvLinkServiceErrorTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Ok _ -> failwith \"Should fail with init error\"",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/JvLinkServiceErrorTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Ok _ -> failwith \"Should fail with open error\"",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/JvLinkServiceErrorTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Ok _ -> failwith \"Should fail with validation error\"",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/JvLinkServiceErrorTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Ok _ -> failwith \"Should yield init error\"",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/JvLinkServiceErrorTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Ok _ -> failwith \"Should yield open error\"",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/LibraryTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error _ -> failwith \"Should be ValidationError\"",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/LibraryTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error _ -> failwith \"Should succeed\"",
+      "count": 3
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/OddsContractTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| other -> failwithf \"%A\" other",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/OfficialFoundationTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error error -> failwithf \"%A\" error",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/PayloadParserApiTests.fs",
+      "rule": "FL0058",
+      "message": "A tuple of wildcards in a pattern can be replaced with a single wildcard. `UnknownRecord(_, _)` can be replaced with `UnknownRecord _`.",
+      "source": "| UnknownRecord(_, _) -> Some()",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/PayoffContractTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| other -> failwithf \"%A\" other",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/PropertyTests.fs",
+      "rule": "FL0035",
+      "message": "Lambda may be able to be replaced with composition. e.g. `fun x -> x |> isValid |> not` could be replaced with `isValid >> not`.",
+      "source": "|> List.forall (fun code -> not (MovieType.isWorkoutType (CustomMovieType code)))",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/RaceContractTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| other -> failwithf \"%A\" other",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/RecordOracle.fs",
+      "rule": "FL0085",
+      "message": "The 'offsets' function has a \"rec\" keyword, but no [<TailCall>] attribute. Consider adding [<TailCall>] attribute to the function and <WarningsAsErrors>FS3569</WarningsAsErrors> property to project file (but only on .NET 8 and higher).",
+      "source": "let rec private offsets layout (f: Field) =",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/RecordParserErrorTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Ok _ -> failwith \"Should fail with empty data\"",
+      "count": 7
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/RecordParserErrorTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Ok _ -> failwith \"Should fail with insufficient data length\"",
+      "count": 7
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/RecordRelationshipTests.fs",
+      "rule": "FL0055",
+      "message": "The `ignore` function is usually favoured over `let _ = ...` when ignoring the result of an expression.",
+      "source": "let _ = H1.parse (testData \"H1\")",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/RecordRelationshipTests.fs",
+      "rule": "FL0055",
+      "message": "The `ignore` function is usually favoured over `let _ = ...` when ignoring the result of an expression.",
+      "source": "let _ = O1.parse (testData \"O1\")",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/RecordRelationshipTests.fs",
+      "rule": "FL0055",
+      "message": "The `ignore` function is usually favoured over `let _ = ...` when ignoring the result of an expression.",
+      "source": "let _ = RA.parse (testData \"RA\")",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/RecordRelationshipTests.fs",
+      "rule": "FL0055",
+      "message": "The `ignore` function is usually favoured over `let _ = ...` when ignoring the result of an expression.",
+      "source": "let _ = SE.parse (testData \"SE\")",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/RecordRelationshipTests.fs",
+      "rule": "FL0055",
+      "message": "The `ignore` function is usually favoured over `let _ = ...` when ignoring the result of an expression.",
+      "source": "let _ = TK.parse (testData \"TK\")",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/RecordRelationshipTests.fs",
+      "rule": "FL0055",
+      "message": "The `ignore` function is usually favoured over `let _ = ...` when ignoring the result of an expression.",
+      "source": "let _ = WF.parse (testData \"WF\")",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/RecordRelationshipTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| _ -> failwith \"Both parsers should succeed\"",
+      "count": 6
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/RunnerContractTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| other -> failwithf \"%A\" other",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/RuntimeModuleTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error err -> failwithf \"Expected Ok, got %A\" err",
+      "count": 21
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/RuntimeModuleTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error other -> failwithf \"Expected ValidationError, got %A\" other",
+      "count": 21
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/RuntimeModuleTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| other -> failwithf \"Expected Abort, got %A\" other",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/SerializationTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Ok _ -> failwith \"Should have failed with invalid JSON\"",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/SerializationTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Ok _ -> failwith \"Should have failed with non-array JSON\"",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/SpecialRegistrationTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| other -> failwithf \"%A\" other",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/StreamPayloadsTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error err -> failwithf \"Unexpected error %A\" err",
+      "count": 5
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/StreamPayloadsTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| _ -> failwith \"Expected ValidationError\"",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/StreamRealtimeTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error err -> failwithf \"Unexpected realtime error %A\" err",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/Tests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error err -> failwithf \"CourseDiagram error %A\" err",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/Tests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error err -> failwithf \"GetSaveDownloadsEnabled failed %A\" err",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/Tests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error err -> failwithf \"start watch events failed %A\" err",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/Tests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error err -> failwithf \"stop watch events failed %A\" err",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/Tests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error err -> failwithf \"unexpected config error %A\" err",
+      "count": 18
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/Tests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error err -> failwithf \"unexpected error %A\" err",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/Tests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error err -> failwithf \"unexpected realtime error %A\" err",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/Tests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| None -> failwith \"Expected realtime request\"",
+      "count": 2
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/Tests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| other -> failwithf \"unexpected event type %A\" other",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/Tests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| other -> failwithf \"unexpected mapping %A\" other",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/Tests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| other -> failwithf \"unexpected result %A\" other",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/ValidationTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error _ -> failwith \"Should succeed with valid dataspec\"",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/ValidationTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Error e -> failwithf \"Should parse under Thai culture: %A\" e",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/ValidationTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Ok _ -> failwith \"Should fail with empty string\"",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/ValidationTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| Ok _ -> failwith \"Should fail with non-numeric string\"",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/VotesContractTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| _ -> failwith \"Accepted malformed entry\"",
+      "count": 1
+    },
+    {
+      "path": "tests/Xanthos.UnitTests/VotesContractTests.fs",
+      "rule": "FL0072",
+      "message": "Bad usage of failwith: consider using unique error messages as parameters.",
+      "source": "| other -> failwithf \"%A\" other",
+      "count": 1
+    }
+  ]
+}

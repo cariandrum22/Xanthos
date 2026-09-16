@@ -149,11 +149,27 @@ dotnet fantomas .
 
 ### Linting
 
-Check code quality with FSharpLint:
+Check FSharpLint results against the reviewed diagnostic baseline (Python 3.10+):
 
 ```bash
-dotnet fsharplint lint Xanthos.sln
+python3 scripts/check_fsharplint.py
+python3 -m unittest discover -s scripts -p test_check_fsharplint.py -v
 ```
+
+CI fails on new diagnostics, tool/parsing errors, incomplete output or inconsistent
+counts. Existing findings are recorded in `.config/fsharplint-baseline.json` and
+remain visible in the job summary and `fsharplint-report` artifact; a passing
+baseline check does not mean warning-free code. Diagnostics are matched by file,
+rule, message, source line text and occurrence count, rather than a total warning budget.
+Line-number shifts alone do not create new findings. Fixed findings are reported
+as resolved; remove their baseline entries so they cannot be reintroduced unnoticed.
+
+Use `python3 scripts/check_fsharplint.py --update-baseline` only for an explicit,
+reviewed baseline change, including after a tool upgrade. Explain additions in the
+PR; CI never regenerates this file. Full stdout/stderr and structured diagnostics
+are saved under `.artifacts/lint/`. On Windows, use your installed Python command.
+The original `dotnet fsharplint lint Xanthos.sln` remains available to inspect every
+finding directly and returns a nonzero exit code while warnings remain.
 
 ### Naming Conventions
 
