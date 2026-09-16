@@ -386,6 +386,67 @@ During the 0.x development series, increment MINOR for API additions or incompat
 changes and PATCH for compatible fixes. Document incompatible changes explicitly;
 1.0.0 will establish the stable public API contract.
 
+### Release Note Format
+
+Copy the [release note template](.github/release-notes-template.md) to
+`docs/releases/vX.Y.Z.md` in the release preparation PR. Write the notes in English
+using these six level-two headings, in order:
+
+- **Summary**: Identify the version and the main result for consumers.
+- **Highlights**: Describe the most relevant changes; leave the full inventory in the changelog.
+- **Compatibility and migration**: State supported targets, SDK requirements and upgrade steps.
+- **Verification**: Link evidence and distinguish managed CI, WindowsManaged, native COM,
+  package consumption and tag verification. Explain checks that were not run.
+- **Known limitations**: Preserve accepted failures and deferred checks explicitly.
+- **Links**: Include version-specific NuGet/changelog links, verification evidence and comparison.
+
+Replace every template placeholder. Run these checks from the repository root
+with Python 3; no additional Python packages are required:
+
+```sh
+python scripts/release_notes.py --check-all
+python -m unittest discover -s scripts -p test_release_notes.py -v
+```
+
+CI checks every note and requires a note matching `VersionPrefix`. The checker
+validates structure, nonempty sections and version-specific links; reviewers must
+still check the accuracy of verification claims and their evidence. Update the
+version, changelog and notes together. Prepublication notes may link the planned
+tag/package; record outstanding publication checks as pending in the verification
+issue and update that evidence after publication.
+
+The [v0.3.1 example](docs/releases/v0.3.1.md) is backfilled from the published
+release, with its original signature status recorded. Its accepted native failure
+remains explicit. This example does not update the
+published GitHub release. Future releases use the reviewed Markdown file as their
+GitHub release body, without appending automatically generated sections.
+
+### Release Tag Signatures
+
+Create an annotated, signed `vX.Y.Z` tag on the reviewed release commit in `main`.
+Configure a maintainer signing key registered with GitHub before tagging; follow
+GitHub's [signed tag instructions](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-tags).
+With that setup complete, replace the placeholders in these commands:
+
+```sh
+git tag -s vX.Y.Z <release-commit> -m "Release vX.Y.Z"
+git tag -v vX.Y.Z
+git push origin refs/tags/vX.Y.Z
+```
+
+Before publishing to NuGet, the workflow requires GitHub to report the **tag**
+signature as verified and its target to match the exact source commit being built.
+A verified target commit alone is insufficient. Manual workflow runs also require
+an existing verified tag matching the selected source commit and version. An
+unverifiable signature, missing tag or failed API lookup stops publication; resolve
+the cause before retrying.
+
+Keep published version tags unchanged during routine releases. Adding a signature
+changes the tag object even when its target commit stays the same. An exceptional
+correction must preserve the target commit and published package/assets, retain
+the original tag in a backup and prevent unintended release workflow reruns.
+Store history-rewrite backups in local Git bundles rather than public release tags.
+
 ### Pre-Release Checklist
 
 Before tagging a release, complete the following:
@@ -395,6 +456,8 @@ Before tagging a release, complete the following:
    [verification checklist](tests/README.md#verification-checklist) on Windows
 3. **CHANGELOG**: Finalize `[Unreleased]` section with release version
 4. **Version**: Update version in `Directory.Build.props`
+5. **Release notes**: Review `docs/releases/vX.Y.Z.md` and pass the format checks
+6. **Signing**: Prepare the registered maintainer key and verify the signed release tag
 
 Release tags (`vX.Y.Z`) and manual workflow version inputs must match the source
 version. The release workflow packs both target frameworks from that version;

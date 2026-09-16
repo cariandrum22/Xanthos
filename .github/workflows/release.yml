@@ -11,6 +11,9 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: read
+
 env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
@@ -20,6 +23,8 @@ jobs:
   build-and-test:
     name: Build and Test
     runs-on: windows-latest
+    outputs:
+      version: ${{ steps.release-metadata.outputs.version }}
     env:
       XANTHOS_E2E_MODE: STUB
       XANTHOS_E2E_SID: CI_TEST_SID
@@ -33,10 +38,12 @@ jobs:
         with:
           global-json-file: global.json
 
-      - name: Verify release version matches source
+      - name: Verify source version, release notes and tag signature
+        id: release-metadata
         shell: pwsh
         env:
           REQUESTED_VERSION: ${{ github.event.inputs.version }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           $version = if ($env:GITHUB_EVENT_NAME -eq 'workflow_dispatch') {
             $env:REQUESTED_VERSION
@@ -44,6 +51,15 @@ jobs:
             $env:GITHUB_REF -replace '^refs/tags/v', ''
           }
           ./scripts/assert-release-version.ps1 -RequestedVersion $version
+          $sourceCommit = git rev-parse HEAD
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Cannot resolve the checked-out release commit.'
+          }
+          python scripts/release_notes.py --version $version --verify-tag --repository $env:GITHUB_REPOSITORY --commit $sourceCommit
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Release metadata validation failed.'
+          }
+          "version=$version" >> $env:GITHUB_OUTPUT
 
       - name: Restore dependencies
         run: dotnet restore
@@ -102,7 +118,7 @@ jobs:
   create-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
-    needs: publish
+    needs: [build-and-test, publish]
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: write
@@ -119,5 +135,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3.0.3
         with:
-          generate_release_notes: true
+          name: v${{ needs.build-and-test.outputs.version }}
+          body_path: docs/releases/v${{ needs.build-and-test.outputs.version }}.md
+          generate_release_notes: false
+          fail_on_unmatched_files: true
           files: ./nupkg/*.nupkg
