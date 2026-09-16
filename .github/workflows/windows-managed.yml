@@ -13,8 +13,8 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-dotnet@v6.0.0
         with:
           global-json-file: global.json
       - name: Verify SDK absence and run Windows x64 boundaries
@@ -22,7 +22,7 @@ jobs:
         run: ./scripts/run-windows-managed-ci.ps1 -RunId "windows-managed-${{ github.run_id }}-${{ github.run_attempt }}"
       - name: Preserve Windows environment, invocation and TRX
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: windows-managed
           overwrite: true
