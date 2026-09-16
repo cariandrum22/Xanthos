@@ -1,11 +1,11 @@
 {
   "assembly": "Xanthos",
-  "commit": "5c87048a3e75f8ab7684a90b2cbf1b18ba9abd33",
-  "runUrl": "https://github.com/cariandrum22/Xanthos/actions/runs/35037592961",
+  "commit": "97b766ae7b03233ee4f4b6127b9c43bbc3161a03",
+  "runUrl": "https://github.com/cariandrum22/Xanthos/actions/runs/35046144769",
   "reports": 3,
-  "coveredLines": 7321,
-  "totalLines": 8197,
-  "percentage": "89.3",
+  "coveredLines": 7307,
+  "totalLines": 8132,
+  "percentage": "89.9",
   "scope": "Portable managed line union; native COM execution excluded.",
   "mergePolicy": "Count each relative source file and line once; covered if any report has positive hits. No averaging or branch-union claim."
 }
